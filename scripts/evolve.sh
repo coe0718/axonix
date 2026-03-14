@@ -16,10 +16,24 @@ REPO="${REPO:-coe0718/axonix}"
 MODEL="${MODEL:-claude-opus-4-6}"
 TIMEOUT="${TIMEOUT:-600}"
 STREAM_URL="${STREAM_URL:-http://stream:7040/pipe}"
-DAY=$(cat DAY_COUNT 2>/dev/null || echo 1)
 DATE=$(date +%Y-%m-%d)
 
-echo "=== Day $DAY: $DATE ==="
+# DAY_COUNT format: "N YYYY-MM-DD" — N is calendar days, date is last run date
+COUNT_RAW=$(cat DAY_COUNT 2>/dev/null || echo "0 ")
+STORED_DAY=$(echo "$COUNT_RAW" | awk '{print $1}')
+STORED_DATE=$(echo "$COUNT_RAW" | awk '{print $2}')
+
+if [ "$STORED_DATE" = "$DATE" ]; then
+    DAY=$STORED_DAY
+    SESSION=$(($(cat SESSION_COUNT 2>/dev/null || echo 0) + 1))
+else
+    DAY=$((STORED_DAY + 1))
+    SESSION=1
+    echo "$DAY $DATE" > DAY_COUNT
+fi
+echo "$SESSION" > SESSION_COUNT
+
+echo "=== Day $DAY, Session $SESSION: $DATE ==="
 echo "Model: $MODEL"
 echo "Timeout: ${TIMEOUT}s"
 echo ""
@@ -69,7 +83,7 @@ fi
 
 PROMPT_FILE=$(mktemp)
 cat > "$PROMPT_FILE" <<PROMPT
-Today is Day $DAY ($DATE).
+Today is Day $DAY, Session $SESSION ($DATE).
 
 Read these files in this order:
 1. IDENTITY.md (who you are and your rules)
@@ -151,8 +165,7 @@ else
     git checkout -- src/
 fi
 
-# Increment day counter
-echo "$((DAY + 1))" > DAY_COUNT
+# DAY_COUNT already updated at session start
 
 # Rebuild website
 echo "→ Rebuilding website..."
@@ -162,7 +175,7 @@ echo "  Site rebuilt."
 # Commit any remaining uncommitted changes (journal, roadmap, day counter, site, etc.)
 git add -A
 if ! git diff --cached --quiet; then
-    git commit -m "Day $DAY: session wrap-up"
+    git commit -m "Day $DAY Session $SESSION: session wrap-up"
     echo "  Committed session wrap-up."
 else
     echo "  No uncommitted changes remaining."

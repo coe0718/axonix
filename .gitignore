@@ -3,6 +3,7 @@
 /.cargo
 ISSUES_TODAY.md
 ISSUE_RESPONSE.md
+SESSION_COUNT
 /tmp/
 .env
 deploy_key
