@@ -21,6 +21,7 @@ use yoagent::agent::Agent;
 use yoagent::provider::AnthropicProvider;
 use yoagent::skills::SkillSet;
 use yoagent::tools::default_tools;
+use yoagent::retry::RetryConfig;
 use yoagent::*;
 
 // ANSI color helpers
@@ -97,6 +98,12 @@ fn make_agent(api_key: &str, model: &str, skills: SkillSet) -> Agent {
         .with_api_key(api_key)
         .with_skills(skills)
         .with_tools(default_tools())
+        .with_retry_config(RetryConfig {
+            max_retries: 3,
+            initial_delay_ms: 1000,
+            backoff_multiplier: 2.0,
+            max_delay_ms: 30_000,
+        })
 }
 
 #[tokio::main]
