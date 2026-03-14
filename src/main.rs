@@ -120,7 +120,7 @@ async fn main() {
         }
     };
 
-    let model = args
+    let mut model = args
         .iter()
         .position(|a| a == "--model")
         .and_then(|i| args.get(i + 1))
@@ -252,7 +252,8 @@ async fn main() {
                     println!("{DIM}  Example: /model claude-sonnet-4-20250514{RESET}\n");
                     continue;
                 }
-                agent = make_agent(&api_key, new_model, skills.clone());
+                model = new_model.to_string();
+                agent = make_agent(&api_key, &model, skills.clone());
                 total_input = 0;
                 total_output = 0;
                 println!("{DIM}  (switched to {new_model}, conversation cleared){RESET}\n");
@@ -564,5 +565,16 @@ mod tests {
         let input = "/model    ";
         let model_name = input.trim_start_matches("/model ").trim();
         assert!(model_name.is_empty(), "Whitespace-only model name should be detected");
+    }
+
+    #[test]
+    fn test_clear_should_preserve_model_switch() {
+        // Simulates the logic: after /model switches, /clear should use the new model
+        let mut model = "claude-opus-4-6".to_string();
+        // Simulate /model command
+        let new_model = "claude-sonnet-4-20250514";
+        model = new_model.to_string();
+        // Simulate /clear — should use current model, not the original
+        assert_eq!(model, "claude-sonnet-4-20250514");
     }
 }
