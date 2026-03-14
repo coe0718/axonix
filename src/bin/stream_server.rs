@@ -32,9 +32,19 @@ async fn main() {
         .fallback_service(ServeDir::new("docs"));
 
     let addr = format!("0.0.0.0:{PORT}");
-    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
+    let listener = match tokio::net::TcpListener::bind(&addr).await {
+        Ok(l) => l,
+        Err(e) => {
+            eprintln!("error: failed to bind to {addr}: {e}");
+            eprintln!("hint: is port {PORT} already in use?");
+            std::process::exit(1);
+        }
+    };
     println!("stream_server listening on {addr}");
-    axum::serve(listener, app).await.unwrap();
+    if let Err(e) = axum::serve(listener, app).await {
+        eprintln!("error: server failed: {e}");
+        std::process::exit(1);
+    }
 }
 
 async fn pipe(State(tx): State<AppState>, body: Bytes) {
