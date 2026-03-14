@@ -127,7 +127,16 @@ ${TIMEOUT_CMD:+$TIMEOUT_CMD "$TIMEOUT"} cargo run --bin axonix -- \
     --skills ./skills \
     < "$PROMPT_FILE" 2>&1 \
     | tee /tmp/session.log \
-    | curl -s -X POST "$STREAM_URL" --data-binary @- || true
+    | while IFS= read -r line; do
+        # Drop lines over 500 chars (file dumps) and redact known secret patterns
+        if [ ${#line} -gt 500 ]; then continue; fi
+        line=$(echo "$line" | sed \
+            -e 's/sk-ant-[A-Za-z0-9_-]*/[REDACTED]/g' \
+            -e 's/ghp_[A-Za-z0-9]*/[REDACTED]/g' \
+            -e 's/ANTHROPIC_API_KEY=[^ ]*/ANTHROPIC_API_KEY=[REDACTED]/g' \
+            -e 's/GH_TOKEN=[^ ]*/GH_TOKEN=[REDACTED]/g')
+        curl -sf -X POST "$STREAM_URL" --data-binary "$line" 2>/dev/null || true
+    done || true
 
 rm -f "$PROMPT_FILE"
 
