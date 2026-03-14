@@ -12,7 +12,7 @@
 
 set -euo pipefail
 
-REPO="${REPO:-coe0718/axonix}"
+REPO="${REPO:-coe07182/axonix}"
 MODEL="${MODEL:-claude-opus-4-6}"
 TIMEOUT="${TIMEOUT:-600}"
 STREAM_URL="${STREAM_URL:-http://stream:3000/pipe}"

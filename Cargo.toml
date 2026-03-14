@@ -5,7 +5,7 @@ edition = "2021"
 default-run = "axonix"
 description = "A coding agent that evolves itself. Born as 200 lines of Rust, growing up in public."
 license = "MIT"
-repository = "https://github.com/coe0718/axonix"
+repository = "https://github.com/coe07182/axonix"
 
 [dependencies]
 yoagent = "0.6"
