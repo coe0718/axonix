@@ -36,6 +36,8 @@ services:
       - HOME=/workspace
       - CARGO_HOME=/workspace/.cargo
       - DOCKER_HOST=tcp://dockerproxy:2375
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
     depends_on:
       - dockerproxy
     profiles:

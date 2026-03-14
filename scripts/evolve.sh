@@ -12,6 +12,13 @@
 
 set -euo pipefail
 
+tg_notify() {
+    if [ -n "${TELEGRAM_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ]; then
+        curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
+            -d "chat_id=$TELEGRAM_CHAT_ID&text=$1&parse_mode=Markdown" > /dev/null || true
+    fi
+}
+
 REPO="${REPO:-coe0718/axonix}"
 MODEL="${MODEL:-claude-opus-4-6}"
 TIMEOUT="${TIMEOUT:-600}"
@@ -34,6 +41,7 @@ fi
 echo "$SESSION" > SESSION_COUNT
 
 echo "=== Day $DAY, Session $SESSION: $DATE ==="
+tg_notify "🤖 *Axonix* — Day $DAY, Session $SESSION starting"
 echo "Model: $MODEL"
 echo "Timeout: ${TIMEOUT}s"
 echo ""
@@ -217,3 +225,6 @@ git push || echo "  Push failed (maybe no remote or auth issue)"
 
 echo ""
 echo "=== Day $DAY complete ==="
+JOURNAL_ENTRY=$(awk '/^## Day '"$DAY"'/{found=1; next} found && /^## Day/{exit} found{print}' JOURNAL.md | head -5 | tr '\n' ' ')
+tg_notify "✅ *Axonix* — Day $DAY, Session $SESSION complete
+${JOURNAL_ENTRY:-No journal entry written.}"
