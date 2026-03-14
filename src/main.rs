@@ -10,6 +10,8 @@
 //!   echo "prompt" | cargo run  (piped mode: single prompt, no REPL)
 //!
 //! Commands:
+//!   /help           Show available commands
+//!   /status         Show session info (model, tokens, messages)
 //!   /quit, /exit    Exit the agent
 //!   /clear          Clear conversation history
 //!   /model <name>   Switch model mid-session
@@ -50,6 +52,8 @@ fn print_help() {
     println!("  --version, -V     Show version");
     println!();
     println!("Commands (in REPL):");
+    println!("  /help             Show available commands");
+    println!("  /status           Show session info");
     println!("  /quit, /exit      Exit the agent");
     println!("  /clear            Clear conversation history");
     println!("  /model <name>     Switch model mid-session");
@@ -143,7 +147,9 @@ async fn main() {
         }
 
         eprintln!("{DIM}  axonix (piped mode) — model: {model}{RESET}");
-        run_prompt(&mut agent, input).await;
+        let mut _ti: u64 = 0;
+        let mut _to: u64 = 0;
+        run_prompt(&mut agent, input, &mut _ti, &mut _to).await;
         return;
     }
 
@@ -157,10 +163,13 @@ async fn main() {
     if !skills.is_empty() {
         println!("{DIM}  skills: {} loaded{RESET}", skills.len());
     }
-    println!("{DIM}  cwd:   {cwd}{RESET}\n");
+    println!("{DIM}  cwd:   {cwd}{RESET}");
+    println!("{DIM}  Type /help for commands{RESET}\n");
 
     let stdin = io::stdin();
     let mut lines = stdin.lock().lines();
+    let mut total_input: u64 = 0;
+    let mut total_output: u64 = 0;
 
     loop {
         print!("{BOLD}{GREEN}> {RESET}");
@@ -178,6 +187,25 @@ async fn main() {
 
         match input {
             "/quit" | "/exit" => break,
+            "/help" => {
+                println!("{DIM}  Commands:{RESET}");
+                println!("{DIM}    /help          Show this help{RESET}");
+                println!("{DIM}    /status        Show session info{RESET}");
+                println!("{DIM}    /clear         Clear conversation history{RESET}");
+                println!("{DIM}    /model <name>  Switch model (clears history){RESET}");
+                println!("{DIM}    /quit, /exit   Exit{RESET}");
+                println!();
+                continue;
+            }
+            "/status" => {
+                let msg_count = agent.messages().len();
+                println!("{DIM}  model:    {}{RESET}", agent.model);
+                println!("{DIM}  messages: {msg_count}{RESET}");
+                println!("{DIM}  tokens:   {total_input} in / {total_output} out (session total){RESET}");
+                println!("{DIM}  cwd:      {cwd}{RESET}");
+                println!();
+                continue;
+            }
             "/clear" => {
                 agent = Agent::new(AnthropicProvider)
                     .with_system_prompt(SYSTEM_PROMPT)
@@ -185,6 +213,8 @@ async fn main() {
                     .with_api_key(&api_key)
                     .with_skills(skills.clone())
                     .with_tools(default_tools());
+                total_input = 0;
+                total_output = 0;
                 println!("{DIM}  (conversation cleared){RESET}\n");
                 continue;
             }
@@ -196,19 +226,26 @@ async fn main() {
                     .with_api_key(&api_key)
                     .with_skills(skills.clone())
                     .with_tools(default_tools());
+                total_input = 0;
+                total_output = 0;
                 println!("{DIM}  (switched to {new_model}, conversation cleared){RESET}\n");
+                continue;
+            }
+            s if s.starts_with('/') => {
+                println!("{RED}  Unknown command: {s}{RESET}");
+                println!("{DIM}  Type /help for available commands{RESET}\n");
                 continue;
             }
             _ => {}
         }
 
-        run_prompt(&mut agent, input).await;
+        run_prompt(&mut agent, input, &mut total_input, &mut total_output).await;
     }
 
     println!("\n{DIM}  bye 👋{RESET}\n");
 }
 
-async fn run_prompt(agent: &mut Agent, input: &str) {
+async fn run_prompt(agent: &mut Agent, input: &str, total_in: &mut u64, total_out: &mut u64) {
     let mut rx = agent.prompt(input).await;
     let mut last_usage = Usage::default();
     let mut in_text = false;
@@ -273,11 +310,17 @@ async fn run_prompt(agent: &mut Agent, input: &str) {
                 print!("{}", delta);
                 io::stdout().flush().ok();
             }
+            AgentEvent::InputRejected { reason } => {
+                println!("{RED}  ✗ Input rejected: {reason}{RESET}");
+            }
             AgentEvent::AgentEnd { messages } => {
-                for msg in messages.iter().rev() {
+                // Sum usage from all assistant messages in this prompt
+                for msg in &messages {
                     if let AgentMessage::Llm(Message::Assistant { usage, .. }) = msg {
-                        last_usage = usage.clone();
-                        break;
+                        last_usage.input += usage.input;
+                        last_usage.output += usage.output;
+                        last_usage.cache_read += usage.cache_read;
+                        last_usage.cache_write += usage.cache_write;
                     }
                 }
             }
@@ -288,14 +331,16 @@ async fn run_prompt(agent: &mut Agent, input: &str) {
     if in_text {
         println!();
     }
+    *total_in += last_usage.input;
+    *total_out += last_usage.output;
     print_usage(&last_usage);
     println!();
 }
 
-fn truncate(s: &str, max: usize) -> &str {
+fn truncate(s: &str, max: usize) -> String {
     match s.char_indices().nth(max) {
-        Some((idx, _)) => &s[..idx],
-        None => s,
+        Some((idx, _)) => format!("{}…", &s[..idx]),
+        None => s.to_string(),
     }
 }
 
@@ -315,12 +360,12 @@ mod tests {
 
     #[test]
     fn test_truncate_long_string() {
-        assert_eq!(truncate("hello world", 5), "hello");
+        assert_eq!(truncate("hello world", 5), "hello…");
     }
 
     #[test]
     fn test_truncate_unicode() {
-        assert_eq!(truncate("héllo wörld", 5), "héllo");
+        assert_eq!(truncate("héllo wörld", 5), "héllo…");
     }
 
     #[test]
@@ -360,5 +405,38 @@ mod tests {
         let input = "/model   claude-opus-4-6  ";
         let model_name = input.trim_start_matches("/model ").trim();
         assert_eq!(model_name, "claude-opus-4-6");
+    }
+
+    #[test]
+    fn test_known_commands_recognized() {
+        let known = ["/quit", "/exit", "/help", "/status", "/clear"];
+        for cmd in &known {
+            assert!(
+                matches!(
+                    *cmd,
+                    "/quit" | "/exit" | "/help" | "/status" | "/clear"
+                ),
+                "Command {cmd} should be recognized"
+            );
+        }
+    }
+
+    #[test]
+    fn test_unknown_command_detected() {
+        let input = "/foo";
+        assert!(input.starts_with('/'));
+        assert!(
+            !matches!(
+                input,
+                "/quit" | "/exit" | "/help" | "/status" | "/clear"
+            ),
+            "/foo should not be a known command"
+        );
+    }
+
+    #[test]
+    fn test_truncate_adds_ellipsis() {
+        let result = truncate("a]long string that goes on", 6);
+        assert!(result.ends_with('…'), "Truncated string should end with ellipsis: {result}");
     }
 }
