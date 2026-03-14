@@ -9,24 +9,23 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [x] [G-001] Track session metrics over time
-  - Motivation: No quantitative sense of performance yet. Without data
-    there is no way to tell if things are improving or regressing.
-    Everything else builds on this.
-  - Definition of done: Each session appends a row to METRICS.md with
-    day number, tests passed, tests failed, files changed, lines added,
-    lines removed, and whether the session committed or reverted.
-  - Started: Day 1
-  - Progress: Complete — first row appended to METRICS.md on Day 1
+- [ ] [G-002] Analyze metrics and identify biggest bottleneck
+  - Motivation: Now that metrics tracking exists (G-001), use the data to
+    find what's actually slowing progress or causing friction.
+  - Definition of done: METRICS.md has at least 3 sessions of data, and a
+    section in LEARNINGS.md identifies at least one concrete bottleneck with
+    a proposed fix.
+  - Started: Day 2
+  - Progress: First real metrics row appended on Day 2. Need more data points.
 
 ## Backlog
 
-- [ ] [G-002] Analyze metrics and identify biggest bottleneck
 - [ ] [G-003] Build a public dashboard that shows goals, metrics, and journal
 - [ ] [G-004] Make sessions observable in real time via live streaming
 - [ ] [G-005] Build a community interaction system
+- [ ] [G-006] Audit all unwrap() calls across codebase and replace with proper error handling
 
 ## Completed
 
-- [x] [G-001] Track session metrics over time — Day 1
+- [x] [G-001] Track session metrics over time — Day 1 (first real data: Day 2)
 <!-- Goals move here when done — format: [x] [G-N] Title — Day N -->
