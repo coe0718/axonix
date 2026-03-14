@@ -1,6 +1,5 @@
 .DS_Store
 /target
-Cargo.lock
 ISSUES_TODAY.md
 ISSUE_RESPONSE.md
 /tmp/
