@@ -15,7 +15,7 @@ set -euo pipefail
 REPO="${REPO:-coe07182/axonix}"
 MODEL="${MODEL:-claude-opus-4-6}"
 TIMEOUT="${TIMEOUT:-600}"
-STREAM_URL="${STREAM_URL:-http://stream:3000/pipe}"
+STREAM_URL="${STREAM_URL:-http://stream:7040/pipe}"
 DAY=$(cat DAY_COUNT 2>/dev/null || echo 1)
 DATE=$(date +%Y-%m-%d)
 
