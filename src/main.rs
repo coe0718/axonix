@@ -210,6 +210,7 @@ async fn main() {
                 println!("{DIM}    /status        Show session info{RESET}");
                 println!("{DIM}    /clear         Clear conversation history{RESET}");
                 println!("{DIM}    /model <name>  Switch model (clears history){RESET}");
+                println!("{DIM}    /save [path]   Save conversation to file{RESET}");
                 println!("{DIM}    /quit, /exit   Exit{RESET}");
                 println!();
                 continue;
@@ -241,6 +242,19 @@ async fn main() {
                 total_input = 0;
                 total_output = 0;
                 println!("{DIM}  (switched to {new_model}, conversation cleared){RESET}\n");
+                continue;
+            }
+            s if s == "/save" || s.starts_with("/save ") => {
+                let path = if s == "/save" {
+                    "conversation.md".to_string()
+                } else {
+                    s.trim_start_matches("/save ").trim().to_string()
+                };
+                let path = if path.is_empty() { "conversation.md".to_string() } else { path };
+                match save_conversation(agent.messages(), &path) {
+                    Ok(count) => println!("{DIM}  saved {count} messages to {path}{RESET}\n"),
+                    Err(e) => println!("{RED}  failed to save: {e}{RESET}\n"),
+                }
                 continue;
             }
             s if s.starts_with('/') => {
@@ -356,6 +370,47 @@ fn truncate(s: &str, max: usize) -> String {
     }
 }
 
+fn save_conversation(messages: &[AgentMessage], path: &str) -> io::Result<usize> {
+    use std::fs::File;
+    let mut file = File::create(path)?;
+    let mut count = 0;
+    for msg in messages {
+        if let Some(llm_msg) = msg.as_llm() {
+            let (role, contents) = match llm_msg {
+                Message::User { content, .. } => ("User", content),
+                Message::Assistant { content, .. } => ("Assistant", content),
+                Message::ToolResult {
+                    tool_name, content, ..
+                } => {
+                    // Write tool results with their tool name
+                    writeln!(file, "## Tool Result: {tool_name}\n")?;
+                    for c in content {
+                        if let Content::Text { text } = c {
+                            writeln!(file, "{text}\n")?;
+                        }
+                    }
+                    writeln!(file, "---\n")?;
+                    count += 1;
+                    continue;
+                }
+            };
+            writeln!(file, "## {role}\n")?;
+            for c in contents {
+                match c {
+                    Content::Text { text } => writeln!(file, "{text}\n")?,
+                    Content::ToolCall { name, arguments, .. } => {
+                        writeln!(file, "**Tool call:** `{name}`\n```json\n{arguments}\n```\n")?
+                    }
+                    _ => {}
+                }
+            }
+            writeln!(file, "---\n")?;
+            count += 1;
+        }
+    }
+    Ok(count)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -431,6 +486,37 @@ mod tests {
                 "Command {cmd} should be recognized"
             );
         }
+        // /save and /model are prefix commands, tested separately
+    }
+
+    #[test]
+    fn test_save_command_parsing() {
+        let input = "/save my_file.md";
+        assert!(input.starts_with("/save "));
+        let path = input.trim_start_matches("/save ").trim();
+        assert_eq!(path, "my_file.md");
+    }
+
+    #[test]
+    fn test_save_command_default_path() {
+        let input = "/save";
+        let path = if input == "/save" {
+            "conversation.md"
+        } else {
+            input.trim_start_matches("/save ").trim()
+        };
+        assert_eq!(path, "conversation.md");
+    }
+
+    #[test]
+    fn test_save_conversation_empty() {
+        let messages: Vec<AgentMessage> = vec![];
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("test.md");
+        let count = save_conversation(&messages, path.to_str().unwrap()).unwrap();
+        assert_eq!(count, 0);
+        let content = std::fs::read_to_string(&path).unwrap();
+        assert!(content.is_empty());
     }
 
     #[test]
