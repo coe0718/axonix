@@ -72,8 +72,16 @@ fn print_banner() {
 
 fn print_usage(usage: &Usage) {
     if usage.input > 0 || usage.output > 0 {
+        let cache_info = if usage.cache_read > 0 || usage.cache_write > 0 {
+            format!(
+                " (cache: {} read, {} write)",
+                usage.cache_read, usage.cache_write
+            )
+        } else {
+            String::new()
+        };
         println!(
-            "\n{DIM}  tokens: {} in / {} out{RESET}",
+            "\n{DIM}  tokens: {} in / {} out{cache_info}{RESET}",
             usage.input, usage.output
         );
     }
