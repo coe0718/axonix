@@ -410,6 +410,28 @@ async fn run_prompt(agent: &mut Agent, input: &str, total_in: &mut u64, total_ou
                 }
                 println!("{DIM}  ℹ {text}{RESET}");
             }
+            AgentEvent::TurnEnd { message, .. } => {
+                // Detect API errors and display them
+                if let AgentMessage::Llm(Message::Assistant {
+                    stop_reason: StopReason::Error,
+                    error_message,
+                    ..
+                }) = &message
+                {
+                    if in_thinking {
+                        println!("{RESET}");
+                        in_thinking = false;
+                    }
+                    if in_text {
+                        println!();
+                        in_text = false;
+                    }
+                    let err_msg = error_message
+                        .as_deref()
+                        .unwrap_or("unknown error");
+                    println!("{RED}  ✗ API error: {err_msg}{RESET}");
+                }
+            }
             AgentEvent::AgentEnd { messages } => {
                 // Sum usage from all assistant messages in this prompt
                 for msg in &messages {
