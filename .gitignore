@@ -7,4 +7,5 @@ ISSUE_RESPONSE.md
 .env
 deploy_key
 deploy_key.pub
+.ssh/
 CLAUDE_SETUP.md
