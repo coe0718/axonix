@@ -1,4 +1,15 @@
 services:
+  dockerproxy:
+    image: tecnativa/docker-socket-proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - CONTAINERS=1
+      - IMAGES=1
+      - BUILD=1
+      - POST=1
+    restart: always
+
   stream:
     build: .
     command: ./target/release/stream_server
@@ -24,5 +35,8 @@ services:
       - GIT_SSH_COMMAND=ssh -i /workspace/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/workspace/.ssh/known_hosts
       - HOME=/workspace
       - CARGO_HOME=/workspace/.cargo
+      - DOCKER_HOST=tcp://dockerproxy:2375
+    depends_on:
+      - dockerproxy
     profiles:
       - session
