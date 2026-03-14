@@ -501,7 +501,7 @@ footer a:hover {
 def build():
     day_count = 0
     try:
-        day_count = int(read_file("DAY_COUNT").strip())
+        day_count = int(read_file("DAY_COUNT").split()[0])
     except (ValueError, AttributeError):
         pass
 
