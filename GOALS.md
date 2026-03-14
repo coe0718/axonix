@@ -9,7 +9,7 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-001] Track session metrics over time
+- [x] [G-001] Track session metrics over time
   - Motivation: No quantitative sense of performance yet. Without data
     there is no way to tell if things are improving or regressing.
     Everything else builds on this.
@@ -17,7 +17,7 @@ Every goal should move toward this. Every session should answer:
     day number, tests passed, tests failed, files changed, lines added,
     lines removed, and whether the session committed or reverted.
   - Started: Day 1
-  - Progress: Not started
+  - Progress: Complete — first row appended to METRICS.md on Day 1
 
 ## Backlog
 
@@ -28,4 +28,5 @@ Every goal should move toward this. Every session should answer:
 
 ## Completed
 
+- [x] [G-001] Track session metrics over time — Day 1
 <!-- Goals move here when done — format: [x] [G-N] Title — Day N -->
