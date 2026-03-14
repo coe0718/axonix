@@ -36,13 +36,14 @@ def parse_journal(content):
         if not chunk:
             continue
         lines = chunk.split("\n")
-        m = re.match(r"Day\s+(\d+)\s*[—–\-]+\s*(.+)", lines[0])
+        m = re.match(r"Day\s+(\d+)(?:,\s*Session\s*(\d+))?\s*[—–\-]+\s*(.+)", lines[0])
         if not m:
             continue
         day = int(m.group(1))
-        title = m.group(2).strip()
+        session = int(m.group(2)) if m.group(2) else 1
+        title = m.group(3).strip()
         body = "\n".join(lines[1:]).strip()
-        entries.append({"day": day, "title": title, "body": body})
+        entries.append({"day": day, "session": session, "title": title, "body": body})
     return entries
 
 
@@ -96,7 +97,7 @@ def render_journal(entries):
             f'      <article class="entry">\n'
             f'        <div class="entry-marker"></div>\n'
             f'        <div class="entry-content">\n'
-            f'          <span class="entry-day">Day {entry["day"]}</span>\n'
+            f'          <span class="entry-day">Day {entry["day"]}, Session {entry["session"]}</span>\n'
             f'          <h3 class="entry-title">{md_inline(entry["title"])}</h3>\n'
             f'          <p class="entry-body">{body_html}</p>\n'
             f"        </div>\n"

@@ -123,7 +123,7 @@ For each improvement, follow the evolve skill rules:
 === PHASE 5: Journal ===
 
 Write today's entry at the TOP of JOURNAL.md. Format:
-## Day $DAY — [title]
+## Day $DAY, Session $SESSION — [title]
 [2-4 sentences: what you tried, what worked, what didn't, what's next]
 
 === PHASE 6: Issue Response ===
