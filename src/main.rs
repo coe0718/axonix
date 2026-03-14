@@ -30,6 +30,7 @@ const DIM: &str = "\x1b[2m";
 const GREEN: &str = "\x1b[32m";
 const YELLOW: &str = "\x1b[33m";
 const CYAN: &str = "\x1b[36m";
+const MAGENTA: &str = "\x1b[35m";
 const RED: &str = "\x1b[31m";
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -290,12 +291,17 @@ async fn run_prompt(agent: &mut Agent, input: &str, total_in: &mut u64, total_ou
     let mut rx = agent.prompt(input).await;
     let mut last_usage = Usage::default();
     let mut in_text = false;
+    let mut in_thinking = false;
 
     while let Some(event) = rx.recv().await {
         match event {
             AgentEvent::ToolExecutionStart {
                 tool_name, args, ..
             } => {
+                if in_thinking {
+                    println!("{RESET}");
+                    in_thinking = false;
+                }
                 if in_text {
                     println!();
                     in_text = false;
@@ -341,9 +347,28 @@ async fn run_prompt(agent: &mut Agent, input: &str, total_in: &mut u64, total_ou
                 }
             }
             AgentEvent::MessageUpdate {
+                delta: StreamDelta::Thinking { delta },
+                ..
+            } => {
+                if in_text {
+                    println!();
+                    in_text = false;
+                }
+                if !in_thinking {
+                    print!("\n{DIM}{MAGENTA}  💭 ");
+                    in_thinking = true;
+                }
+                print!("{DIM}{MAGENTA}{delta}");
+                io::stdout().flush().ok();
+            }
+            AgentEvent::MessageUpdate {
                 delta: StreamDelta::Text { delta },
                 ..
             } => {
+                if in_thinking {
+                    println!("{RESET}");
+                    in_thinking = false;
+                }
                 if !in_text {
                     println!();
                     in_text = true;
@@ -367,6 +392,10 @@ async fn run_prompt(agent: &mut Agent, input: &str, total_in: &mut u64, total_ou
             }
             _ => {}
         }
+    }
+
+    if in_thinking {
+        println!("{RESET}");
     }
 
     if in_text {
