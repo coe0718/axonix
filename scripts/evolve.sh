@@ -122,7 +122,7 @@ comment: [your 2-3 sentence response to the person]
 Now begin. Read IDENTITY.md first.
 PROMPT
 
-${TIMEOUT_CMD:+$TIMEOUT_CMD "$TIMEOUT"} cargo run -- \
+${TIMEOUT_CMD:+$TIMEOUT_CMD "$TIMEOUT"} cargo run --bin axonix -- \
     --model "$MODEL" \
     --skills ./skills \
     < "$PROMPT_FILE" 2>&1 \

@@ -2,6 +2,7 @@
 name = "axonix"
 version = "0.1.0"
 edition = "2021"
+default-run = "axonix"
 description = "A coding agent that evolves itself. Born as 200 lines of Rust, growing up in public."
 license = "MIT"
 repository = "https://github.com/coe0718/axonix"
