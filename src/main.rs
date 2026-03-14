@@ -173,7 +173,9 @@ async fn main() {
         eprintln!("{DIM}  axonix (piped mode) — model: {model}{RESET}");
         let mut _ti: u64 = 0;
         let mut _to: u64 = 0;
-        run_prompt(&mut agent, input, &mut _ti, &mut _to).await;
+        let mut _cr: u64 = 0;
+        let mut _cw: u64 = 0;
+        run_prompt(&mut agent, input, &mut _ti, &mut _to, &mut _cr, &mut _cw).await;
         return;
     }
 
@@ -209,6 +211,8 @@ async fn main() {
     let mut lines = stdin.lock().lines();
     let mut total_input: u64 = 0;
     let mut total_output: u64 = 0;
+    let mut total_cache_read: u64 = 0;
+    let mut total_cache_write: u64 = 0;
     let mut last_prompt: Option<String> = None;
 
     loop {
@@ -248,18 +252,25 @@ async fn main() {
                 println!("{DIM}  model:    {}{RESET}", agent.model);
                 println!("{DIM}  messages: {msg_count}{RESET}");
                 println!("{DIM}  tokens:   {total_input} in / {total_output} out (session total){RESET}");
+                if total_cache_read > 0 || total_cache_write > 0 {
+                    println!("{DIM}  cache:    {total_cache_read} read / {total_cache_write} write{RESET}");
+                }
                 println!("{DIM}  elapsed:  {mins}m {secs}s{RESET}");
                 println!("{DIM}  cwd:      {cwd}{RESET}");
                 println!();
                 continue;
             }
             "/tokens" => {
-                let cost = estimate_cost(&model, total_input, total_output);
+                let cost = estimate_cost(&model, total_input, total_output, total_cache_read, total_cache_write);
                 println!("{DIM}  Token usage (session total):{RESET}");
-                println!("{DIM}    input:  {total_input}{RESET}");
-                println!("{DIM}    output: {total_output}{RESET}");
-                println!("{DIM}    total:  {}{RESET}", total_input + total_output);
-                println!("{DIM}    est. cost: ${cost:.4}{RESET}");
+                println!("{DIM}    input:       {total_input}{RESET}");
+                println!("{DIM}    output:      {total_output}{RESET}");
+                if total_cache_read > 0 || total_cache_write > 0 {
+                    println!("{DIM}    cache read:  {total_cache_read}{RESET}");
+                    println!("{DIM}    cache write: {total_cache_write}{RESET}");
+                }
+                println!("{DIM}    total:       {}{RESET}", total_input + total_output + total_cache_read + total_cache_write);
+                println!("{DIM}    est. cost:   ${cost:.4}{RESET}");
                 println!();
                 continue;
             }
@@ -268,7 +279,7 @@ async fn main() {
                     Some(prompt) => {
                         let prompt = prompt.clone();
                         println!("{DIM}  (retrying: {}){RESET}", truncate(&prompt, 60));
-                        run_prompt(&mut agent, &prompt, &mut total_input, &mut total_output).await;
+                        run_prompt(&mut agent, &prompt, &mut total_input, &mut total_output, &mut total_cache_read, &mut total_cache_write).await;
                     }
                     None => {
                         println!("{DIM}  (nothing to retry){RESET}\n");
@@ -280,6 +291,8 @@ async fn main() {
                 agent = make_agent(&api_key, &model, skills.clone());
                 total_input = 0;
                 total_output = 0;
+                total_cache_read = 0;
+                total_cache_write = 0;
                 println!("{DIM}  (conversation cleared){RESET}\n");
                 continue;
             }
@@ -294,6 +307,8 @@ async fn main() {
                 agent = make_agent(&api_key, &model, skills.clone());
                 total_input = 0;
                 total_output = 0;
+                total_cache_read = 0;
+                total_cache_write = 0;
                 println!("{DIM}  (switched to {new_model}, conversation cleared){RESET}\n");
                 continue;
             }
@@ -319,13 +334,13 @@ async fn main() {
         }
 
         last_prompt = Some(input.to_string());
-        run_prompt(&mut agent, input, &mut total_input, &mut total_output).await;
+        run_prompt(&mut agent, input, &mut total_input, &mut total_output, &mut total_cache_read, &mut total_cache_write).await;
     }
 
     println!("\n{DIM}  bye 👋{RESET}\n");
 }
 
-async fn run_prompt(agent: &mut Agent, input: &str, total_in: &mut u64, total_out: &mut u64) {
+async fn run_prompt(agent: &mut Agent, input: &str, total_in: &mut u64, total_out: &mut u64, total_cr: &mut u64, total_cw: &mut u64) {
     let mut rx = agent.prompt(input).await;
     let mut last_usage = Usage::default();
     let mut in_text = false;
@@ -474,6 +489,8 @@ async fn run_prompt(agent: &mut Agent, input: &str, total_in: &mut u64, total_ou
     }
     *total_in += last_usage.input;
     *total_out += last_usage.output;
+    *total_cr += last_usage.cache_read;
+    *total_cw += last_usage.cache_write;
     print_usage(&last_usage);
     println!();
 }
@@ -487,7 +504,10 @@ fn truncate(s: &str, max: usize) -> String {
 
 /// Rough cost estimate based on model pricing (USD).
 /// Prices are approximate and may change — this is a convenience indicator, not a bill.
-fn estimate_cost(model: &str, input_tokens: u64, output_tokens: u64) -> f64 {
+/// Accounts for Anthropic cache pricing:
+///   - cache_read tokens are 10% of input price
+///   - cache_write tokens are 25% more than input price
+fn estimate_cost(model: &str, input_tokens: u64, output_tokens: u64, cache_read: u64, cache_write: u64) -> f64 {
     let (input_per_m, output_per_m) = if model.contains("opus") {
         (15.0, 75.0)
     } else if model.contains("sonnet") {
@@ -498,8 +518,12 @@ fn estimate_cost(model: &str, input_tokens: u64, output_tokens: u64) -> f64 {
         // Unknown model — use sonnet pricing as default
         (3.0, 15.0)
     };
+    let cache_read_per_m = input_per_m * 0.1;
+    let cache_write_per_m = input_per_m * 1.25;
     (input_tokens as f64 / 1_000_000.0) * input_per_m
         + (output_tokens as f64 / 1_000_000.0) * output_per_m
+        + (cache_read as f64 / 1_000_000.0) * cache_read_per_m
+        + (cache_write as f64 / 1_000_000.0) * cache_write_per_m
 }
 
 fn save_conversation(messages: &[AgentMessage], path: &str) -> io::Result<usize> {
@@ -686,34 +710,56 @@ mod tests {
 
     #[test]
     fn test_estimate_cost_opus() {
-        let cost = estimate_cost("claude-opus-4-6", 1_000_000, 1_000_000);
+        let cost = estimate_cost("claude-opus-4-6", 1_000_000, 1_000_000, 0, 0);
         // Opus: $15/M input + $75/M output = $90 for 1M each
         assert!((cost - 90.0).abs() < 0.01, "Opus cost estimate wrong: {cost}");
     }
 
     #[test]
     fn test_estimate_cost_sonnet() {
-        let cost = estimate_cost("claude-sonnet-4-20250514", 1_000_000, 0);
+        let cost = estimate_cost("claude-sonnet-4-20250514", 1_000_000, 0, 0, 0);
         assert!((cost - 3.0).abs() < 0.01, "Sonnet input cost wrong: {cost}");
     }
 
     #[test]
     fn test_estimate_cost_haiku() {
-        let cost = estimate_cost("claude-haiku-3", 0, 1_000_000);
+        let cost = estimate_cost("claude-haiku-3", 0, 1_000_000, 0, 0);
         assert!((cost - 1.25).abs() < 0.01, "Haiku output cost wrong: {cost}");
     }
 
     #[test]
     fn test_estimate_cost_unknown_model() {
-        let cost = estimate_cost("some-unknown-model", 1_000_000, 1_000_000);
+        let cost = estimate_cost("some-unknown-model", 1_000_000, 1_000_000, 0, 0);
         // Default to sonnet pricing: $3/M + $15/M = $18
         assert!((cost - 18.0).abs() < 0.01, "Unknown model cost wrong: {cost}");
     }
 
     #[test]
     fn test_estimate_cost_zero_tokens() {
-        let cost = estimate_cost("claude-opus-4-6", 0, 0);
+        let cost = estimate_cost("claude-opus-4-6", 0, 0, 0, 0);
         assert!((cost - 0.0).abs() < 0.001, "Zero tokens should cost $0: {cost}");
+    }
+
+    #[test]
+    fn test_estimate_cost_with_cache_read() {
+        // Opus: cache_read at 10% of $15/M = $1.5/M
+        let cost = estimate_cost("claude-opus-4-6", 0, 0, 1_000_000, 0);
+        assert!((cost - 1.5).abs() < 0.01, "Cache read cost wrong: {cost}");
+    }
+
+    #[test]
+    fn test_estimate_cost_with_cache_write() {
+        // Opus: cache_write at 125% of $15/M = $18.75/M
+        let cost = estimate_cost("claude-opus-4-6", 0, 0, 0, 1_000_000);
+        assert!((cost - 18.75).abs() < 0.01, "Cache write cost wrong: {cost}");
+    }
+
+    #[test]
+    fn test_estimate_cost_full_breakdown() {
+        // Sonnet: $3/M input + $15/M output + $0.3/M cache_read + $3.75/M cache_write
+        let cost = estimate_cost("claude-sonnet-4-20250514", 1_000_000, 1_000_000, 1_000_000, 1_000_000);
+        let expected = 3.0 + 15.0 + 0.3 + 3.75;
+        assert!((cost - expected).abs() < 0.01, "Full breakdown cost wrong: {cost}, expected: {expected}");
     }
 
     #[test]
