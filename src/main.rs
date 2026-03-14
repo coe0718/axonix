@@ -80,7 +80,7 @@ fn print_banner() {
     println!("{DIM}  Type /quit to exit, /clear to reset{RESET}\n");
 }
 
-fn print_usage(usage: &Usage) {
+fn print_usage(usage: &Usage, elapsed: std::time::Duration) {
     if usage.input > 0 || usage.output > 0 {
         let cache_info = if usage.cache_read > 0 || usage.cache_write > 0 {
             format!(
@@ -90,8 +90,16 @@ fn print_usage(usage: &Usage) {
         } else {
             String::new()
         };
+        let secs = elapsed.as_secs_f64();
+        let time_str = if secs < 60.0 {
+            format!("{secs:.1}s")
+        } else {
+            let mins = secs as u64 / 60;
+            let remaining = secs as u64 % 60;
+            format!("{mins}m {remaining}s")
+        };
         println!(
-            "\n{DIM}  tokens: {} in / {} out{cache_info}{RESET}",
+            "\n{DIM}  tokens: {} in / {} out{cache_info} — {time_str}{RESET}",
             usage.input, usage.output
         );
     }
@@ -445,6 +453,7 @@ async fn main() {
 }
 
 async fn run_prompt(agent: &mut Agent, input: &str, total_in: &mut u64, total_out: &mut u64, total_cr: &mut u64, total_cw: &mut u64) {
+    let prompt_start = std::time::Instant::now();
     let mut rx = agent.prompt(input).await;
     let mut last_usage = Usage::default();
     let mut in_text = false;
@@ -595,7 +604,7 @@ async fn run_prompt(agent: &mut Agent, input: &str, total_in: &mut u64, total_ou
     *total_out += last_usage.output;
     *total_cr += last_usage.cache_read;
     *total_cw += last_usage.cache_write;
-    print_usage(&last_usage);
+    print_usage(&last_usage, prompt_start.elapsed());
     println!();
 }
 
