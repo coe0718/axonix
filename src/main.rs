@@ -16,6 +16,10 @@
 //!   /clear          Clear conversation history
 //!   /retry          Retry the last prompt
 //!   /model <name>   Switch model mid-session
+//!
+//! Multiline input:
+//!   End a line with \ to continue on the next line
+//!   Type """ to start a block, """ again to finish
 
 use std::io::{self, BufRead, IsTerminal, Read, Write};
 use yoagent::agent::Agent;
@@ -224,7 +228,54 @@ async fn main() {
             _ => break,
         };
 
-        let input = line.trim();
+        // Multiline input: backslash continuation or triple-quote blocks
+        let input = if line.trim_end().ends_with('\\') {
+            // Backslash continuation: keep reading lines until one doesn't end with \
+            let mut buf = String::from(line.trim_end().trim_end_matches('\\'));
+            buf.push('\n');
+            loop {
+                print!("{DIM}. {RESET}");
+                io::stdout().flush().ok();
+                match lines.next() {
+                    Some(Ok(next)) => {
+                        if next.trim_end().ends_with('\\') {
+                            buf.push_str(next.trim_end().trim_end_matches('\\'));
+                            buf.push('\n');
+                        } else {
+                            buf.push_str(&next);
+                            break;
+                        }
+                    }
+                    _ => break,
+                }
+            }
+            buf
+        } else if line.trim() == "\"\"\"" {
+            // Triple-quote block: read until closing """
+            let mut buf = String::new();
+            println!("{DIM}  (multiline mode — type \"\"\" on its own line to finish){RESET}");
+            loop {
+                print!("{DIM}. {RESET}");
+                io::stdout().flush().ok();
+                match lines.next() {
+                    Some(Ok(next)) => {
+                        if next.trim() == "\"\"\"" {
+                            break;
+                        }
+                        if !buf.is_empty() {
+                            buf.push('\n');
+                        }
+                        buf.push_str(&next);
+                    }
+                    _ => break,
+                }
+            }
+            buf
+        } else {
+            line
+        };
+
+        let input = input.trim();
         if input.is_empty() {
             continue;
         }
@@ -241,6 +292,10 @@ async fn main() {
                 println!("{DIM}    /model <name>  Switch model (clears history){RESET}");
                 println!("{DIM}    /save [path]   Save conversation to file{RESET}");
                 println!("{DIM}    /quit, /exit   Exit{RESET}");
+                println!();
+                println!("{DIM}  Multiline input:{RESET}");
+                println!("{DIM}    End a line with \\ to continue on the next line{RESET}");
+                println!("{DIM}    Type \"\"\" to start a block, \"\"\" again to finish{RESET}");
                 println!();
                 continue;
             }
@@ -792,5 +847,28 @@ mod tests {
     fn test_retry_empty_returns_none() {
         let last_prompt: Option<String> = None;
         assert!(last_prompt.is_none());
+    }
+
+    #[test]
+    fn test_multiline_backslash_detection() {
+        // Lines ending with \ should trigger continuation
+        assert!("hello\\".trim_end().ends_with('\\'));
+        assert!("hello \\".trim_end().ends_with('\\'));
+        assert!(!"hello".trim_end().ends_with('\\'));
+        assert!(!"".trim_end().ends_with('\\'));
+    }
+
+    #[test]
+    fn test_multiline_triple_quote_detection() {
+        assert_eq!("\"\"\"".trim(), "\"\"\"");
+        assert_eq!("  \"\"\"  ".trim(), "\"\"\"");
+        assert_ne!("\"\"\" hello".trim(), "\"\"\"");
+    }
+
+    #[test]
+    fn test_backslash_stripping() {
+        let line = "hello world\\";
+        let stripped = line.trim_end().trim_end_matches('\\');
+        assert_eq!(stripped, "hello world");
     }
 }
