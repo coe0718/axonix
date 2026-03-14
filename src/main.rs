@@ -390,6 +390,17 @@ async fn run_prompt(agent: &mut Agent, input: &str, total_in: &mut u64, total_ou
             AgentEvent::InputRejected { reason } => {
                 println!("{RED}  ✗ Input rejected: {reason}{RESET}");
             }
+            AgentEvent::ProgressMessage { text, .. } => {
+                if in_thinking {
+                    println!("{RESET}");
+                    in_thinking = false;
+                }
+                if in_text {
+                    println!();
+                    in_text = false;
+                }
+                println!("{DIM}  ℹ {text}{RESET}");
+            }
             AgentEvent::AgentEnd { messages } => {
                 // Sum usage from all assistant messages in this prompt
                 for msg in &messages {
