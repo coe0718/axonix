@@ -55,9 +55,11 @@ fn print_help() {
     println!("Commands (in REPL):");
     println!("  /help             Show available commands");
     println!("  /status           Show session info");
+    println!("  /tokens           Show token usage and cost estimate");
     println!("  /quit, /exit      Exit the agent");
     println!("  /clear            Clear conversation history");
     println!("  /model <name>     Switch model mid-session");
+    println!("  /save [path]      Save conversation to file");
     println!();
     println!("Environment:");
     println!("  ANTHROPIC_API_KEY  API key for Anthropic (required)");
