@@ -1,5 +1,6 @@
 .DS_Store
 /target
+/.cargo
 ISSUES_TODAY.md
 ISSUE_RESPONSE.md
 /tmp/

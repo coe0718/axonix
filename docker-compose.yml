@@ -21,5 +21,6 @@ services:
       - STREAM_URL=${STREAM_URL:-http://stream:7040/pipe}
       - GIT_SSH_COMMAND=ssh -i /workspace/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new
       - HOME=/workspace
+      - CARGO_HOME=/workspace/.cargo
     profiles:
       - session
