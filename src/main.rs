@@ -286,6 +286,7 @@ async fn main() {
                 println!("{DIM}  Commands:{RESET}");
                 println!("{DIM}    /help          Show this help{RESET}");
                 println!("{DIM}    /status        Show session info{RESET}");
+                println!("{DIM}    /context       Show conversation messages summary{RESET}");
                 println!("{DIM}    /tokens        Show token usage and cost estimate{RESET}");
                 println!("{DIM}    /retry         Retry the last prompt{RESET}");
                 println!("{DIM}    /clear         Clear conversation history{RESET}");
@@ -313,6 +314,54 @@ async fn main() {
                 println!("{DIM}  elapsed:  {mins}m {secs}s{RESET}");
                 println!("{DIM}  cwd:      {cwd}{RESET}");
                 println!();
+                continue;
+            }
+            "/context" => {
+                let messages = agent.messages();
+                if messages.is_empty() {
+                    println!("{DIM}  (no messages in context){RESET}\n");
+                } else {
+                    println!("{DIM}  Context ({} messages):{RESET}", messages.len());
+                    for (i, msg) in messages.iter().enumerate() {
+                        let summary = match msg.as_llm() {
+                            Some(Message::User { content, .. }) => {
+                                let text = content.iter().find_map(|c| {
+                                    if let Content::Text { text } = c { Some(text.as_str()) } else { None }
+                                }).unwrap_or("(no text)");
+                                format!("{CYAN}user:{RESET} {}", truncate(text, 70))
+                            }
+                            Some(Message::Assistant { content, usage, .. }) => {
+                                let text_len: usize = content.iter().map(|c| {
+                                    match c {
+                                        Content::Text { text } => text.len(),
+                                        Content::ToolCall { .. } => 0,
+                                        _ => 0,
+                                    }
+                                }).sum();
+                                let tool_count = content.iter().filter(|c| matches!(c, Content::ToolCall { .. })).count();
+                                let mut desc = format!("{GREEN}assistant:{RESET} ");
+                                if tool_count > 0 {
+                                    desc.push_str(&format!("{tool_count} tool call(s) "));
+                                }
+                                if text_len > 0 {
+                                    desc.push_str(&format!("{text_len} chars "));
+                                }
+                                desc.push_str(&format!("{DIM}({}in/{}out){RESET}", usage.input, usage.output));
+                                desc
+                            }
+                            Some(Message::ToolResult { tool_name, is_error, content, .. }) => {
+                                let len: usize = content.iter().map(|c| {
+                                    if let Content::Text { text } = c { text.len() } else { 0 }
+                                }).sum();
+                                let status = if *is_error { format!("{RED}✗{RESET}") } else { format!("{GREEN}✓{RESET}") };
+                                format!("{YELLOW}tool:{RESET} {tool_name} {status} ({len} chars)")
+                            }
+                            None => format!("{DIM}(extension message){RESET}"),
+                        };
+                        println!("{DIM}  {i:>3}.{RESET} {summary}");
+                    }
+                    println!();
+                }
                 continue;
             }
             "/tokens" => {
@@ -687,12 +736,12 @@ mod tests {
 
     #[test]
     fn test_known_commands_recognized() {
-        let known = ["/quit", "/exit", "/help", "/status", "/clear", "/tokens", "/retry"];
+        let known = ["/quit", "/exit", "/help", "/status", "/context", "/clear", "/tokens", "/retry"];
         for cmd in &known {
             assert!(
                 matches!(
                     *cmd,
-                    "/quit" | "/exit" | "/help" | "/status" | "/clear" | "/tokens" | "/retry"
+                    "/quit" | "/exit" | "/help" | "/status" | "/context" | "/clear" | "/tokens" | "/retry"
                 ),
                 "Command {cmd} should be recognized"
             );
