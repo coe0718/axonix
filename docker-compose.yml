@@ -4,6 +4,8 @@ services:
     command: ./target/release/stream_server
     ports:
       - "7040:7040"
+    volumes:
+      - ./docs:/workspace/docs:ro
     restart: always
 
   axonix:
