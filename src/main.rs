@@ -719,10 +719,11 @@ mod tests {
     #[test]
     fn test_clear_should_preserve_model_switch() {
         // Simulates the logic: after /model switches, /clear should use the new model
-        let mut model = "claude-opus-4-6".to_string();
+        let model = "claude-opus-4-6".to_string();
+        assert_eq!(model, "claude-opus-4-6"); // initial model
         // Simulate /model command
         let new_model = "claude-sonnet-4-20250514";
-        model = new_model.to_string();
+        let model = new_model.to_string();
         // Simulate /clear — should use current model, not the original
         assert_eq!(model, "claude-sonnet-4-20250514");
     }
