@@ -9,15 +9,17 @@ services:
   axonix:
     build: .
     command: ./scripts/evolve.sh
+    user: "${UID}:${GID}"
     volumes:
       - .:/workspace
       - ./IDENTITY.md:/workspace/IDENTITY.md:ro
       - ./scripts/evolve.sh:/workspace/scripts/evolve.sh:ro
-      - ./deploy_key:/root/.ssh/id_ed25519:ro
+      - ./deploy_key:/home/user/.ssh/id_ed25519:ro
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - GH_TOKEN=${GH_TOKEN}
       - STREAM_URL=${STREAM_URL:-http://stream:7040/pipe}
-      - GIT_SSH_COMMAND=ssh -i /root/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new
+      - GIT_SSH_COMMAND=ssh -i /home/user/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new
+      - HOME=/home/user
     profiles:
       - session
