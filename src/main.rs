@@ -170,6 +170,8 @@ async fn main() {
     println!("{DIM}  cwd:   {cwd}{RESET}");
     println!("{DIM}  Type /help for commands{RESET}\n");
 
+    let session_start = std::time::Instant::now();
+
     // Handle Ctrl+C gracefully
     let ctrlc_flag = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     {
@@ -217,9 +219,13 @@ async fn main() {
             }
             "/status" => {
                 let msg_count = agent.messages().len();
+                let elapsed = session_start.elapsed();
+                let mins = elapsed.as_secs() / 60;
+                let secs = elapsed.as_secs() % 60;
                 println!("{DIM}  model:    {}{RESET}", agent.model);
                 println!("{DIM}  messages: {msg_count}{RESET}");
                 println!("{DIM}  tokens:   {total_input} in / {total_output} out (session total){RESET}");
+                println!("{DIM}  elapsed:  {mins}m {secs}s{RESET}");
                 println!("{DIM}  cwd:      {cwd}{RESET}");
                 println!();
                 continue;
