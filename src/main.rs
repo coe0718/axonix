@@ -170,6 +170,19 @@ async fn main() {
     println!("{DIM}  cwd:   {cwd}{RESET}");
     println!("{DIM}  Type /help for commands{RESET}\n");
 
+    // Handle Ctrl+C gracefully
+    let ctrlc_flag = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    {
+        let flag = ctrlc_flag.clone();
+        tokio::spawn(async move {
+            tokio::signal::ctrl_c().await.ok();
+            flag.store(true, std::sync::atomic::Ordering::SeqCst);
+            // Print goodbye on Ctrl+C
+            eprintln!("\n{DIM}  interrupted — bye 👋{RESET}\n");
+            std::process::exit(0);
+        });
+    }
+
     let stdin = io::stdin();
     let mut lines = stdin.lock().lines();
     let mut total_input: u64 = 0;
