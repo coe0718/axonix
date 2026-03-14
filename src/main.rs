@@ -14,6 +14,7 @@
 //!   /status         Show session info (model, tokens, messages)
 //!   /quit, /exit    Exit the agent
 //!   /clear          Clear conversation history
+//!   /retry          Retry the last prompt
 //!   /model <name>   Switch model mid-session
 
 use std::io::{self, BufRead, IsTerminal, Read, Write};
@@ -59,6 +60,7 @@ fn print_help() {
     println!("  /tokens           Show token usage and cost estimate");
     println!("  /quit, /exit      Exit the agent");
     println!("  /clear            Clear conversation history");
+    println!("  /retry            Retry the last prompt");
     println!("  /model <name>     Switch model mid-session");
     println!("  /save [path]      Save conversation to file");
     println!();
@@ -207,6 +209,7 @@ async fn main() {
     let mut lines = stdin.lock().lines();
     let mut total_input: u64 = 0;
     let mut total_output: u64 = 0;
+    let mut last_prompt: Option<String> = None;
 
     loop {
         print!("{BOLD}{GREEN}> {RESET}");
@@ -229,6 +232,7 @@ async fn main() {
                 println!("{DIM}    /help          Show this help{RESET}");
                 println!("{DIM}    /status        Show session info{RESET}");
                 println!("{DIM}    /tokens        Show token usage and cost estimate{RESET}");
+                println!("{DIM}    /retry         Retry the last prompt{RESET}");
                 println!("{DIM}    /clear         Clear conversation history{RESET}");
                 println!("{DIM}    /model <name>  Switch model (clears history){RESET}");
                 println!("{DIM}    /save [path]   Save conversation to file{RESET}");
@@ -257,6 +261,19 @@ async fn main() {
                 println!("{DIM}    total:  {}{RESET}", total_input + total_output);
                 println!("{DIM}    est. cost: ${cost:.4}{RESET}");
                 println!();
+                continue;
+            }
+            "/retry" => {
+                match &last_prompt {
+                    Some(prompt) => {
+                        let prompt = prompt.clone();
+                        println!("{DIM}  (retrying: {}){RESET}", truncate(&prompt, 60));
+                        run_prompt(&mut agent, &prompt, &mut total_input, &mut total_output).await;
+                    }
+                    None => {
+                        println!("{DIM}  (nothing to retry){RESET}\n");
+                    }
+                }
                 continue;
             }
             "/clear" => {
@@ -301,6 +318,7 @@ async fn main() {
             _ => {}
         }
 
+        last_prompt = Some(input.to_string());
         run_prompt(&mut agent, input, &mut total_input, &mut total_output).await;
     }
 
@@ -590,12 +608,12 @@ mod tests {
 
     #[test]
     fn test_known_commands_recognized() {
-        let known = ["/quit", "/exit", "/help", "/status", "/clear", "/tokens"];
+        let known = ["/quit", "/exit", "/help", "/status", "/clear", "/tokens", "/retry"];
         for cmd in &known {
             assert!(
                 matches!(
                     *cmd,
-                    "/quit" | "/exit" | "/help" | "/status" | "/clear" | "/tokens"
+                    "/quit" | "/exit" | "/help" | "/status" | "/clear" | "/tokens" | "/retry"
                 ),
                 "Command {cmd} should be recognized"
             );
@@ -707,5 +725,25 @@ mod tests {
         model = new_model.to_string();
         // Simulate /clear — should use current model, not the original
         assert_eq!(model, "claude-sonnet-4-20250514");
+    }
+
+    #[test]
+    fn test_retry_tracks_last_prompt() {
+        let mut last_prompt: Option<String> = None;
+        assert!(last_prompt.is_none(), "Should start with no last prompt");
+
+        // Simulate sending a prompt
+        last_prompt = Some("explain monads".to_string());
+        assert_eq!(last_prompt.as_deref(), Some("explain monads"));
+
+        // Simulate sending another prompt
+        last_prompt = Some("now explain functors".to_string());
+        assert_eq!(last_prompt.as_deref(), Some("now explain functors"));
+    }
+
+    #[test]
+    fn test_retry_empty_returns_none() {
+        let last_prompt: Option<String> = None;
+        assert!(last_prompt.is_none());
     }
 }
