@@ -79,6 +79,15 @@ fn print_usage(usage: &Usage) {
     }
 }
 
+fn make_agent(api_key: &str, model: &str, skills: SkillSet) -> Agent {
+    Agent::new(AnthropicProvider)
+        .with_system_prompt(SYSTEM_PROMPT)
+        .with_model(model)
+        .with_api_key(api_key)
+        .with_skills(skills)
+        .with_tools(default_tools())
+}
+
 #[tokio::main]
 async fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -129,12 +138,7 @@ async fn main() {
         }
     };
 
-    let mut agent = Agent::new(AnthropicProvider)
-        .with_system_prompt(SYSTEM_PROMPT)
-        .with_model(&model)
-        .with_api_key(&api_key)
-        .with_skills(skills.clone())
-        .with_tools(default_tools());
+    let mut agent = make_agent(&api_key, &model, skills.clone());
 
     // Piped mode: read all of stdin as a single prompt, run once, exit
     if !io::stdin().is_terminal() {
@@ -207,12 +211,7 @@ async fn main() {
                 continue;
             }
             "/clear" => {
-                agent = Agent::new(AnthropicProvider)
-                    .with_system_prompt(SYSTEM_PROMPT)
-                    .with_model(&model)
-                    .with_api_key(&api_key)
-                    .with_skills(skills.clone())
-                    .with_tools(default_tools());
+                agent = make_agent(&api_key, &model, skills.clone());
                 total_input = 0;
                 total_output = 0;
                 println!("{DIM}  (conversation cleared){RESET}\n");
@@ -220,12 +219,12 @@ async fn main() {
             }
             s if s.starts_with("/model ") => {
                 let new_model = s.trim_start_matches("/model ").trim();
-                agent = Agent::new(AnthropicProvider)
-                    .with_system_prompt(SYSTEM_PROMPT)
-                    .with_model(new_model)
-                    .with_api_key(&api_key)
-                    .with_skills(skills.clone())
-                    .with_tools(default_tools());
+                if new_model.is_empty() {
+                    println!("{RED}  Usage: /model <name>{RESET}");
+                    println!("{DIM}  Example: /model claude-sonnet-4-20250514{RESET}\n");
+                    continue;
+                }
+                agent = make_agent(&api_key, new_model, skills.clone());
                 total_input = 0;
                 total_output = 0;
                 println!("{DIM}  (switched to {new_model}, conversation cleared){RESET}\n");
@@ -438,5 +437,19 @@ mod tests {
     fn test_truncate_adds_ellipsis() {
         let result = truncate("a]long string that goes on", 6);
         assert!(result.ends_with('…'), "Truncated string should end with ellipsis: {result}");
+    }
+
+    #[test]
+    fn test_model_command_empty_name() {
+        let input = "/model ";
+        let model_name = input.trim_start_matches("/model ").trim();
+        assert!(model_name.is_empty(), "Empty model name should be detected");
+    }
+
+    #[test]
+    fn test_model_command_whitespace_only() {
+        let input = "/model    ";
+        let model_name = input.trim_start_matches("/model ").trim();
+        assert!(model_name.is_empty(), "Whitespace-only model name should be detected");
     }
 }
