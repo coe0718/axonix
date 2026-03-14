@@ -219,6 +219,7 @@ async fn main() {
                 println!("{DIM}  Commands:{RESET}");
                 println!("{DIM}    /help          Show this help{RESET}");
                 println!("{DIM}    /status        Show session info{RESET}");
+                println!("{DIM}    /tokens        Show token usage and cost estimate{RESET}");
                 println!("{DIM}    /clear         Clear conversation history{RESET}");
                 println!("{DIM}    /model <name>  Switch model (clears history){RESET}");
                 println!("{DIM}    /save [path]   Save conversation to file{RESET}");
@@ -236,6 +237,16 @@ async fn main() {
                 println!("{DIM}  tokens:   {total_input} in / {total_output} out (session total){RESET}");
                 println!("{DIM}  elapsed:  {mins}m {secs}s{RESET}");
                 println!("{DIM}  cwd:      {cwd}{RESET}");
+                println!();
+                continue;
+            }
+            "/tokens" => {
+                let cost = estimate_cost(&model, total_input, total_output);
+                println!("{DIM}  Token usage (session total):{RESET}");
+                println!("{DIM}    input:  {total_input}{RESET}");
+                println!("{DIM}    output: {total_output}{RESET}");
+                println!("{DIM}    total:  {}{RESET}", total_input + total_output);
+                println!("{DIM}    est. cost: ${cost:.4}{RESET}");
                 println!();
                 continue;
             }
@@ -414,6 +425,23 @@ fn truncate(s: &str, max: usize) -> String {
     }
 }
 
+/// Rough cost estimate based on model pricing (USD).
+/// Prices are approximate and may change — this is a convenience indicator, not a bill.
+fn estimate_cost(model: &str, input_tokens: u64, output_tokens: u64) -> f64 {
+    let (input_per_m, output_per_m) = if model.contains("opus") {
+        (15.0, 75.0)
+    } else if model.contains("sonnet") {
+        (3.0, 15.0)
+    } else if model.contains("haiku") {
+        (0.25, 1.25)
+    } else {
+        // Unknown model — use sonnet pricing as default
+        (3.0, 15.0)
+    };
+    (input_tokens as f64 / 1_000_000.0) * input_per_m
+        + (output_tokens as f64 / 1_000_000.0) * output_per_m
+}
+
 fn save_conversation(messages: &[AgentMessage], path: &str) -> io::Result<usize> {
     use std::fs::File;
     let mut file = File::create(path)?;
@@ -520,12 +548,12 @@ mod tests {
 
     #[test]
     fn test_known_commands_recognized() {
-        let known = ["/quit", "/exit", "/help", "/status", "/clear"];
+        let known = ["/quit", "/exit", "/help", "/status", "/clear", "/tokens"];
         for cmd in &known {
             assert!(
                 matches!(
                     *cmd,
-                    "/quit" | "/exit" | "/help" | "/status" | "/clear"
+                    "/quit" | "/exit" | "/help" | "/status" | "/clear" | "/tokens"
                 ),
                 "Command {cmd} should be recognized"
             );
@@ -594,6 +622,38 @@ mod tests {
         let input = "/model    ";
         let model_name = input.trim_start_matches("/model ").trim();
         assert!(model_name.is_empty(), "Whitespace-only model name should be detected");
+    }
+
+    #[test]
+    fn test_estimate_cost_opus() {
+        let cost = estimate_cost("claude-opus-4-6", 1_000_000, 1_000_000);
+        // Opus: $15/M input + $75/M output = $90 for 1M each
+        assert!((cost - 90.0).abs() < 0.01, "Opus cost estimate wrong: {cost}");
+    }
+
+    #[test]
+    fn test_estimate_cost_sonnet() {
+        let cost = estimate_cost("claude-sonnet-4-20250514", 1_000_000, 0);
+        assert!((cost - 3.0).abs() < 0.01, "Sonnet input cost wrong: {cost}");
+    }
+
+    #[test]
+    fn test_estimate_cost_haiku() {
+        let cost = estimate_cost("claude-haiku-3", 0, 1_000_000);
+        assert!((cost - 1.25).abs() < 0.01, "Haiku output cost wrong: {cost}");
+    }
+
+    #[test]
+    fn test_estimate_cost_unknown_model() {
+        let cost = estimate_cost("some-unknown-model", 1_000_000, 1_000_000);
+        // Default to sonnet pricing: $3/M + $15/M = $18
+        assert!((cost - 18.0).abs() < 0.01, "Unknown model cost wrong: {cost}");
+    }
+
+    #[test]
+    fn test_estimate_cost_zero_tokens() {
+        let cost = estimate_cost("claude-opus-4-6", 0, 0);
+        assert!((cost - 0.0).abs() < 0.001, "Zero tokens should cost $0: {cost}");
     }
 
     #[test]
