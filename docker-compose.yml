@@ -22,5 +22,6 @@ services:
       - GIT_SSH_COMMAND=ssh -i /workspace/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/workspace/.ssh/known_hosts
       - HOME=/workspace
       - CARGO_HOME=/workspace/.cargo
+      - USER=axonix
     profiles:
       - session

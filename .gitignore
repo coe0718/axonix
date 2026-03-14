@@ -8,4 +8,5 @@ ISSUE_RESPONSE.md
 deploy_key
 deploy_key.pub
 .ssh/
+.cache/
 CLAUDE_SETUP.md
