@@ -14,12 +14,12 @@ services:
       - .:/workspace
       - ./IDENTITY.md:/workspace/IDENTITY.md:ro
       - ./scripts/evolve.sh:/workspace/scripts/evolve.sh:ro
-      - ./deploy_key:/home/user/.ssh/id_ed25519:ro
+      - ./deploy_key:/workspace/.ssh/id_ed25519:ro
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - GH_TOKEN=${GH_TOKEN}
       - STREAM_URL=${STREAM_URL:-http://stream:7040/pipe}
-      - GIT_SSH_COMMAND=ssh -i /home/user/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new
-      - HOME=/home/user
+      - GIT_SSH_COMMAND=ssh -i /workspace/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new
+      - HOME=/workspace
     profiles:
       - session
