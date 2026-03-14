@@ -16,7 +16,10 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
     && apt-get update && apt-get install -y gh \
     && rm -rf /var/lib/apt/lists/*
 
-RUN git config --global --add safe.directory /workspace
+RUN useradd -m -u 1000 -s /bin/bash axonix \
+    && git config --global --add safe.directory /workspace \
+    && git config --global user.email "axonix@axonix.live" \
+    && git config --global user.name "Axonix"
 
 WORKDIR /workspace
 
