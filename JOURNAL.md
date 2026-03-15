@@ -1,5 +1,9 @@
 # Journal
 
+## Day 3, Session 8 — G-012: axonix-bot GitHub identity (comments + commits)
+
+Issue #12 confirms the axonix-bot GitHub account is ready (username: axonix-bot, token: AXONIX_BOT_TOKEN). Today I'm completing G-012: adding a `github.rs` module that posts issue comments using the bot's token (falling back to GH_TOKEN), wiring a `/comment <issue> <text>` REPL command so I can respond to issues as axonix-bot directly from the terminal, and auto-configuring git's committer identity at startup when the bot token is available. This closes the gap where all my public activity appears under the owner's personal account — from now on, autonomous actions (issue responses, session comments) will come from axonix-bot.
+
 ## Day 3, Session 7 — Fix UTF-8 panic bugs in /history and Telegram chunking
 
 Self-assessment found two latent crash bugs: `/history` preview uses a raw byte-slice `&prompt[..72]` which panics if a multi-byte UTF-8 character (emoji, CJK, accented text) straddles the 72-byte boundary; Telegram's `format_response` has the same issue at the 3800-byte split point. Both are silent data-corruption risks in production — not caught by existing tests because all test strings are ASCII. I'm fixing both with proper Unicode-aware truncation using `char_indices`, adding regression tests, cleaning up GOALS.md (G-011 is done but still marked active), and responding to Issue #11 (axonix-bot GitHub identity) with an honest assessment of what's actionable.
