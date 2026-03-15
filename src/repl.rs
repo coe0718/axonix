@@ -124,6 +124,8 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                 "    /model <name>  Switch model (clears history)".to_string(),
                 "    /save [path]   Save conversation to file".to_string(),
                 "    /lint <file>   Validate YAML or Caddyfile syntax".to_string(),
+                "    /ssh list      List registered SSH hosts".to_string(),
+                "    /ssh <h> <cmd> Run command on a remote host".to_string(),
             ];
             if !skill_names.is_empty() {
                 lines.push("    /skills        Show loaded skills".to_string());
@@ -270,6 +272,104 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                     LintResult::Unsupported(msg) => vec![format!("__lint_unsupported:{msg}")],
                 };
                 CommandResult::Handled(lines)
+            }
+        }
+
+        s if s == "/ssh" || s.starts_with("/ssh ") => {
+            let arg = if s == "/ssh" {
+                ""
+            } else {
+                s.trim_start_matches("/ssh ").trim()
+            };
+
+            if arg.is_empty() || arg == "--help" {
+                let hosts: Vec<String> = state.ssh_hosts.aliases().iter().map(|a| a.to_string()).collect();
+                let mut lines = vec![
+                    "  Usage:".to_string(),
+                    "    /ssh list              List registered hosts".to_string(),
+                    "    /ssh <host> <command>  Run a command on a remote host".to_string(),
+                    String::new(),
+                ];
+                if hosts.is_empty() {
+                    lines.push("  No hosts registered. Create hosts.toml in the working directory:".to_string());
+                    lines.push("    [hosts.caddy-nuc]".to_string());
+                    lines.push("    address = \"192.168.1.10\"".to_string());
+                    lines.push("    user = \"admin\"".to_string());
+                } else {
+                    lines.push(format!("  Registered hosts: {}", hosts.join(", ")));
+                }
+                lines.push(String::new());
+                CommandResult::Handled(lines)
+            } else if arg == "list" {
+                if state.ssh_hosts.is_empty() {
+                    CommandResult::Handled(vec![
+                        "  No hosts registered.".to_string(),
+                        "  Create hosts.toml in the working directory or ~/.axonix/hosts.toml".to_string(),
+                        "  Example:".to_string(),
+                        "    [hosts.caddy-nuc]".to_string(),
+                        "    address = \"192.168.1.10\"".to_string(),
+                        "    user = \"admin\"".to_string(),
+                        String::new(),
+                    ])
+                } else {
+                    let mut lines = vec![format!("  SSH Hosts ({} registered):", state.ssh_hosts.len())];
+                    for alias in state.ssh_hosts.aliases() {
+                        if let Some(host) = state.ssh_hosts.get(alias) {
+                            let mut desc = format!("    {:<20} {}", alias, host.destination());
+                            if host.port != 22 {
+                                desc.push_str(&format!(":{}", host.port));
+                            }
+                            if let Some(d) = &host.description {
+                                desc.push_str(&format!("  — {d}"));
+                            }
+                            lines.push(desc);
+                        }
+                    }
+                    lines.push(String::new());
+                    CommandResult::Handled(lines)
+                }
+            } else {
+                // "/ssh <host> <command>"
+                let mut parts = arg.splitn(2, ' ');
+                let host_alias = parts.next().unwrap_or("").trim();
+                let remote_cmd = parts.next().unwrap_or("").trim();
+
+                if host_alias.is_empty() {
+                    return CommandResult::Handled(vec![
+                        "  Usage: /ssh <host> <command>".to_string(),
+                        "  Use /ssh list to see registered hosts".to_string(),
+                        String::new(),
+                    ]);
+                }
+
+                if remote_cmd.is_empty() {
+                    return CommandResult::Handled(vec![
+                        format!("  Usage: /ssh {host_alias} <command>"),
+                        "  Example: /ssh caddy-nuc systemctl reload caddy".to_string(),
+                        String::new(),
+                    ]);
+                }
+
+                match state.ssh_hosts.get(host_alias) {
+                    None => CommandResult::Handled(vec![
+                        format!("  Unknown host: '{host_alias}'"),
+                        "  Use /ssh list to see registered hosts".to_string(),
+                        String::new(),
+                    ]),
+                    Some(host) => {
+                        let host = host.clone();
+                        match ssh_exec(&host, remote_cmd, Some(Duration::from_secs(15))) {
+                            Err(e) => CommandResult::Handled(vec![
+                                format!("__ssh_error:{host_alias}:{e}"),
+                            ]),
+                            Ok(result) => {
+                                CommandResult::Handled(vec![
+                                    format!("__ssh_result:{}:{}:{}", host_alias, result.exit_code, result.combined_output()),
+                                ])
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -706,5 +806,109 @@ mod tests {
         assert_eq!(s.total_output, 0);
         assert_eq!(s.total_cache_read, 0);
         assert_eq!(s.total_cache_write, 0);
+    }
+
+    // ── SSH command ───────────────────────────────────────────────────────────
+
+    /// Helper: state with a registered test host (no real SSH connectivity needed).
+    fn state_with_host() -> ReplState {
+        let mut s = ReplState::new("claude-opus-4-6");
+        s.ssh_hosts.add(crate::ssh::HostEntry::new("test-nuc", "192.168.1.99").with_user("admin"));
+        s
+    }
+
+    #[test]
+    fn test_ssh_no_args_returns_help() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/ssh", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("Usage"), "/ssh with no args should show usage");
+        assert!(all.contains("/ssh list"), "should mention /ssh list");
+        assert!(all.contains("<host>"), "should mention host parameter");
+    }
+
+    #[test]
+    fn test_ssh_help_flag_returns_usage() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/ssh --help", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("Usage"), "/ssh --help should show usage");
+    }
+
+    #[test]
+    fn test_ssh_list_empty_registry() {
+        let mut s = state(); // fresh state, no hosts loaded in test
+        // Ensure hosts are empty (no hosts.toml or ~/.axonix/hosts.toml in test env)
+        s.ssh_hosts = crate::ssh::HostRegistry::new();
+        let CommandResult::Handled(lines) = handle_command("/ssh list", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(
+            all.contains("No hosts") || all.contains("hosts.toml"),
+            "empty registry should mention no hosts: {all}"
+        );
+    }
+
+    #[test]
+    fn test_ssh_list_with_registered_host() {
+        let mut s = state_with_host();
+        let CommandResult::Handled(lines) = handle_command("/ssh list", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("test-nuc"), "list should show registered host alias");
+        assert!(all.contains("192.168.1.99"), "list should show host address");
+        assert!(all.contains("admin"), "list should show user");
+    }
+
+    #[test]
+    fn test_ssh_unknown_host_returns_error() {
+        let mut s = state_with_host();
+        let CommandResult::Handled(lines) = handle_command("/ssh no-such-host uptime", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(
+            all.contains("Unknown host") || all.contains("no-such-host"),
+            "unknown host should produce error: {all}"
+        );
+    }
+
+    #[test]
+    fn test_ssh_host_no_command_returns_usage() {
+        let mut s = state_with_host();
+        let CommandResult::Handled(lines) = handle_command("/ssh test-nuc", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(
+            all.contains("Usage") || all.contains("command"),
+            "host with no command should show usage: {all}"
+        );
+    }
+
+    #[test]
+    fn test_ssh_help_shows_registered_hosts_in_usage() {
+        let mut s = state_with_host();
+        let CommandResult::Handled(lines) = handle_command("/ssh", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("test-nuc"), "usage output should list registered hosts when present");
+    }
+
+    #[test]
+    fn test_help_includes_ssh_command() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/help", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("/ssh"), "/help should document /ssh command");
     }
 }

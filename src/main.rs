@@ -282,6 +282,35 @@ async fn main() {
                         }
                     } else if let Some(rest) = line.strip_prefix("__lint_unsupported:") {
                         println!("{YELLOW}  ⚠ {rest}{RESET}");
+                    } else if let Some(rest) = line.strip_prefix("__ssh_error:") {
+                        // format: "__ssh_error:<host>:<message>"
+                        let (host, msg) = rest.split_once(':').unwrap_or((rest, "unknown error"));
+                        println!("{RED}  ✗ ssh {host}: {msg}{RESET}\n");
+                    } else if let Some(rest) = line.strip_prefix("__ssh_result:") {
+                        // format: "__ssh_result:<host>:<exit_code>:<output>"
+                        let mut parts = rest.splitn(3, ':');
+                        let host = parts.next().unwrap_or("?");
+                        let exit_code: i32 = parts.next().unwrap_or("0").parse().unwrap_or(0);
+                        let output = parts.next().unwrap_or("").trim();
+                        if exit_code == 0 {
+                            if output.is_empty() {
+                                println!("{GREEN}  ✓ {host}: (no output){RESET}\n");
+                            } else {
+                                println!("{GREEN}  ✓ {host}{RESET}");
+                                for out_line in output.lines() {
+                                    println!("    {out_line}");
+                                }
+                                println!();
+                            }
+                        } else {
+                            println!("{RED}  ✗ {host} (exit {exit_code}){RESET}");
+                            if !output.is_empty() {
+                                for out_line in output.lines() {
+                                    println!("    {out_line}");
+                                }
+                            }
+                            println!();
+                        }
                     } else if line.is_empty() {
                         println!();
                     } else {

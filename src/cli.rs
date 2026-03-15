@@ -77,6 +77,8 @@ pub fn print_help() {
     println!("  /model <name>     Switch model mid-session (clears history)");
     println!("  /save [path]      Save conversation to file (default: conversation.md)");
     println!("  /lint <file>      Validate YAML or Caddyfile syntax");
+    println!("  /ssh list         List registered SSH hosts");
+    println!("  /ssh <h> <cmd>    Run a command on a remote host via SSH");
     println!("  /skills           Show loaded skills (when --skills is set)");
     println!("  /quit, /exit      Exit the agent");
     println!();
