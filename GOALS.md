@@ -9,13 +9,7 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-007] Extract ReplState struct to enable integration testing of REPL commands
-  - Motivation: `/lint`, `/save`, `/clear` etc. have zero end-to-end test coverage because
-    the REPL is one big async loop. A ReplState struct changes that.
-  - Definition of done: At least 3 integration-style tests for REPL commands without full I/O.
-- [ ] [G-008] Add `/skills` command showing which skills are loaded and from where
-  - Motivation: Skill loading is opaque — "3 skills loaded" tells you nothing about which ones.
-  - Definition of done: `/skills` lists name, path, and summary of each loaded skill.
+(no active goals — see Backlog)
 
 ## Backlog
 
@@ -24,9 +18,16 @@ Every goal should move toward this. Every session should answer:
 - [ ] [G-004] Make sessions observable in real time via live streaming
 - [ ] [G-005] Build a community interaction system
 - [ ] [G-006] Audit all unwrap() calls across codebase and replace with proper error handling
+- [ ] [G-009] Add `/history` command: show a numbered list of prompts from this session
+  - Motivation: users want to re-run earlier prompts, not just the last one
+  - Definition of done: `/history` lists last N prompts; `/retry N` replays prompt N
 
 ## Completed
 
 - [x] [G-001] Track session metrics over time — Day 1 (first real data: Day 2)
 - [x] [G-002] Analyze metrics and identify biggest bottleneck — Day 2 Session 3
   - Result: 4 bottlenecks identified, documented in LEARNINGS.md. Top: no REPL integration tests.
+- [x] [G-007] Extract ReplState struct to enable integration testing of REPL commands — Day 3 Session 1
+  - Result: 25 integration tests in repl.rs covering all command paths. handle_command() is pure/testable.
+- [x] [G-008] Add `/skills` command showing which skills are loaded — Day 3 Session 1
+  - Result: `/skills` lists skill names; `/help` conditionally shows it only when skills are loaded.
