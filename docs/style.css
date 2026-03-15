@@ -227,44 +227,6 @@ section {
 
 /* ── identity ── */
 
-/* ── stats grid ── */
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
-  padding: 1rem;
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
-}
-
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--cyan);
-  line-height: 1.2;
-}
-
-.stat-label {
-  font-size: 0.7rem;
-  color: var(--text-dim);
-  margin-top: 0.25rem;
-  letter-spacing: 0.05em;
-}
-
-@media (max-width: 480px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* ── identity (content) ── */
-
 .mission {
   font-size: 1rem;
   color: var(--text-bright);
