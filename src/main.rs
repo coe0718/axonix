@@ -122,19 +122,61 @@ fn make_agent(api_key: &str, model: &str, skills: SkillSet) -> Agent {
         })
 }
 
+/// Parsed command-line arguments.
+struct CliArgs {
+    model: String,
+    skill_dirs: Vec<String>,
+    prompt: Option<String>,
+}
+
+impl CliArgs {
+    /// Parse CLI arguments. Returns None if --help or --version was handled (program should exit).
+    fn parse(args: &[String]) -> Option<Self> {
+        if args.iter().any(|a| a == "--help" || a == "-h") {
+            print_help();
+            return None;
+        }
+        if args.iter().any(|a| a == "--version" || a == "-V") {
+            println!("axonix v{VERSION}");
+            return None;
+        }
+
+        let model = args
+            .iter()
+            .position(|a| a == "--model")
+            .and_then(|i| args.get(i + 1))
+            .cloned()
+            .unwrap_or_else(|| "claude-opus-4-6".into());
+
+        let skill_dirs: Vec<String> = args
+            .iter()
+            .enumerate()
+            .filter(|(_, a)| a.as_str() == "--skills")
+            .filter_map(|(i, _)| args.get(i + 1).cloned())
+            .collect();
+
+        let prompt = args
+            .iter()
+            .position(|a| a == "--prompt" || a == "-p")
+            .and_then(|i| args.get(i + 1))
+            .cloned();
+
+        Some(Self {
+            model,
+            skill_dirs,
+            prompt,
+        })
+    }
+}
+
 #[tokio::main]
 async fn main() {
     let args: Vec<String> = std::env::args().collect();
 
-    // Handle --help and --version before anything else
-    if args.iter().any(|a| a == "--help" || a == "-h") {
-        print_help();
-        return;
-    }
-    if args.iter().any(|a| a == "--version" || a == "-V") {
-        println!("axonix v{VERSION}");
-        return;
-    }
+    let cli = match CliArgs::parse(&args) {
+        Some(c) => c,
+        None => return, // --help or --version was printed
+    };
 
     let api_key = match std::env::var("ANTHROPIC_API_KEY").or_else(|_| std::env::var("API_KEY")) {
         Ok(key) if !key.is_empty() => key,
@@ -146,24 +188,12 @@ async fn main() {
         }
     };
 
-    let mut model = args
-        .iter()
-        .position(|a| a == "--model")
-        .and_then(|i| args.get(i + 1))
-        .cloned()
-        .unwrap_or_else(|| "claude-opus-4-6".into());
+    let mut model = cli.model;
 
-    let skill_dirs: Vec<String> = args
-        .iter()
-        .enumerate()
-        .filter(|(_, a)| a.as_str() == "--skills")
-        .filter_map(|(i, _)| args.get(i + 1).cloned())
-        .collect();
-
-    let skills = if skill_dirs.is_empty() {
+    let skills = if cli.skill_dirs.is_empty() {
         SkillSet::empty()
     } else {
-        match SkillSet::load(&skill_dirs) {
+        match SkillSet::load(&cli.skill_dirs) {
             Ok(s) => s,
             Err(e) => {
                 eprintln!("{YELLOW}warning:{RESET} Failed to load skills: {e}");
@@ -175,13 +205,7 @@ async fn main() {
     let mut agent = make_agent(&api_key, &model, skills.clone());
 
     // --prompt / -p mode: run a single prompt from CLI args and exit
-    let prompt_arg = args
-        .iter()
-        .position(|a| a == "--prompt" || a == "-p")
-        .and_then(|i| args.get(i + 1))
-        .cloned();
-
-    if let Some(prompt_text) = prompt_arg {
+    if let Some(prompt_text) = cli.prompt {
         let prompt_text = prompt_text.trim();
         if prompt_text.is_empty() {
             eprintln!("{RED}error:{RESET} --prompt requires a non-empty string.");
@@ -959,59 +983,75 @@ mod tests {
     fn test_prompt_flag_parsing() {
         let args: Vec<String> = vec!["axonix", "-p", "explain monads"]
             .into_iter().map(String::from).collect();
-        let prompt = args
-            .iter()
-            .position(|a| a == "--prompt" || a == "-p")
-            .and_then(|i| args.get(i + 1))
-            .cloned();
-        assert_eq!(prompt.as_deref(), Some("explain monads"));
+        let cli = CliArgs::parse(&args).unwrap();
+        assert_eq!(cli.prompt.as_deref(), Some("explain monads"));
     }
 
     #[test]
     fn test_prompt_long_flag_parsing() {
         let args: Vec<String> = vec!["axonix", "--prompt", "fix the bug"]
             .into_iter().map(String::from).collect();
-        let prompt = args
-            .iter()
-            .position(|a| a == "--prompt" || a == "-p")
-            .and_then(|i| args.get(i + 1))
-            .cloned();
-        assert_eq!(prompt.as_deref(), Some("fix the bug"));
+        let cli = CliArgs::parse(&args).unwrap();
+        assert_eq!(cli.prompt.as_deref(), Some("fix the bug"));
     }
 
     #[test]
     fn test_prompt_flag_missing_value() {
         let args: Vec<String> = vec!["axonix", "-p"]
             .into_iter().map(String::from).collect();
-        let prompt = args
-            .iter()
-            .position(|a| a == "--prompt" || a == "-p")
-            .and_then(|i| args.get(i + 1))
-            .cloned();
-        assert!(prompt.is_none(), "Missing value after -p should yield None");
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(cli.prompt.is_none(), "Missing value after -p should yield None");
     }
 
     #[test]
     fn test_prompt_flag_not_present() {
         let args: Vec<String> = vec!["axonix", "--model", "claude-sonnet-4-20250514"]
             .into_iter().map(String::from).collect();
-        let prompt = args
-            .iter()
-            .position(|a| a == "--prompt" || a == "-p")
-            .and_then(|i| args.get(i + 1))
-            .cloned();
-        assert!(prompt.is_none());
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(cli.prompt.is_none());
+        assert_eq!(cli.model, "claude-sonnet-4-20250514");
     }
 
     #[test]
     fn test_prompt_flag_with_other_flags() {
         let args: Vec<String> = vec!["axonix", "--model", "claude-opus-4-6", "-p", "hello world"]
             .into_iter().map(String::from).collect();
-        let prompt = args
-            .iter()
-            .position(|a| a == "--prompt" || a == "-p")
-            .and_then(|i| args.get(i + 1))
-            .cloned();
-        assert_eq!(prompt.as_deref(), Some("hello world"));
+        let cli = CliArgs::parse(&args).unwrap();
+        assert_eq!(cli.prompt.as_deref(), Some("hello world"));
+        assert_eq!(cli.model, "claude-opus-4-6");
+    }
+
+    #[test]
+    fn test_cli_default_model() {
+        let args: Vec<String> = vec!["axonix"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert_eq!(cli.model, "claude-opus-4-6");
+        assert!(cli.skill_dirs.is_empty());
+        assert!(cli.prompt.is_none());
+    }
+
+    #[test]
+    fn test_cli_skills_parsing() {
+        let args: Vec<String> = vec!["axonix", "--skills", "./my_skills", "--skills", "./more"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert_eq!(cli.skill_dirs, vec!["./my_skills", "./more"]);
+    }
+
+    #[test]
+    fn test_cli_help_returns_none() {
+        // CliArgs::parse returns None for --help (program should exit)
+        let args: Vec<String> = vec!["axonix", "--help"]
+            .into_iter().map(String::from).collect();
+        // Note: this will print help text to stdout as a side effect
+        assert!(CliArgs::parse(&args).is_none());
+    }
+
+    #[test]
+    fn test_cli_version_returns_none() {
+        let args: Vec<String> = vec!["axonix", "-V"]
+            .into_iter().map(String::from).collect();
+        assert!(CliArgs::parse(&args).is_none());
     }
 }
