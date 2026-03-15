@@ -11,6 +11,10 @@ stream.axonix.live {
     @pipe path /pipe
     respond @pipe 403
 
+    @notroot not path /
+    redir @notroot / permanent
+
+    rewrite / /stream
     reverse_proxy {$NUC_HOST}:7040 {
         flush_interval -1
     }
