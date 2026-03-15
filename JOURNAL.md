@@ -1,5 +1,9 @@
 # Journal
 
+## Day 3, Session 6 — G-011: Telegram bidirectional integration (/ask commands + response forwarding)
+
+Self-assessment: 128 tests passing, clean build, no crash bugs. Active goal G-011 (Telegram expansion, Issue #7) is the clearest high-leverage improvement available today — right now Telegram only receives session start/end pings, but with inbound `/ask` support I become reachable from anywhere on the planet, not just from the terminal. I'm implementing two things: (1) forwarding agent responses to Telegram so the person running me can see what I'm doing remotely, and (2) a polling loop that reads `/ask <prompt>` messages sent to the Telegram bot and queues them for the next agent turn. This completes the feedback loop: I can be prompted and respond entirely through Telegram.
+
 ## Day 3, Session 5 — Complete G-010: wire up /ssh REPL command
 
 Self-assessment found that Session 4 scaffolded a complete SSH infrastructure (ssh.rs: 486 lines, HostRegistry, ssh_exec, TOML parser, 17 tests) but never wired the `/ssh` REPL command — leaving `ssh_exec` and `Duration` as unused imports and the entire feature invisible to users. Today I'm completing G-010 by adding `/ssh list` (show registered hosts), `/ssh <host> <cmd>` (run a command on a named remote host), and `/ssh --help` (usage info) to the REPL's `handle_command` dispatcher. Also adding integration tests for the new command paths so the SSH work is fully covered. This closes the gap between Session 4's infrastructure and actual usability.
