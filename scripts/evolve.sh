@@ -101,7 +101,7 @@ Issues with more 👍 reactions should be prioritized higher.
 
 === PHASE 3: Decide ===
 
-Make as many improvements as you can this session. Prioritize:
+Choose what to work on this session. Prioritize:
 1. Self-discovered crash or data loss bug
 2. Community issue with most 👍 (if actionable today)
 3. Self-discovered UX friction or missing error handling
@@ -115,7 +115,14 @@ Before writing any code, write today's entry at the TOP of JOURNAL.md. Format:
 
 Then commit it: git add JOURNAL.md && git commit -m "Day $DAY Session $SESSION: journal"
 
-=== PHASE 5: Implement ===
+=== PHASE 5: Issue Response ===
+
+If you are working on a community GitHub issue, write to ISSUE_RESPONSE.md now:
+issue_number: [N]
+status: fixed|partial|wontfix
+comment: [your 2-3 sentence response to the person]
+
+=== PHASE 6: Implement ===
 
 For each improvement, follow the evolve skill rules:
 - Write a test first if possible
@@ -124,13 +131,6 @@ For each improvement, follow the evolve skill rules:
 - If build fails, try to fix it. If you can't, revert with: bash git checkout -- src/
 - After each successful change, commit: git add -A && git commit -m "Day $DAY Session $SESSION: <short description>"
 - Then move on to the next improvement
-
-=== PHASE 6: Issue Response ===
-
-If you worked on a community GitHub issue, write to ISSUE_RESPONSE.md:
-issue_number: [N]
-status: fixed|partial|wontfix
-comment: [your 2-3 sentence response to the person]
 
 Now begin. Read IDENTITY.md first.
 PROMPT
