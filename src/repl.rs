@@ -7,6 +7,7 @@
 //! By separating state from I/O, every command path becomes testable
 //! without mocking stdin/stdout or spinning up an async runtime.
 
+use std::collections::VecDeque;
 use crate::lint::{lint_file, LintResult};
 
 /// All mutable state for an interactive REPL session.
@@ -24,8 +25,8 @@ pub struct ReplState {
     /// The last user prompt (for `/retry`).
     pub last_prompt: Option<String>,
     /// Ordered history of all user prompts this session (oldest first).
-    /// Capped at `HISTORY_LIMIT` entries.
-    pub history: Vec<String>,
+    /// Capped at `HISTORY_LIMIT` entries. Uses VecDeque for O(1) front removal.
+    pub history: VecDeque<String>,
 }
 
 /// Maximum number of prompts kept in session history.
@@ -41,7 +42,7 @@ impl ReplState {
             total_cache_read: 0,
             total_cache_write: 0,
             last_prompt: None,
-            history: Vec::new(),
+            history: VecDeque::new(),
         }
     }
 
@@ -55,12 +56,13 @@ impl ReplState {
 
     /// Record a user prompt in history and update `last_prompt`.
     /// Oldest entries are dropped when history exceeds `HISTORY_LIMIT`.
+    /// Uses VecDeque::pop_front for O(1) removal from the front.
     pub fn push_prompt(&mut self, prompt: impl Into<String>) {
         let p = prompt.into();
         self.last_prompt = Some(p.clone());
-        self.history.push(p);
+        self.history.push_back(p);
         if self.history.len() > HISTORY_LIMIT {
-            self.history.remove(0);
+            self.history.pop_front();
         }
     }
 
@@ -138,9 +140,10 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                 ])
             } else {
                 let mut lines = vec![format!("  History ({} prompts):", state.history.len())];
-                let start = if state.history.len() > 20 { state.history.len() - 20 } else { 0 };
-                for (i, prompt) in state.history[start..].iter().enumerate() {
-                    let n = start + i + 1;
+                let total = state.history.len();
+                let start = if total > 20 { total - 20 } else { 0 };
+                for (i, prompt) in state.history.iter().enumerate().skip(start) {
+                    let n = i + 1;
                     let preview = if prompt.len() > 72 {
                         format!("{}…", &prompt[..72])
                     } else {
@@ -149,7 +152,7 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                     lines.push(format!("  {:>3}.  {preview}", n));
                 }
                 if start > 0 {
-                    lines.push(format!("  (showing last 20 of {} prompts)", state.history.len()));
+                    lines.push(format!("  (showing last 20 of {} prompts)", total));
                 }
                 lines.push(String::new());
                 CommandResult::Handled(lines)
