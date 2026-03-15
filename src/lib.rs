@@ -5,6 +5,7 @@
 //! - `render` — ANSI colors, text truncation, usage display
 //! - `cost` — token cost estimation per model
 //! - `conversation` — saving conversations to markdown
+//! - `github` — GitHub API integration (issue comments as axonix-bot or owner)
 //! - `lint` — YAML and Caddyfile validation (for docker compose, Caddy server config)
 //! - `ssh` — multi-device management via SSH
 //! - `telegram` — Telegram bot integration (notifications + inbound /ask commands)
@@ -12,6 +13,7 @@
 pub mod cli;
 pub mod conversation;
 pub mod cost;
+pub mod github;
 pub mod lint;
 pub mod render;
 pub mod repl;
