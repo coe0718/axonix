@@ -13,3 +13,4 @@ pub mod cost;
 pub mod lint;
 pub mod render;
 pub mod repl;
+pub mod ssh;

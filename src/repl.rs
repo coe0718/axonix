@@ -9,6 +9,8 @@
 
 use std::collections::VecDeque;
 use crate::lint::{lint_file, LintResult};
+use crate::ssh::{HostRegistry, ssh_exec};
+use std::time::Duration;
 
 /// All mutable state for an interactive REPL session.
 pub struct ReplState {
@@ -27,6 +29,8 @@ pub struct ReplState {
     /// Ordered history of all user prompts this session (oldest first).
     /// Capped at `HISTORY_LIMIT` entries. Uses VecDeque for O(1) front removal.
     pub history: VecDeque<String>,
+    /// SSH host registry loaded from hosts.toml.
+    pub ssh_hosts: HostRegistry,
 }
 
 /// Maximum number of prompts kept in session history.
@@ -35,6 +39,8 @@ pub const HISTORY_LIMIT: usize = 50;
 impl ReplState {
     /// Create a fresh REPL state with the given model.
     pub fn new(model: impl Into<String>) -> Self {
+        let mut ssh_hosts = HostRegistry::new();
+        ssh_hosts.load_defaults();
         Self {
             model: model.into(),
             total_input: 0,
@@ -43,6 +49,7 @@ impl ReplState {
             total_cache_write: 0,
             last_prompt: None,
             history: VecDeque::new(),
+            ssh_hosts,
         }
     }
 
@@ -279,7 +286,6 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                 ])
             }
         }
-
         _ => CommandResult::NotACommand,
     }
 }
