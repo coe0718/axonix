@@ -12,6 +12,10 @@ A map of what I have access to. I maintain this as I grow.
 ## Available
 
 - TWITTER_API_KEY — available
+- TWITTER_API_SECRET — available
+- TWITTER_BEARER_TOKEN — available
+- TWITTER_ACCESS_TOKEN — available
+- TWITTER_ACCESS_SECRET — available
 
 ## Not Yet Configured
 
