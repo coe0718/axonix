@@ -36,6 +36,7 @@ use axonix::conversation::save_conversation;
 use axonix::cost::estimate_cost;
 use axonix::render::*;
 use axonix::repl::{handle_command, CommandResult, ReplState};
+use axonix::telegram::TelegramClient;
 
 const SYSTEM_PROMPT: &str = r#"You are a coding assistant working in the user's terminal.
 You have access to the filesystem and shell. Be direct and concise.
@@ -107,6 +108,9 @@ async fn main() {
 
     let mut agent = make_agent(&api_key, &model, skills.clone());
 
+    // Initialize Telegram client if credentials are available
+    let tg = TelegramClient::from_env();
+
     // --prompt / -p mode: run a single prompt from CLI args and exit
     if let Some(prompt_text) = cli_args.prompt {
         let prompt_text = prompt_text.trim();
@@ -117,7 +121,7 @@ async fn main() {
         }
         eprintln!("{DIM}  axonix (prompt mode) — model: {model}{RESET}");
         let mut repl = ReplState::new(&model);
-        run_prompt(&mut agent, prompt_text, &mut repl).await;
+        run_prompt(&mut agent, prompt_text, &mut repl, tg.as_ref()).await;
         return;
     }
 
@@ -133,7 +137,7 @@ async fn main() {
 
         eprintln!("{DIM}  axonix (piped mode) — model: {model}{RESET}");
         let mut repl = ReplState::new(&model);
-        run_prompt(&mut agent, input, &mut repl).await;
+        run_prompt(&mut agent, input, &mut repl, tg.as_ref()).await;
         return;
     }
 
@@ -151,6 +155,9 @@ async fn main() {
         skills.skills().iter().map(|s| s.name.clone()).collect()
     };
     println!("{DIM}  cwd:   {cwd}{RESET}");
+    if tg.is_some() {
+        println!("{DIM}  telegram: connected — send /ask <prompt> to chat with me{RESET}");
+    }
     println!("{DIM}  Type /help for commands{RESET}\n");
 
     let session_start = std::time::Instant::now();
@@ -170,6 +177,41 @@ async fn main() {
     let stdin = io::stdin();
     let mut lines = stdin.lock().lines();
     let mut repl = ReplState::new(&model);
+
+    // Telegram inbound poll: spawn a background task that polls for /ask commands
+    // and sends them over a channel for the main loop to process after each turn.
+    let tg_rx = if let Some(ref tg_client) = tg {
+        let (tx, rx) = tokio::sync::mpsc::channel::<axonix::telegram::AskCommand>(16);
+        let tg_poll = tg_client.clone();
+        tokio::spawn(async move {
+            let mut offset: i64 = 0;
+            loop {
+                match tg_poll.get_updates(offset).await {
+                    Ok(updates) => {
+                        if !updates.is_empty() {
+                            offset = updates.iter().map(|u| u.update_id).max().unwrap_or(offset) + 1;
+                            let commands = tg_poll.extract_ask_commands(&updates);
+                            for cmd in commands {
+                                if tx.send(cmd).await.is_err() {
+                                    return; // receiver dropped, session ended
+                                }
+                            }
+                        }
+                    }
+                    Err(_) => {
+                        // Network error — wait before retrying
+                        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+                    }
+                }
+                // Small sleep between polls to avoid hammering the API
+                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+            }
+        });
+        Some(rx)
+    } else {
+        None
+    };
+    let mut tg_rx = tg_rx;
 
     loop {
         print!("{BOLD}{GREEN}> {RESET}");
@@ -251,7 +293,7 @@ async fn main() {
             CommandResult::Retry(ref prompt) => {
                 println!("{DIM}  (retrying: {}){RESET}", truncate(prompt, 60));
                 let prompt = prompt.clone();
-                run_prompt(&mut agent, &prompt, &mut repl).await;
+                run_prompt(&mut agent, &prompt, &mut repl, tg.as_ref()).await;
                 continue;
             }
 
@@ -410,7 +452,22 @@ async fn main() {
                 }
 
                 repl.push_prompt(input);
-                run_prompt(&mut agent, input, &mut repl).await;
+                run_prompt(&mut agent, input, &mut repl, tg.as_ref()).await;
+            }
+        }
+
+        // After each main-loop turn, drain any queued Telegram /ask commands
+        if let Some(ref mut rx) = tg_rx {
+            while let Ok(cmd) = rx.try_recv() {
+                let ask_prompt = cmd.prompt.clone();
+                let msg_id = cmd.message_id;
+                println!("\n{DIM}  📱 Telegram ask: {}{RESET}", truncate(&ask_prompt, 60));
+                repl.push_prompt(&ask_prompt);
+                run_prompt(&mut agent, &ask_prompt, &mut repl, tg.as_ref()).await;
+                // Acknowledge in Telegram that the ask was processed
+                if let Some(ref tg_client) = tg {
+                    tg_client.reply_to("✅ Done", msg_id).await.ok();
+                }
             }
         }
     }
@@ -418,12 +475,14 @@ async fn main() {
     println!("\n{DIM}  bye 👋{RESET}\n");
 }
 
-async fn run_prompt(agent: &mut Agent, input: &str, repl: &mut ReplState) {
+async fn run_prompt(agent: &mut Agent, input: &str, repl: &mut ReplState, tg: Option<&TelegramClient>) {
     let prompt_start = std::time::Instant::now();
     let mut rx = agent.prompt(input).await;
     let mut last_usage = Usage::default();
     let mut in_text = false;
     let mut in_thinking = false;
+    // Collect full text response for Telegram forwarding
+    let mut response_text = String::new();
 
     while let Some(event) = rx.recv().await {
         match event {
@@ -505,6 +564,7 @@ async fn run_prompt(agent: &mut Agent, input: &str, repl: &mut ReplState) {
                     println!();
                     in_text = true;
                 }
+                response_text.push_str(&delta);
                 print!("{}", delta);
                 io::stdout().flush().ok();
             }
@@ -570,6 +630,17 @@ async fn run_prompt(agent: &mut Agent, input: &str, repl: &mut ReplState) {
     repl.total_cache_write += last_usage.cache_write;
     print_usage(&last_usage, prompt_start.elapsed());
     println!();
+
+    // Forward response to Telegram if connected and response is non-empty
+    if let Some(tg) = tg {
+        let response = response_text.trim();
+        if !response.is_empty() {
+            let chunks = TelegramClient::format_response(response);
+            for chunk in chunks {
+                tg.send_message(&chunk).await.ok();
+            }
+        }
+    }
 }
 
 #[cfg(test)]

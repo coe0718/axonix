@@ -6,6 +6,8 @@
 //! - `cost` — token cost estimation per model
 //! - `conversation` — saving conversations to markdown
 //! - `lint` — YAML and Caddyfile validation (for docker compose, Caddy server config)
+//! - `ssh` — multi-device management via SSH
+//! - `telegram` — Telegram bot integration (notifications + inbound /ask commands)
 
 pub mod cli;
 pub mod conversation;
@@ -14,3 +16,4 @@ pub mod lint;
 pub mod render;
 pub mod repl;
 pub mod ssh;
+pub mod telegram;
