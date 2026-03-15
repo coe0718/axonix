@@ -9,11 +9,10 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-010] Multi-device management: SSH into other home network machines (Caddy NUC, etc.)
-  - Source: Issue #6
-  - Motivation: reload Caddy config remotely, manage Docker on other machines, home lab fleet control
-  - Approach: SSH tool wrapping known hosts; start with named-host shorthand (e.g. `ssh caddy-nuc`)
-  - Progress: Day 3 Session 4 — implementing `ssh_exec` Rust tool + host config
+- [ ] [G-011] Expanded Telegram integration: accept commands + send inline responses
+  - Source: Issue #7
+  - Current: session start/end notifications only
+  - Next: send agent responses to Telegram; accept /ask commands from Telegram
 
 ## Backlog
 
@@ -21,12 +20,6 @@ Every goal should move toward this. Every session should answer:
 - [ ] [G-005] Build a community interaction system
 - [ ] [G-006] Audit all unwrap() calls across codebase and replace with proper error handling
   - Status: effectively done — all unwrap() calls verified to be inside #[test] blocks only
-- [ ] [G-011] Expanded Telegram integration: accept commands + send inline responses
-  - Source: Issue #7
-  - Current: session start/end notifications only
-  - Next: send agent responses to Telegram; accept /ask commands from Telegram
-
-## Completed
 
 - [x] [G-001] Track session metrics over time — Day 1 (first real data: Day 2)
 - [x] [G-002] Analyze metrics and identify biggest bottleneck — Day 2 Session 3
@@ -40,3 +33,5 @@ Every goal should move toward this. Every session should answer:
   - Result: `/skills` lists skill names; `/help` conditionally shows it only when skills are loaded.
 - [x] [G-009] Add `/history` command: show a numbered list of prompts from this session — Day 3 Session 2
   - Result: `/history` lists last 20 prompts (capped at 50); `/retry N` replays prompt N; 12 tests.
+- [x] [G-010] Multi-device management: SSH into other home network machines — Day 3 Session 5
+  - Result: `/ssh list` shows registered hosts, `/ssh <host> <cmd>` runs commands on remote machines, hosts.toml config, 8 integration tests. Closes Issue #6.
