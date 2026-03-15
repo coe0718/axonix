@@ -7,6 +7,7 @@
 //!   ANTHROPIC_API_KEY=sk-... cargo run
 //!   ANTHROPIC_API_KEY=sk-... cargo run -- --model claude-opus-4-6
 //!   ANTHROPIC_API_KEY=sk-... cargo run -- --skills ./skills
+//!   ANTHROPIC_API_KEY=sk-... cargo run -- -p "explain this code"
 //!   echo "prompt" | cargo run  (piped mode: single prompt, no REPL)
 //!
 //! Commands:
@@ -55,6 +56,7 @@ fn print_help() {
     println!("Options:");
     println!("  --model <name>    Model to use (default: claude-opus-4-6)");
     println!("  --skills <dir>    Directory containing skill files");
+    println!("  -p, --prompt <text>  Run a single prompt and exit (no REPL)");
     println!("  --help, -h        Show this help message");
     println!("  --version, -V     Show version");
     println!();
@@ -171,6 +173,29 @@ async fn main() {
     };
 
     let mut agent = make_agent(&api_key, &model, skills.clone());
+
+    // --prompt / -p mode: run a single prompt from CLI args and exit
+    let prompt_arg = args
+        .iter()
+        .position(|a| a == "--prompt" || a == "-p")
+        .and_then(|i| args.get(i + 1))
+        .cloned();
+
+    if let Some(prompt_text) = prompt_arg {
+        let prompt_text = prompt_text.trim();
+        if prompt_text.is_empty() {
+            eprintln!("{RED}error:{RESET} --prompt requires a non-empty string.");
+            eprintln!("Example: axonix -p \"explain this code\"");
+            std::process::exit(1);
+        }
+        eprintln!("{DIM}  axonix (prompt mode) — model: {model}{RESET}");
+        let mut _ti: u64 = 0;
+        let mut _to: u64 = 0;
+        let mut _cr: u64 = 0;
+        let mut _cw: u64 = 0;
+        run_prompt(&mut agent, prompt_text, &mut _ti, &mut _to, &mut _cr, &mut _cw).await;
+        return;
+    }
 
     // Piped mode: read all of stdin as a single prompt, run once, exit
     if !io::stdin().is_terminal() {
@@ -928,5 +953,65 @@ mod tests {
         let line = "hello world\\";
         let stripped = line.trim_end().trim_end_matches('\\');
         assert_eq!(stripped, "hello world");
+    }
+
+    #[test]
+    fn test_prompt_flag_parsing() {
+        let args: Vec<String> = vec!["axonix", "-p", "explain monads"]
+            .into_iter().map(String::from).collect();
+        let prompt = args
+            .iter()
+            .position(|a| a == "--prompt" || a == "-p")
+            .and_then(|i| args.get(i + 1))
+            .cloned();
+        assert_eq!(prompt.as_deref(), Some("explain monads"));
+    }
+
+    #[test]
+    fn test_prompt_long_flag_parsing() {
+        let args: Vec<String> = vec!["axonix", "--prompt", "fix the bug"]
+            .into_iter().map(String::from).collect();
+        let prompt = args
+            .iter()
+            .position(|a| a == "--prompt" || a == "-p")
+            .and_then(|i| args.get(i + 1))
+            .cloned();
+        assert_eq!(prompt.as_deref(), Some("fix the bug"));
+    }
+
+    #[test]
+    fn test_prompt_flag_missing_value() {
+        let args: Vec<String> = vec!["axonix", "-p"]
+            .into_iter().map(String::from).collect();
+        let prompt = args
+            .iter()
+            .position(|a| a == "--prompt" || a == "-p")
+            .and_then(|i| args.get(i + 1))
+            .cloned();
+        assert!(prompt.is_none(), "Missing value after -p should yield None");
+    }
+
+    #[test]
+    fn test_prompt_flag_not_present() {
+        let args: Vec<String> = vec!["axonix", "--model", "claude-sonnet-4-20250514"]
+            .into_iter().map(String::from).collect();
+        let prompt = args
+            .iter()
+            .position(|a| a == "--prompt" || a == "-p")
+            .and_then(|i| args.get(i + 1))
+            .cloned();
+        assert!(prompt.is_none());
+    }
+
+    #[test]
+    fn test_prompt_flag_with_other_flags() {
+        let args: Vec<String> = vec!["axonix", "--model", "claude-opus-4-6", "-p", "hello world"]
+            .into_iter().map(String::from).collect();
+        let prompt = args
+            .iter()
+            .position(|a| a == "--prompt" || a == "-p")
+            .and_then(|i| args.get(i + 1))
+            .cloned();
+        assert_eq!(prompt.as_deref(), Some("hello world"));
     }
 }
