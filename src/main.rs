@@ -30,82 +30,16 @@ use yoagent::tools::default_tools;
 use yoagent::retry::RetryConfig;
 use yoagent::*;
 
-// ANSI color helpers
-const RESET: &str = "\x1b[0m";
-const BOLD: &str = "\x1b[1m";
-const DIM: &str = "\x1b[2m";
-const GREEN: &str = "\x1b[32m";
-const YELLOW: &str = "\x1b[33m";
-const CYAN: &str = "\x1b[36m";
-const MAGENTA: &str = "\x1b[35m";
-const RED: &str = "\x1b[31m";
-
-const VERSION: &str = env!("CARGO_PKG_VERSION");
+use axonix::cli::{self, CliArgs};
+use axonix::conversation::save_conversation;
+use axonix::cost::estimate_cost;
+use axonix::render::*;
 
 const SYSTEM_PROMPT: &str = r#"You are a coding assistant working in the user's terminal.
 You have access to the filesystem and shell. Be direct and concise.
 When the user asks you to do something, do it — don't just explain how.
 Use tools proactively: read files to understand context, run commands to verify your work.
 After making changes, run tests or verify the result when appropriate."#;
-
-fn print_help() {
-    println!("axonix v{VERSION} — a coding agent growing up in public");
-    println!();
-    println!("Usage: axonix [OPTIONS]");
-    println!();
-    println!("Options:");
-    println!("  --model <name>    Model to use (default: claude-opus-4-6)");
-    println!("  --skills <dir>    Directory containing skill files");
-    println!("  -p, --prompt <text>  Run a single prompt and exit (no REPL)");
-    println!("  --help, -h        Show this help message");
-    println!("  --version, -V     Show version");
-    println!();
-    println!("Commands (in REPL):");
-    println!("  /help             Show available commands");
-    println!("  /status           Show session info");
-    println!("  /tokens           Show token usage and cost estimate");
-    println!("  /quit, /exit      Exit the agent");
-    println!("  /clear            Clear conversation history");
-    println!("  /retry            Retry the last prompt");
-    println!("  /model <name>     Switch model mid-session");
-    println!("  /save [path]      Save conversation to file");
-    println!();
-    println!("Environment:");
-    println!("  ANTHROPIC_API_KEY  API key for Anthropic (required)");
-    println!("  API_KEY            Alternative env var for API key");
-}
-
-fn print_banner() {
-    println!(
-        "\n{BOLD}{CYAN}  axonix{RESET} v{VERSION} {DIM}— a coding agent growing up in public{RESET}"
-    );
-    println!("{DIM}  Type /quit to exit, /clear to reset{RESET}\n");
-}
-
-fn print_usage(usage: &Usage, elapsed: std::time::Duration) {
-    if usage.input > 0 || usage.output > 0 {
-        let cache_info = if usage.cache_read > 0 || usage.cache_write > 0 {
-            format!(
-                " (cache: {} read, {} write)",
-                usage.cache_read, usage.cache_write
-            )
-        } else {
-            String::new()
-        };
-        let secs = elapsed.as_secs_f64();
-        let time_str = if secs < 60.0 {
-            format!("{secs:.1}s")
-        } else {
-            let mins = secs as u64 / 60;
-            let remaining = secs as u64 % 60;
-            format!("{mins}m {remaining}s")
-        };
-        println!(
-            "\n{DIM}  tokens: {} in / {} out{cache_info} — {time_str}{RESET}",
-            usage.input, usage.output
-        );
-    }
-}
 
 fn make_agent(api_key: &str, model: &str, skills: SkillSet) -> Agent {
     Agent::new(AnthropicProvider)
@@ -122,58 +56,11 @@ fn make_agent(api_key: &str, model: &str, skills: SkillSet) -> Agent {
         })
 }
 
-/// Parsed command-line arguments.
-struct CliArgs {
-    model: String,
-    skill_dirs: Vec<String>,
-    prompt: Option<String>,
-}
-
-impl CliArgs {
-    /// Parse CLI arguments. Returns None if --help or --version was handled (program should exit).
-    fn parse(args: &[String]) -> Option<Self> {
-        if args.iter().any(|a| a == "--help" || a == "-h") {
-            print_help();
-            return None;
-        }
-        if args.iter().any(|a| a == "--version" || a == "-V") {
-            println!("axonix v{VERSION}");
-            return None;
-        }
-
-        let model = args
-            .iter()
-            .position(|a| a == "--model")
-            .and_then(|i| args.get(i + 1))
-            .cloned()
-            .unwrap_or_else(|| "claude-opus-4-6".into());
-
-        let skill_dirs: Vec<String> = args
-            .iter()
-            .enumerate()
-            .filter(|(_, a)| a.as_str() == "--skills")
-            .filter_map(|(i, _)| args.get(i + 1).cloned())
-            .collect();
-
-        let prompt = args
-            .iter()
-            .position(|a| a == "--prompt" || a == "-p")
-            .and_then(|i| args.get(i + 1))
-            .cloned();
-
-        Some(Self {
-            model,
-            skill_dirs,
-            prompt,
-        })
-    }
-}
-
 #[tokio::main]
 async fn main() {
     let args: Vec<String> = std::env::args().collect();
 
-    let cli = match CliArgs::parse(&args) {
+    let cli_args = match CliArgs::parse(&args) {
         Some(c) => c,
         None => return, // --help or --version was printed
     };
@@ -188,12 +75,12 @@ async fn main() {
         }
     };
 
-    let mut model = cli.model;
+    let mut model = cli_args.model;
 
-    let skills = if cli.skill_dirs.is_empty() {
+    let skills = if cli_args.skill_dirs.is_empty() {
         SkillSet::empty()
     } else {
-        match SkillSet::load(&cli.skill_dirs) {
+        match SkillSet::load(&cli_args.skill_dirs) {
             Ok(s) => s,
             Err(e) => {
                 eprintln!("{YELLOW}warning:{RESET} Failed to load skills: {e}");
@@ -205,7 +92,7 @@ async fn main() {
     let mut agent = make_agent(&api_key, &model, skills.clone());
 
     // --prompt / -p mode: run a single prompt from CLI args and exit
-    if let Some(prompt_text) = cli.prompt {
+    if let Some(prompt_text) = cli_args.prompt {
         let prompt_text = prompt_text.trim();
         if prompt_text.is_empty() {
             eprintln!("{RED}error:{RESET} --prompt requires a non-empty string.");
@@ -245,7 +132,7 @@ async fn main() {
         .map(|p| p.display().to_string())
         .unwrap_or_else(|_| "(unknown)".to_string());
 
-    print_banner();
+    cli::print_banner();
     println!("{DIM}  model: {model}{RESET}");
     if !skills.is_empty() {
         println!("{DIM}  skills: {} loaded{RESET}", skills.len());
@@ -262,7 +149,6 @@ async fn main() {
         tokio::spawn(async move {
             tokio::signal::ctrl_c().await.ok();
             flag.store(true, std::sync::atomic::Ordering::SeqCst);
-            // Print goodbye on Ctrl+C
             eprintln!("\n{DIM}  interrupted — bye 👋{RESET}\n");
             std::process::exit(0);
         });
@@ -287,7 +173,6 @@ async fn main() {
 
         // Multiline input: backslash continuation or triple-quote blocks
         let input = if line.trim_end().ends_with('\\') {
-            // Backslash continuation: keep reading lines until one doesn't end with \
             let mut buf = String::from(line.trim_end().trim_end_matches('\\'));
             buf.push('\n');
             loop {
@@ -308,7 +193,6 @@ async fn main() {
             }
             buf
         } else if line.trim() == "\"\"\"" {
-            // Triple-quote block: read until closing """
             let mut buf = String::new();
             println!("{DIM}  (multiline mode — type \"\"\" on its own line to finish){RESET}");
             loop {
@@ -606,7 +490,6 @@ async fn run_prompt(agent: &mut Agent, input: &str, total_in: &mut u64, total_ou
                 println!("{DIM}  ℹ {text}{RESET}");
             }
             AgentEvent::TurnEnd { message, .. } => {
-                // Detect API errors and display them
                 if let AgentMessage::Llm(Message::Assistant {
                     stop_reason: StopReason::Error,
                     error_message,
@@ -628,7 +511,6 @@ async fn run_prompt(agent: &mut Agent, input: &str, total_in: &mut u64, total_ou
                 }
             }
             AgentEvent::AgentEnd { messages } => {
-                // Sum usage from all assistant messages in this prompt
                 for msg in &messages {
                     if let AgentMessage::Llm(Message::Assistant { usage, .. }) = msg {
                         last_usage.input += usage.input;
@@ -657,114 +539,8 @@ async fn run_prompt(agent: &mut Agent, input: &str, total_in: &mut u64, total_ou
     println!();
 }
 
-fn truncate(s: &str, max: usize) -> String {
-    match s.char_indices().nth(max) {
-        Some((idx, _)) => format!("{}…", &s[..idx]),
-        None => s.to_string(),
-    }
-}
-
-/// Rough cost estimate based on model pricing (USD).
-/// Prices are approximate and may change — this is a convenience indicator, not a bill.
-/// Accounts for Anthropic cache pricing:
-///   - cache_read tokens are 10% of input price
-///   - cache_write tokens are 25% more than input price
-fn estimate_cost(model: &str, input_tokens: u64, output_tokens: u64, cache_read: u64, cache_write: u64) -> f64 {
-    let (input_per_m, output_per_m) = if model.contains("opus") {
-        (15.0, 75.0)
-    } else if model.contains("sonnet") {
-        (3.0, 15.0)
-    } else if model.contains("haiku") {
-        (0.25, 1.25)
-    } else {
-        // Unknown model — use sonnet pricing as default
-        (3.0, 15.0)
-    };
-    let cache_read_per_m = input_per_m * 0.1;
-    let cache_write_per_m = input_per_m * 1.25;
-    (input_tokens as f64 / 1_000_000.0) * input_per_m
-        + (output_tokens as f64 / 1_000_000.0) * output_per_m
-        + (cache_read as f64 / 1_000_000.0) * cache_read_per_m
-        + (cache_write as f64 / 1_000_000.0) * cache_write_per_m
-}
-
-fn save_conversation(messages: &[AgentMessage], path: &str) -> io::Result<usize> {
-    use std::fs::File;
-    let mut file = File::create(path)?;
-    let mut count = 0;
-    for msg in messages {
-        if let Some(llm_msg) = msg.as_llm() {
-            let (role, contents) = match llm_msg {
-                Message::User { content, .. } => ("User", content),
-                Message::Assistant { content, .. } => ("Assistant", content),
-                Message::ToolResult {
-                    tool_name, content, ..
-                } => {
-                    // Write tool results with their tool name
-                    writeln!(file, "## Tool Result: {tool_name}\n")?;
-                    for c in content {
-                        if let Content::Text { text } = c {
-                            writeln!(file, "{text}\n")?;
-                        }
-                    }
-                    writeln!(file, "---\n")?;
-                    count += 1;
-                    continue;
-                }
-            };
-            writeln!(file, "## {role}\n")?;
-            for c in contents {
-                match c {
-                    Content::Text { text } => writeln!(file, "{text}\n")?,
-                    Content::ToolCall { name, arguments, .. } => {
-                        writeln!(file, "**Tool call:** `{name}`\n```json\n{arguments}\n```\n")?
-                    }
-                    _ => {}
-                }
-            }
-            writeln!(file, "---\n")?;
-            count += 1;
-        }
-    }
-    Ok(count)
-}
-
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    #[test]
-    fn test_truncate_short_string() {
-        assert_eq!(truncate("hello", 10), "hello");
-    }
-
-    #[test]
-    fn test_truncate_exact_length() {
-        assert_eq!(truncate("hello", 5), "hello");
-    }
-
-    #[test]
-    fn test_truncate_long_string() {
-        assert_eq!(truncate("hello world", 5), "hello…");
-    }
-
-    #[test]
-    fn test_truncate_unicode() {
-        assert_eq!(truncate("héllo wörld", 5), "héllo…");
-    }
-
-    #[test]
-    fn test_truncate_empty() {
-        assert_eq!(truncate("", 5), "");
-    }
-
-    #[test]
-    fn test_version_constant_exists() {
-        assert!(
-            VERSION.contains('.'),
-            "Version should contain a dot: {VERSION}"
-        );
-    }
 
     #[test]
     fn test_command_parsing_quit() {
@@ -775,21 +551,6 @@ mod tests {
                 "Unrecognized quit command: {cmd}"
             );
         }
-    }
-
-    #[test]
-    fn test_command_parsing_model() {
-        let input = "/model claude-opus-4-6";
-        assert!(input.starts_with("/model "));
-        let model_name = input.trim_start_matches("/model ").trim();
-        assert_eq!(model_name, "claude-opus-4-6");
-    }
-
-    #[test]
-    fn test_command_parsing_model_whitespace() {
-        let input = "/model   claude-opus-4-6  ";
-        let model_name = input.trim_start_matches("/model ").trim();
-        assert_eq!(model_name, "claude-opus-4-6");
     }
 
     #[test]
@@ -804,7 +565,6 @@ mod tests {
                 "Command {cmd} should be recognized"
             );
         }
-        // /save and /model are prefix commands, tested separately
     }
 
     #[test]
@@ -827,17 +587,6 @@ mod tests {
     }
 
     #[test]
-    fn test_save_conversation_empty() {
-        let messages: Vec<AgentMessage> = vec![];
-        let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("test.md");
-        let count = save_conversation(&messages, path.to_str().unwrap()).unwrap();
-        assert_eq!(count, 0);
-        let content = std::fs::read_to_string(&path).unwrap();
-        assert!(content.is_empty());
-    }
-
-    #[test]
     fn test_unknown_command_detected() {
         let input = "/foo";
         assert!(input.starts_with('/'));
@@ -851,88 +600,11 @@ mod tests {
     }
 
     #[test]
-    fn test_truncate_adds_ellipsis() {
-        let result = truncate("a]long string that goes on", 6);
-        assert!(result.ends_with('…'), "Truncated string should end with ellipsis: {result}");
-    }
-
-    #[test]
-    fn test_model_command_empty_name() {
-        let input = "/model ";
-        let model_name = input.trim_start_matches("/model ").trim();
-        assert!(model_name.is_empty(), "Empty model name should be detected");
-    }
-
-    #[test]
-    fn test_model_command_whitespace_only() {
-        let input = "/model    ";
-        let model_name = input.trim_start_matches("/model ").trim();
-        assert!(model_name.is_empty(), "Whitespace-only model name should be detected");
-    }
-
-    #[test]
-    fn test_estimate_cost_opus() {
-        let cost = estimate_cost("claude-opus-4-6", 1_000_000, 1_000_000, 0, 0);
-        // Opus: $15/M input + $75/M output = $90 for 1M each
-        assert!((cost - 90.0).abs() < 0.01, "Opus cost estimate wrong: {cost}");
-    }
-
-    #[test]
-    fn test_estimate_cost_sonnet() {
-        let cost = estimate_cost("claude-sonnet-4-20250514", 1_000_000, 0, 0, 0);
-        assert!((cost - 3.0).abs() < 0.01, "Sonnet input cost wrong: {cost}");
-    }
-
-    #[test]
-    fn test_estimate_cost_haiku() {
-        let cost = estimate_cost("claude-haiku-3", 0, 1_000_000, 0, 0);
-        assert!((cost - 1.25).abs() < 0.01, "Haiku output cost wrong: {cost}");
-    }
-
-    #[test]
-    fn test_estimate_cost_unknown_model() {
-        let cost = estimate_cost("some-unknown-model", 1_000_000, 1_000_000, 0, 0);
-        // Default to sonnet pricing: $3/M + $15/M = $18
-        assert!((cost - 18.0).abs() < 0.01, "Unknown model cost wrong: {cost}");
-    }
-
-    #[test]
-    fn test_estimate_cost_zero_tokens() {
-        let cost = estimate_cost("claude-opus-4-6", 0, 0, 0, 0);
-        assert!((cost - 0.0).abs() < 0.001, "Zero tokens should cost $0: {cost}");
-    }
-
-    #[test]
-    fn test_estimate_cost_with_cache_read() {
-        // Opus: cache_read at 10% of $15/M = $1.5/M
-        let cost = estimate_cost("claude-opus-4-6", 0, 0, 1_000_000, 0);
-        assert!((cost - 1.5).abs() < 0.01, "Cache read cost wrong: {cost}");
-    }
-
-    #[test]
-    fn test_estimate_cost_with_cache_write() {
-        // Opus: cache_write at 125% of $15/M = $18.75/M
-        let cost = estimate_cost("claude-opus-4-6", 0, 0, 0, 1_000_000);
-        assert!((cost - 18.75).abs() < 0.01, "Cache write cost wrong: {cost}");
-    }
-
-    #[test]
-    fn test_estimate_cost_full_breakdown() {
-        // Sonnet: $3/M input + $15/M output + $0.3/M cache_read + $3.75/M cache_write
-        let cost = estimate_cost("claude-sonnet-4-20250514", 1_000_000, 1_000_000, 1_000_000, 1_000_000);
-        let expected = 3.0 + 15.0 + 0.3 + 3.75;
-        assert!((cost - expected).abs() < 0.01, "Full breakdown cost wrong: {cost}, expected: {expected}");
-    }
-
-    #[test]
     fn test_clear_should_preserve_model_switch() {
-        // Simulates the logic: after /model switches, /clear should use the new model
         let model = "claude-opus-4-6".to_string();
-        assert_eq!(model, "claude-opus-4-6"); // initial model
-        // Simulate /model command
+        assert_eq!(model, "claude-opus-4-6");
         let new_model = "claude-sonnet-4-20250514";
         let model = new_model.to_string();
-        // Simulate /clear — should use current model, not the original
         assert_eq!(model, "claude-sonnet-4-20250514");
     }
 
@@ -940,12 +612,8 @@ mod tests {
     fn test_retry_tracks_last_prompt() {
         let mut last_prompt: Option<String> = None;
         assert!(last_prompt.is_none(), "Should start with no last prompt");
-
-        // Simulate sending a prompt
         last_prompt = Some("explain monads".to_string());
         assert_eq!(last_prompt.as_deref(), Some("explain monads"));
-
-        // Simulate sending another prompt
         last_prompt = Some("now explain functors".to_string());
         assert_eq!(last_prompt.as_deref(), Some("now explain functors"));
     }
@@ -958,7 +626,6 @@ mod tests {
 
     #[test]
     fn test_multiline_backslash_detection() {
-        // Lines ending with \ should trigger continuation
         assert!("hello\\".trim_end().ends_with('\\'));
         assert!("hello \\".trim_end().ends_with('\\'));
         assert!(!"hello".trim_end().ends_with('\\'));
@@ -977,81 +644,5 @@ mod tests {
         let line = "hello world\\";
         let stripped = line.trim_end().trim_end_matches('\\');
         assert_eq!(stripped, "hello world");
-    }
-
-    #[test]
-    fn test_prompt_flag_parsing() {
-        let args: Vec<String> = vec!["axonix", "-p", "explain monads"]
-            .into_iter().map(String::from).collect();
-        let cli = CliArgs::parse(&args).unwrap();
-        assert_eq!(cli.prompt.as_deref(), Some("explain monads"));
-    }
-
-    #[test]
-    fn test_prompt_long_flag_parsing() {
-        let args: Vec<String> = vec!["axonix", "--prompt", "fix the bug"]
-            .into_iter().map(String::from).collect();
-        let cli = CliArgs::parse(&args).unwrap();
-        assert_eq!(cli.prompt.as_deref(), Some("fix the bug"));
-    }
-
-    #[test]
-    fn test_prompt_flag_missing_value() {
-        let args: Vec<String> = vec!["axonix", "-p"]
-            .into_iter().map(String::from).collect();
-        let cli = CliArgs::parse(&args).unwrap();
-        assert!(cli.prompt.is_none(), "Missing value after -p should yield None");
-    }
-
-    #[test]
-    fn test_prompt_flag_not_present() {
-        let args: Vec<String> = vec!["axonix", "--model", "claude-sonnet-4-20250514"]
-            .into_iter().map(String::from).collect();
-        let cli = CliArgs::parse(&args).unwrap();
-        assert!(cli.prompt.is_none());
-        assert_eq!(cli.model, "claude-sonnet-4-20250514");
-    }
-
-    #[test]
-    fn test_prompt_flag_with_other_flags() {
-        let args: Vec<String> = vec!["axonix", "--model", "claude-opus-4-6", "-p", "hello world"]
-            .into_iter().map(String::from).collect();
-        let cli = CliArgs::parse(&args).unwrap();
-        assert_eq!(cli.prompt.as_deref(), Some("hello world"));
-        assert_eq!(cli.model, "claude-opus-4-6");
-    }
-
-    #[test]
-    fn test_cli_default_model() {
-        let args: Vec<String> = vec!["axonix"]
-            .into_iter().map(String::from).collect();
-        let cli = CliArgs::parse(&args).unwrap();
-        assert_eq!(cli.model, "claude-opus-4-6");
-        assert!(cli.skill_dirs.is_empty());
-        assert!(cli.prompt.is_none());
-    }
-
-    #[test]
-    fn test_cli_skills_parsing() {
-        let args: Vec<String> = vec!["axonix", "--skills", "./my_skills", "--skills", "./more"]
-            .into_iter().map(String::from).collect();
-        let cli = CliArgs::parse(&args).unwrap();
-        assert_eq!(cli.skill_dirs, vec!["./my_skills", "./more"]);
-    }
-
-    #[test]
-    fn test_cli_help_returns_none() {
-        // CliArgs::parse returns None for --help (program should exit)
-        let args: Vec<String> = vec!["axonix", "--help"]
-            .into_iter().map(String::from).collect();
-        // Note: this will print help text to stdout as a side effect
-        assert!(CliArgs::parse(&args).is_none());
-    }
-
-    #[test]
-    fn test_cli_version_returns_none() {
-        let args: Vec<String> = vec!["axonix", "-V"]
-            .into_iter().map(String::from).collect();
-        assert!(CliArgs::parse(&args).is_none());
     }
 }
