@@ -34,8 +34,8 @@ use yoagent::*;
 use axonix::cli::{self, CliArgs};
 use axonix::conversation::save_conversation;
 use axonix::cost::estimate_cost;
-use axonix::lint::{lint_file, LintResult};
 use axonix::render::*;
+use axonix::repl::{handle_command, CommandResult, ReplState};
 
 const SYSTEM_PROMPT: &str = r#"You are a coding assistant working in the user's terminal.
 You have access to the filesystem and shell. Be direct and concise.
@@ -77,7 +77,7 @@ async fn main() {
         }
     };
 
-    let mut model = cli_args.model;
+    let model = cli_args.model;
 
     let skills = if cli_args.skill_dirs.is_empty() {
         SkillSet::empty()
@@ -102,11 +102,8 @@ async fn main() {
             std::process::exit(1);
         }
         eprintln!("{DIM}  axonix (prompt mode) — model: {model}{RESET}");
-        let mut _ti: u64 = 0;
-        let mut _to: u64 = 0;
-        let mut _cr: u64 = 0;
-        let mut _cw: u64 = 0;
-        run_prompt(&mut agent, prompt_text, &mut _ti, &mut _to, &mut _cr, &mut _cw).await;
+        let mut repl = ReplState::new(&model);
+        run_prompt(&mut agent, prompt_text, &mut repl).await;
         return;
     }
 
@@ -121,11 +118,8 @@ async fn main() {
         }
 
         eprintln!("{DIM}  axonix (piped mode) — model: {model}{RESET}");
-        let mut _ti: u64 = 0;
-        let mut _to: u64 = 0;
-        let mut _cr: u64 = 0;
-        let mut _cw: u64 = 0;
-        run_prompt(&mut agent, input, &mut _ti, &mut _to, &mut _cr, &mut _cw).await;
+        let mut repl = ReplState::new(&model);
+        run_prompt(&mut agent, input, &mut repl).await;
         return;
     }
 
@@ -136,9 +130,12 @@ async fn main() {
 
     cli::print_banner();
     println!("{DIM}  model: {model}{RESET}");
-    if !skills.is_empty() {
+    let skill_names: Vec<String> = if skills.is_empty() {
+        vec![]
+    } else {
         println!("{DIM}  skills: {} loaded{RESET}", skills.len());
-    }
+        skills.skills().iter().map(|s| s.name.clone()).collect()
+    };
     println!("{DIM}  cwd:   {cwd}{RESET}");
     println!("{DIM}  Type /help for commands{RESET}\n");
 
@@ -158,11 +155,7 @@ async fn main() {
 
     let stdin = io::stdin();
     let mut lines = stdin.lock().lines();
-    let mut total_input: u64 = 0;
-    let mut total_output: u64 = 0;
-    let mut total_cache_read: u64 = 0;
-    let mut total_cache_write: u64 = 0;
-    let mut last_prompt: Option<String> = None;
+    let mut repl = ReplState::new(&model);
 
     loop {
         print!("{BOLD}{GREEN}> {RESET}");
@@ -223,111 +216,29 @@ async fn main() {
             continue;
         }
 
-        match input {
-            "/quit" | "/exit" => break,
-            "/help" => {
-                println!("{DIM}  Commands:{RESET}");
-                println!("{DIM}    /help          Show this help{RESET}");
-                println!("{DIM}    /status        Show session info{RESET}");
-                println!("{DIM}    /context       Show conversation messages summary{RESET}");
-                println!("{DIM}    /tokens        Show token usage and cost estimate{RESET}");
-                println!("{DIM}    /retry         Retry the last prompt{RESET}");
-                println!("{DIM}    /clear         Clear conversation history{RESET}");
-                println!("{DIM}    /model <name>  Switch model (clears history){RESET}");
-                println!("{DIM}    /save [path]   Save conversation to file{RESET}");
-                println!("{DIM}    /lint <file>   Validate YAML or Caddyfile syntax{RESET}");
-                println!("{DIM}    /quit, /exit   Exit{RESET}");
-                println!();
-                println!("{DIM}  Multiline input:{RESET}");
-                println!("{DIM}    End a line with \\ to continue on the next line{RESET}");
-                println!("{DIM}    Type \"\"\" to start a block, \"\"\" again to finish{RESET}");
-                println!();
+        // Dispatch through handle_command first, then handle agent-data commands inline
+        let cmd_result = handle_command(input, &mut repl, &skill_names);
+        match cmd_result {
+            CommandResult::Quit => break,
+
+            CommandResult::Clear => {
+                agent = make_agent(&api_key, &repl.model, skills.clone());
+                repl.reset_tokens();
+                println!("{DIM}  (conversation cleared){RESET}\n");
                 continue;
             }
-            "/status" => {
-                let msg_count = agent.messages().len();
-                let elapsed = session_start.elapsed();
-                let mins = elapsed.as_secs() / 60;
-                let secs = elapsed.as_secs() % 60;
-                println!("{DIM}  model:    {}{RESET}", agent.model);
-                println!("{DIM}  messages: {msg_count}{RESET}");
-                println!("{DIM}  tokens:   {total_input} in / {total_output} out (session total){RESET}");
-                if total_cache_read > 0 || total_cache_write > 0 {
-                    println!("{DIM}  cache:    {total_cache_read} read / {total_cache_write} write{RESET}");
-                }
-                println!("{DIM}  elapsed:  {mins}m {secs}s{RESET}");
-                println!("{DIM}  cwd:      {cwd}{RESET}");
-                println!();
+
+            CommandResult::SwitchModel(ref new_model) => {
+                agent = make_agent(&api_key, new_model, skills.clone());
+                println!("{DIM}  (switched to {new_model}, conversation cleared){RESET}\n");
                 continue;
             }
-            "/context" => {
-                let messages = agent.messages();
-                if messages.is_empty() {
-                    println!("{DIM}  (no messages in context){RESET}\n");
-                } else {
-                    println!("{DIM}  Context ({} messages):{RESET}", messages.len());
-                    for (i, msg) in messages.iter().enumerate() {
-                        let summary = match msg.as_llm() {
-                            Some(Message::User { content, .. }) => {
-                                let text = content.iter().find_map(|c| {
-                                    if let Content::Text { text } = c { Some(text.as_str()) } else { None }
-                                }).unwrap_or("(no text)");
-                                format!("{CYAN}user:{RESET} {}", truncate(text, 70))
-                            }
-                            Some(Message::Assistant { content, usage, .. }) => {
-                                let text_len: usize = content.iter().map(|c| {
-                                    match c {
-                                        Content::Text { text } => text.len(),
-                                        Content::ToolCall { .. } => 0,
-                                        _ => 0,
-                                    }
-                                }).sum();
-                                let tool_count = content.iter().filter(|c| matches!(c, Content::ToolCall { .. })).count();
-                                let mut desc = format!("{GREEN}assistant:{RESET} ");
-                                if tool_count > 0 {
-                                    desc.push_str(&format!("{tool_count} tool call(s) "));
-                                }
-                                if text_len > 0 {
-                                    desc.push_str(&format!("{text_len} chars "));
-                                }
-                                desc.push_str(&format!("{DIM}({}in/{}out){RESET}", usage.input, usage.output));
-                                desc
-                            }
-                            Some(Message::ToolResult { tool_name, is_error, content, .. }) => {
-                                let len: usize = content.iter().map(|c| {
-                                    if let Content::Text { text } = c { text.len() } else { 0 }
-                                }).sum();
-                                let status = if *is_error { format!("{RED}✗{RESET}") } else { format!("{GREEN}✓{RESET}") };
-                                format!("{YELLOW}tool:{RESET} {tool_name} {status} ({len} chars)")
-                            }
-                            None => format!("{DIM}(extension message){RESET}"),
-                        };
-                        println!("{DIM}  {i:>3}.{RESET} {summary}");
-                    }
-                    println!();
-                }
-                continue;
-            }
-            "/tokens" => {
-                let cost = estimate_cost(&model, total_input, total_output, total_cache_read, total_cache_write);
-                println!("{DIM}  Token usage (session total):{RESET}");
-                println!("{DIM}    input:       {total_input}{RESET}");
-                println!("{DIM}    output:      {total_output}{RESET}");
-                if total_cache_read > 0 || total_cache_write > 0 {
-                    println!("{DIM}    cache read:  {total_cache_read}{RESET}");
-                    println!("{DIM}    cache write: {total_cache_write}{RESET}");
-                }
-                println!("{DIM}    total:       {}{RESET}", total_input + total_output + total_cache_read + total_cache_write);
-                println!("{DIM}    est. cost:   ${cost:.4}{RESET}");
-                println!();
-                continue;
-            }
-            "/retry" => {
-                match &last_prompt {
+
+            CommandResult::Retry => {
+                match repl.last_prompt.clone() {
                     Some(prompt) => {
-                        let prompt = prompt.clone();
                         println!("{DIM}  (retrying: {}){RESET}", truncate(&prompt, 60));
-                        run_prompt(&mut agent, &prompt, &mut total_input, &mut total_output, &mut total_cache_read, &mut total_cache_write).await;
+                        run_prompt(&mut agent, &prompt, &mut repl).await;
                     }
                     None => {
                         println!("{DIM}  (nothing to retry){RESET}\n");
@@ -335,92 +246,142 @@ async fn main() {
                 }
                 continue;
             }
-            "/clear" => {
-                agent = make_agent(&api_key, &model, skills.clone());
-                total_input = 0;
-                total_output = 0;
-                total_cache_read = 0;
-                total_cache_write = 0;
-                println!("{DIM}  (conversation cleared){RESET}\n");
-                continue;
-            }
-            s if s.starts_with("/model ") => {
-                let new_model = s.trim_start_matches("/model ").trim();
-                if new_model.is_empty() {
-                    println!("{RED}  Usage: /model <name>{RESET}");
-                    println!("{DIM}  Example: /model claude-sonnet-4-20250514{RESET}\n");
-                    continue;
-                }
-                model = new_model.to_string();
-                agent = make_agent(&api_key, &model, skills.clone());
-                total_input = 0;
-                total_output = 0;
-                total_cache_read = 0;
-                total_cache_write = 0;
-                println!("{DIM}  (switched to {new_model}, conversation cleared){RESET}\n");
-                continue;
-            }
-            s if s == "/save" || s.starts_with("/save ") => {
-                let path = if s == "/save" {
-                    "conversation.md".to_string()
-                } else {
-                    s.trim_start_matches("/save ").trim().to_string()
-                };
-                let path = if path.is_empty() { "conversation.md".to_string() } else { path };
-                match save_conversation(agent.messages(), &path) {
-                    Ok(count) => println!("{DIM}  saved {count} messages to {path}{RESET}\n"),
-                    Err(e) => println!("{RED}  failed to save: {e}{RESET}\n"),
-                }
-                continue;
-            }
-            s if s == "/lint" || s.starts_with("/lint ") => {
-                let path = if s == "/lint" {
-                    String::new()
-                } else {
-                    s.trim_start_matches("/lint ").trim().to_string()
-                };
-                if path.is_empty() {
-                    println!("{RED}  Usage: /lint <file>{RESET}");
-                    println!("{DIM}  Supported: .yaml/.yml (YAML/docker-compose), Caddyfile/.caddy{RESET}\n");
-                } else {
-                    match lint_file(&path) {
-                        LintResult::Ok(summary) => {
-                            println!("{GREEN}  ✓ {path}: {summary}{RESET}\n");
+
+            CommandResult::Handled(ref output_lines) => {
+                // Render the output lines, interpreting special markers
+                for line in output_lines {
+                    if let Some(rest) = line.strip_prefix("__save:") {
+                        // Perform the actual save (needs agent messages)
+                        match save_conversation(agent.messages(), rest) {
+                            Ok(count) => println!("{DIM}  saved {count} messages to {rest}{RESET}\n"),
+                            Err(e) => println!("{RED}  failed to save: {e}{RESET}\n"),
                         }
-                        LintResult::Errors(errors) => {
-                            println!("{RED}  ✗ {path} has {} error(s):{RESET}", errors.len());
-                            for err in &errors {
-                                if err.line > 0 {
-                                    println!("{RED}    line {}: {}{RESET}", err.line, err.message);
-                                } else {
-                                    println!("{RED}    {}{RESET}", err.message);
-                                }
+                    } else if let Some(rest) = line.strip_prefix("__lint_ok:") {
+                        // format: "__lint_ok:<path>:<summary>"
+                        let (path, summary) = rest.split_once(':').unwrap_or((rest, "valid"));
+                        println!("{GREEN}  ✓ {path}: {summary}{RESET}");
+                    } else if let Some(rest) = line.strip_prefix("__lint_errors:") {
+                        let (path, count) = rest.split_once(':').unwrap_or((rest, "?"));
+                        println!("{RED}  ✗ {path} has {count} error(s):{RESET}");
+                    } else if let Some(rest) = line.strip_prefix("__lint_error:") {
+                        // format: "__lint_error:<line>:<message>"
+                        let (lineno, msg) = rest.split_once(':').unwrap_or(("0", rest));
+                        let n: usize = lineno.parse().unwrap_or(0);
+                        if n > 0 {
+                            println!("{RED}    line {n}: {msg}{RESET}");
+                        } else {
+                            println!("{RED}    {msg}{RESET}");
+                        }
+                    } else if let Some(rest) = line.strip_prefix("__lint_unsupported:") {
+                        println!("{YELLOW}  ⚠ {rest}{RESET}");
+                    } else if line.is_empty() {
+                        println!();
+                    } else {
+                        println!("{DIM}{line}{RESET}");
+                    }
+                }
+                // Add trailing newline after lint errors block if needed
+                let has_lint_error = output_lines.iter().any(|l| l.starts_with("__lint_errors:"));
+                if has_lint_error {
+                    println!();
+                }
+                continue;
+            }
+
+            CommandResult::NotACommand => {
+                // Handle commands that need agent/session data inline
+                match input {
+                    "/status" => {
+                        let msg_count = agent.messages().len();
+                        let elapsed = session_start.elapsed();
+                        let mins = elapsed.as_secs() / 60;
+                        let secs = elapsed.as_secs() % 60;
+                        println!("{DIM}  model:    {}{RESET}", agent.model);
+                        println!("{DIM}  messages: {msg_count}{RESET}");
+                        println!("{DIM}  tokens:   {} in / {} out (session total){RESET}", repl.total_input, repl.total_output);
+                        if repl.total_cache_read > 0 || repl.total_cache_write > 0 {
+                            println!("{DIM}  cache:    {} read / {} write{RESET}", repl.total_cache_read, repl.total_cache_write);
+                        }
+                        println!("{DIM}  elapsed:  {mins}m {secs}s{RESET}");
+                        println!("{DIM}  cwd:      {cwd}{RESET}");
+                        println!();
+                        continue;
+                    }
+                    "/context" => {
+                        let messages = agent.messages();
+                        if messages.is_empty() {
+                            println!("{DIM}  (no messages in context){RESET}\n");
+                        } else {
+                            println!("{DIM}  Context ({} messages):{RESET}", messages.len());
+                            for (i, msg) in messages.iter().enumerate() {
+                                let summary = match msg.as_llm() {
+                                    Some(Message::User { content, .. }) => {
+                                        let text = content.iter().find_map(|c| {
+                                            if let Content::Text { text } = c { Some(text.as_str()) } else { None }
+                                        }).unwrap_or("(no text)");
+                                        format!("{CYAN}user:{RESET} {}", truncate(text, 70))
+                                    }
+                                    Some(Message::Assistant { content, usage, .. }) => {
+                                        let text_len: usize = content.iter().map(|c| {
+                                            match c {
+                                                Content::Text { text } => text.len(),
+                                                Content::ToolCall { .. } => 0,
+                                                _ => 0,
+                                            }
+                                        }).sum();
+                                        let tool_count = content.iter().filter(|c| matches!(c, Content::ToolCall { .. })).count();
+                                        let mut desc = format!("{GREEN}assistant:{RESET} ");
+                                        if tool_count > 0 {
+                                            desc.push_str(&format!("{tool_count} tool call(s) "));
+                                        }
+                                        if text_len > 0 {
+                                            desc.push_str(&format!("{text_len} chars "));
+                                        }
+                                        desc.push_str(&format!("{DIM}({}in/{}out){RESET}", usage.input, usage.output));
+                                        desc
+                                    }
+                                    Some(Message::ToolResult { tool_name, is_error, content, .. }) => {
+                                        let len: usize = content.iter().map(|c| {
+                                            if let Content::Text { text } = c { text.len() } else { 0 }
+                                        }).sum();
+                                        let status = if *is_error { format!("{RED}✗{RESET}") } else { format!("{GREEN}✓{RESET}") };
+                                        format!("{YELLOW}tool:{RESET} {tool_name} {status} ({len} chars)")
+                                    }
+                                    None => format!("{DIM}(extension message){RESET}"),
+                                };
+                                println!("{DIM}  {i:>3}.{RESET} {summary}");
                             }
                             println!();
                         }
-                        LintResult::Unsupported(msg) => {
-                            println!("{YELLOW}  ⚠ {msg}{RESET}\n");
-                        }
+                        continue;
                     }
+                    "/tokens" => {
+                        let cost = estimate_cost(&repl.model, repl.total_input, repl.total_output, repl.total_cache_read, repl.total_cache_write);
+                        println!("{DIM}  Token usage (session total):{RESET}");
+                        println!("{DIM}    input:       {}{RESET}", repl.total_input);
+                        println!("{DIM}    output:      {}{RESET}", repl.total_output);
+                        if repl.total_cache_read > 0 || repl.total_cache_write > 0 {
+                            println!("{DIM}    cache read:  {}{RESET}", repl.total_cache_read);
+                            println!("{DIM}    cache write: {}{RESET}", repl.total_cache_write);
+                        }
+                        println!("{DIM}    total:       {}{RESET}", repl.total_input + repl.total_output + repl.total_cache_read + repl.total_cache_write);
+                        println!("{DIM}    est. cost:   ${cost:.4}{RESET}");
+                        println!();
+                        continue;
+                    }
+                    _ => {} // Fall through to agent prompt
                 }
-                continue;
-            }
-            s if s.starts_with('/') => {
-                println!("{RED}  Unknown command: {s}{RESET}");
-                println!("{DIM}  Type /help for available commands{RESET}\n");
-                continue;
-            }
-            _ => {}
-        }
 
-        last_prompt = Some(input.to_string());
-        run_prompt(&mut agent, input, &mut total_input, &mut total_output, &mut total_cache_read, &mut total_cache_write).await;
+                repl.last_prompt = Some(input.to_string());
+                run_prompt(&mut agent, input, &mut repl).await;
+            }
+        }
     }
 
     println!("\n{DIM}  bye 👋{RESET}\n");
 }
 
-async fn run_prompt(agent: &mut Agent, input: &str, total_in: &mut u64, total_out: &mut u64, total_cr: &mut u64, total_cw: &mut u64) {
+async fn run_prompt(agent: &mut Agent, input: &str, repl: &mut ReplState) {
     let prompt_start = std::time::Instant::now();
     let mut rx = agent.prompt(input).await;
     let mut last_usage = Usage::default();
@@ -566,10 +527,10 @@ async fn run_prompt(agent: &mut Agent, input: &str, total_in: &mut u64, total_ou
     if in_text {
         println!();
     }
-    *total_in += last_usage.input;
-    *total_out += last_usage.output;
-    *total_cr += last_usage.cache_read;
-    *total_cw += last_usage.cache_write;
+    repl.total_input += last_usage.input;
+    repl.total_output += last_usage.output;
+    repl.total_cache_read += last_usage.cache_read;
+    repl.total_cache_write += last_usage.cache_write;
     print_usage(&last_usage, prompt_start.elapsed());
     println!();
 }
