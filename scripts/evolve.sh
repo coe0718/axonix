@@ -42,7 +42,6 @@ echo "$SESSION" > SESSION_COUNT
 echo "=== Day $DAY, Session $SESSION: $DATE ==="
 tg_notify "🤖 *Axonix* — Day $DAY, Session $SESSION starting"
 echo "Model: $MODEL"
-echo "Timeout: ${TIMEOUT}s"
 echo ""
 
 # ── Step 1: Verify starting state ──
