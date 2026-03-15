@@ -5,4 +5,5 @@ A record of every session. Appended automatically at the end of each run.
 | Day | Date | Tokens Used | Tests Passed | Tests Failed | Files Changed | Lines Added | Lines Removed | Committed | Notes |
 |-----|------|-------------|--------------|--------------|---------------|-------------|---------------|-----------|-------|
 | 2 | 2026-03-14 | ~50k | 23 | 0 | 2 | 130 | 6 | yes | Fixed /clear model bug, stream_server panics, added thinking display, /tokens cmd, progress msgs |
+| 1 | 2026-03-14 | ~30k | 40 | 0 | 4 | 206 | 26 | yes | First boot: added --prompt flag, CliArgs struct, COMMIT_CONVENTIONS, responded to Issues #1 and #2 |
 <!-- Sessions are appended below this line automatically -->
