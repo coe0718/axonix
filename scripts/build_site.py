@@ -48,6 +48,86 @@ def parse_journal(content):
 
 
 
+def parse_metrics(content):
+    """Parse METRICS.md table rows into a list of session dicts."""
+    sessions = []
+    for line in content.splitlines():
+        line = line.strip()
+        if not line.startswith("|") or "Day" in line and "Date" in line:
+            continue
+        if line.startswith("|---") or line.startswith("| --"):
+            continue
+        cols = [c.strip() for c in line.split("|")]
+        cols = [c for c in cols if c]  # drop empty from leading/trailing |
+        if len(cols) < 8:
+            continue
+        try:
+            int(cols[0])  # first col must be a day number
+        except ValueError:
+            continue
+        sessions.append({
+            "day": cols[0],
+            "date": cols[1],
+            "tokens": cols[2],
+            "tests_passed": cols[3],
+            "tests_failed": cols[4],
+            "files_changed": cols[5],
+            "lines_added": cols[6],
+            "lines_removed": cols[7],
+            "committed": cols[8] if len(cols) > 8 else "?",
+            "notes": cols[9] if len(cols) > 9 else "",
+        })
+    return sessions
+
+
+def render_stats(sessions):
+    """Render a stats summary grid from parsed metrics."""
+    if not sessions:
+        return '<p class="stats-empty">No metrics recorded yet.</p>'
+
+    total_sessions = len(sessions)
+    try:
+        total_tokens = sum(
+            int(s["tokens"].replace("~", "").replace("k", "000").replace(",", ""))
+            for s in sessions
+        )
+        tokens_str = f"~{total_tokens // 1000}k"
+    except (ValueError, AttributeError):
+        tokens_str = "?"
+
+    # Latest test count
+    latest_tests = sessions[0]["tests_passed"] if sessions else "?"
+
+    # Total lines added
+    try:
+        total_added = sum(int(s["lines_added"].replace(",", "")) for s in sessions)
+        added_str = f"+{total_added:,}"
+    except (ValueError, AttributeError):
+        added_str = "?"
+
+    # Committed sessions
+    committed = sum(1 for s in sessions if s["committed"].lower() == "yes")
+
+    stats = [
+        ("sessions", str(total_sessions), "evolution cycles"),
+        ("tokens", tokens_str, "total API usage"),
+        ("tests", latest_tests, "passing (latest)"),
+        ("lines", added_str, "lines written"),
+        ("commits", f"{committed}/{total_sessions}", "sessions committed"),
+    ]
+
+    parts = ['      <div class="stats-grid">']
+    for key, value, label in stats:
+        parts.append(
+            f'        <div class="stat-card">\n'
+            f'          <span class="stat-value">{html.escape(str(value))}</span>\n'
+            f'          <span class="stat-label">{html.escape(label)}</span>\n'
+            f'        </div>'
+        )
+    parts.append("      </div>")
+    return "\n".join(parts)
+
+
 def parse_identity(content):
     intro_lines = []
     rules = []
@@ -144,6 +224,7 @@ HTML_TEMPLATE = """\
   <nav>
     <a href="#" class="nav-name">axonix</a>
     <div class="nav-links">
+      <a href="#stats">stats</a>
       <a href="#journal">journal</a>
       <a href="#identity">identity</a>
       <a href="https://github.com/coe0718/axonix" target="_blank" rel="noopener">github \u2197</a>
@@ -156,6 +237,11 @@ HTML_TEMPLATE = """\
       <p class="day-count">Day {day_count}</p>
       <p class="tagline">a coding agent growing up in public</p>
     </header>
+
+    <section id="stats">
+      <h2 class="section-label">// stats</h2>
+{stats_html}
+    </section>
 
     <section id="journal">
       <h2 class="section-label">// journal</h2>
@@ -347,6 +433,43 @@ section {
 }
 
 
+/* ── stats grid ── */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.stat-card {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--cyan);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+}
+
+.stats-empty {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+
 /* ── journal timeline ── */
 
 .timeline {
@@ -506,11 +629,14 @@ def build():
     except (ValueError, AttributeError):
         pass
 
+    metrics = parse_metrics(read_file("METRICS.md"))
+    stats_html = render_stats(metrics)
     journal_html = render_journal(parse_journal(read_file("JOURNAL.md")))
     identity_html = render_identity(parse_identity(read_file("IDENTITY.md")))
 
     page = HTML_TEMPLATE.format(
         day_count=day_count,
+        stats_html=stats_html,
         journal_html=journal_html,
         identity_html=identity_html,
     )
@@ -520,7 +646,7 @@ def build():
     (DOCS / "style.css").write_text(CSS)
     (DOCS / ".nojekyll").touch()
 
-    print(f"Site built: docs/index.html (Day {day_count})")
+    print(f"Site built: docs/index.html (Day {day_count}, {len(metrics)} sessions)")
 
 
 if __name__ == "__main__":
