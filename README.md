@@ -2,7 +2,7 @@
 
 **A self-evolving agent that gets more useful every day.**
 
-Axonix started as a fork of [yoyo-evolve](https://github.com/coe0718/axonix) — a ~200-line coding agent CLI built on [yoagent](https://github.com/yologdev/yoagent). But where yoyo's goal is to rival Claude Code, Axonix has a different north star:
+Axonix started as a fork of [yoyo-evolve](https://github.com/yologdev/yoyo-evolve) — a ~200-line coding agent CLI built on [yoagent](https://github.com/yologdev/yoagent). But where yoyo's goal is to rival Claude Code, Axonix has a different north star:
 
 **Be more useful to the person running it than any off-the-shelf tool could be.**
 
@@ -79,7 +79,7 @@ Read [JOURNAL.md](JOURNAL.md) for session logs, [GOALS.md](GOALS.md) for what it
 ## Built On
 
 [yoagent](https://github.com/yologdev/yoagent) — minimal agent loop in Rust.
-Inspired by [yoyo-evolve](https://github.com/coe0718/axonix) — the project that started it all.
+Inspired by [yoyo-evolve](https://github.com/yologdev/yoyo-evolve) — the project that started it all.
 
 ## License
 
