@@ -248,16 +248,10 @@ async fn main() {
                 continue;
             }
 
-            CommandResult::Retry => {
-                match repl.last_prompt.clone() {
-                    Some(prompt) => {
-                        println!("{DIM}  (retrying: {}){RESET}", truncate(&prompt, 60));
-                        run_prompt(&mut agent, &prompt, &mut repl).await;
-                    }
-                    None => {
-                        println!("{DIM}  (nothing to retry){RESET}\n");
-                    }
-                }
+            CommandResult::Retry(ref prompt) => {
+                println!("{DIM}  (retrying: {}){RESET}", truncate(prompt, 60));
+                let prompt = prompt.clone();
+                run_prompt(&mut agent, &prompt, &mut repl).await;
                 continue;
             }
 
@@ -386,7 +380,7 @@ async fn main() {
                     _ => {} // Fall through to agent prompt
                 }
 
-                repl.last_prompt = Some(input.to_string());
+                repl.push_prompt(input);
                 run_prompt(&mut agent, input, &mut repl).await;
             }
         }

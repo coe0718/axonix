@@ -23,7 +23,13 @@ pub struct ReplState {
     pub total_cache_write: u64,
     /// The last user prompt (for `/retry`).
     pub last_prompt: Option<String>,
+    /// Ordered history of all user prompts this session (oldest first).
+    /// Capped at `HISTORY_LIMIT` entries.
+    pub history: Vec<String>,
 }
+
+/// Maximum number of prompts kept in session history.
+pub const HISTORY_LIMIT: usize = 50;
 
 impl ReplState {
     /// Create a fresh REPL state with the given model.
@@ -35,6 +41,7 @@ impl ReplState {
             total_cache_read: 0,
             total_cache_write: 0,
             last_prompt: None,
+            history: Vec::new(),
         }
     }
 
@@ -44,6 +51,27 @@ impl ReplState {
         self.total_output = 0;
         self.total_cache_read = 0;
         self.total_cache_write = 0;
+    }
+
+    /// Record a user prompt in history and update `last_prompt`.
+    /// Oldest entries are dropped when history exceeds `HISTORY_LIMIT`.
+    pub fn push_prompt(&mut self, prompt: impl Into<String>) {
+        let p = prompt.into();
+        self.last_prompt = Some(p.clone());
+        self.history.push(p);
+        if self.history.len() > HISTORY_LIMIT {
+            self.history.remove(0);
+        }
+    }
+
+    /// Retrieve a history entry by 1-based index (as shown in `/history`).
+    /// Returns `None` if index is out of range.
+    pub fn history_entry(&self, n: usize) -> Option<&str> {
+        if n == 0 || n > self.history.len() {
+            None
+        } else {
+            Some(&self.history[n - 1])
+        }
     }
 }
 
@@ -60,8 +88,9 @@ pub enum CommandResult {
     SwitchModel(String),
     /// `/clear` — reset conversation.
     Clear,
-    /// `/retry` — re-run the last prompt.
-    Retry,
+    /// `/retry` or `/retry N` — re-run a prompt from history.
+    /// Carries the prompt text to replay.
+    Retry(String),
 }
 
 /// Process a REPL input string. Returns a `CommandResult`.
@@ -80,7 +109,8 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                 "    /status        Show session info".to_string(),
                 "    /context       Show conversation messages summary".to_string(),
                 "    /tokens        Show token usage and cost estimate".to_string(),
-                "    /retry         Retry the last prompt".to_string(),
+                "    /history       Show numbered list of prompts this session".to_string(),
+                "    /retry [N]     Retry last prompt, or prompt #N from /history".to_string(),
                 "    /clear         Clear conversation history".to_string(),
                 "    /model <name>  Switch model (clears history)".to_string(),
                 "    /save [path]   Save conversation to file".to_string(),
@@ -100,7 +130,63 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
 
         "/clear" => CommandResult::Clear,
 
-        "/retry" => CommandResult::Retry,
+        "/history" => {
+            if state.history.is_empty() {
+                CommandResult::Handled(vec![
+                    "  (no prompts in history yet)".to_string(),
+                    String::new(),
+                ])
+            } else {
+                let mut lines = vec![format!("  History ({} prompts):", state.history.len())];
+                let start = if state.history.len() > 20 { state.history.len() - 20 } else { 0 };
+                for (i, prompt) in state.history[start..].iter().enumerate() {
+                    let n = start + i + 1;
+                    let preview = if prompt.len() > 72 {
+                        format!("{}…", &prompt[..72])
+                    } else {
+                        prompt.clone()
+                    };
+                    lines.push(format!("  {:>3}.  {preview}", n));
+                }
+                if start > 0 {
+                    lines.push(format!("  (showing last 20 of {} prompts)", state.history.len()));
+                }
+                lines.push(String::new());
+                CommandResult::Handled(lines)
+            }
+        }
+
+        s if s == "/retry" || s.starts_with("/retry ") => {
+            if s == "/retry" {
+                // Retry the last prompt
+                match &state.last_prompt {
+                    Some(p) => CommandResult::Retry(p.clone()),
+                    None => CommandResult::Handled(vec![
+                        "  (nothing to retry — no prompts sent yet)".to_string(),
+                        String::new(),
+                    ]),
+                }
+            } else {
+                // "/retry N" — retry prompt #N from history
+                let arg = s.trim_start_matches("/retry ").trim();
+                match arg.parse::<usize>() {
+                    Ok(n) if n > 0 => {
+                        match state.history_entry(n) {
+                            Some(p) => CommandResult::Retry(p.to_string()),
+                            None => CommandResult::Handled(vec![
+                                format!("  No prompt #{n} in history (use /history to see entries)"),
+                                String::new(),
+                            ]),
+                        }
+                    }
+                    _ => CommandResult::Handled(vec![
+                        format!("  Usage: /retry or /retry <N>"),
+                        "  Use /history to see prompt numbers".to_string(),
+                        String::new(),
+                    ]),
+                }
+            }
+        }
 
         "/skills" => {
             if skill_names.is_empty() {
@@ -330,9 +416,64 @@ mod tests {
     // ── Retry ─────────────────────────────────────────────────────────────────
 
     #[test]
-    fn test_retry_returns_retry() {
+    fn test_retry_no_history_returns_handled() {
         let mut s = state();
-        assert_eq!(handle_command("/retry", &mut s, &[]), CommandResult::Retry);
+        // No prompts yet → returns Handled with "nothing to retry" message
+        let result = handle_command("/retry", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled when no history, got: {result:?}");
+        };
+        assert!(lines.iter().any(|l| l.contains("nothing to retry")));
+    }
+
+    #[test]
+    fn test_retry_with_history_returns_retry() {
+        let mut s = state();
+        s.push_prompt("explain monads");
+        let result = handle_command("/retry", &mut s, &[]);
+        assert_eq!(result, CommandResult::Retry("explain monads".to_string()));
+    }
+
+    #[test]
+    fn test_retry_n_valid_index() {
+        let mut s = state();
+        s.push_prompt("first prompt");
+        s.push_prompt("second prompt");
+        s.push_prompt("third prompt");
+        let result = handle_command("/retry 2", &mut s, &[]);
+        assert_eq!(result, CommandResult::Retry("second prompt".to_string()));
+    }
+
+    #[test]
+    fn test_retry_n_out_of_range() {
+        let mut s = state();
+        s.push_prompt("only prompt");
+        let result = handle_command("/retry 5", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled for out-of-range retry: {result:?}");
+        };
+        assert!(lines.iter().any(|l| l.contains("No prompt #5")));
+    }
+
+    #[test]
+    fn test_retry_n_invalid_arg() {
+        let mut s = state();
+        let result = handle_command("/retry abc", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled for invalid retry arg: {result:?}");
+        };
+        assert!(lines.iter().any(|l| l.contains("Usage")));
+    }
+
+    #[test]
+    fn test_retry_n_zero_is_invalid() {
+        let mut s = state();
+        s.push_prompt("a prompt");
+        let result = handle_command("/retry 0", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled for retry 0: {result:?}");
+        };
+        assert!(lines.iter().any(|l| l.contains("Usage") || l.contains("No prompt")));
     }
 
     // ── Lint ─────────────────────────────────────────────────────────────────
@@ -445,6 +586,91 @@ mod tests {
         assert_eq!(handle_command("", &mut s, &[]), CommandResult::NotACommand);
     }
 
+    // ── History ───────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_history_empty() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/history", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        assert!(lines.iter().any(|l| l.contains("no prompts")));
+    }
+
+    #[test]
+    fn test_history_shows_prompts() {
+        let mut s = state();
+        s.push_prompt("explain monads");
+        s.push_prompt("what is a monad?");
+        let CommandResult::Handled(lines) = handle_command("/history", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("explain monads"), "history should show first prompt");
+        assert!(all.contains("what is a monad?"), "history should show second prompt");
+    }
+
+    #[test]
+    fn test_history_numbered_correctly() {
+        let mut s = state();
+        s.push_prompt("alpha");
+        s.push_prompt("beta");
+        s.push_prompt("gamma");
+        let CommandResult::Handled(lines) = handle_command("/history", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("1.") || all.contains("  1"), "should show entry 1");
+        assert!(all.contains("3.") || all.contains("  3"), "should show entry 3");
+    }
+
+    // ── push_prompt / history_entry ───────────────────────────────────────────
+
+    #[test]
+    fn test_push_prompt_updates_last_prompt() {
+        let mut s = state();
+        s.push_prompt("hello world");
+        assert_eq!(s.last_prompt.as_deref(), Some("hello world"));
+    }
+
+    #[test]
+    fn test_push_prompt_appends_to_history() {
+        let mut s = state();
+        s.push_prompt("first");
+        s.push_prompt("second");
+        assert_eq!(s.history.len(), 2);
+        assert_eq!(s.history[0], "first");
+        assert_eq!(s.history[1], "second");
+    }
+
+    #[test]
+    fn test_history_entry_valid_index() {
+        let mut s = state();
+        s.push_prompt("alpha");
+        s.push_prompt("beta");
+        assert_eq!(s.history_entry(1), Some("alpha"));
+        assert_eq!(s.history_entry(2), Some("beta"));
+    }
+
+    #[test]
+    fn test_history_entry_out_of_range() {
+        let mut s = state();
+        s.push_prompt("only");
+        assert!(s.history_entry(0).is_none(), "index 0 should be None");
+        assert!(s.history_entry(2).is_none(), "out-of-range should be None");
+    }
+
+    #[test]
+    fn test_history_capped_at_limit() {
+        let mut s = state();
+        for i in 0..=HISTORY_LIMIT + 5 {
+            s.push_prompt(format!("prompt {i}"));
+        }
+        assert_eq!(s.history.len(), HISTORY_LIMIT, "history should not exceed HISTORY_LIMIT");
+        // Oldest entries should be dropped
+        assert!(s.history[0].contains("6"), "oldest kept entry should be prompt 6");
+    }
+
     // ── ReplState ─────────────────────────────────────────────────────────────
 
     #[test]
@@ -456,6 +682,7 @@ mod tests {
         assert_eq!(s.total_cache_read, 0);
         assert_eq!(s.total_cache_write, 0);
         assert!(s.last_prompt.is_none());
+        assert!(s.history.is_empty(), "fresh state should have empty history");
     }
 
     #[test]
