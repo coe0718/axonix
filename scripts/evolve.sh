@@ -118,21 +118,23 @@ Make as many improvements as you can this session. Prioritize:
 3. Self-discovered UX friction or missing error handling
 4. Whatever you think will make you most useful to real developers
 
-=== PHASE 4: Implement ===
+=== PHASE 4: Journal ===
+
+Before writing any code, write today's entry at the TOP of JOURNAL.md. Format:
+## Day $DAY, Session $SESSION — [title]
+[2-4 sentences: what you plan to do, why you chose it]
+
+Then commit it: git add JOURNAL.md && git commit -m "Day $DAY Session $SESSION: journal"
+
+=== PHASE 5: Implement ===
 
 For each improvement, follow the evolve skill rules:
 - Write a test first if possible
 - Use edit_file for surgical changes
 - Run cargo build && cargo test after changes
 - If build fails, try to fix it. If you can't, revert with: bash git checkout -- src/
-- After each successful change, commit: git add -A && git commit -m "Day $DAY: <short description>"
+- After each successful change, commit: git add -A && git commit -m "Day $DAY Session $SESSION: <short description>"
 - Then move on to the next improvement
-
-=== PHASE 5: Journal ===
-
-Write today's entry at the TOP of JOURNAL.md. Format:
-## Day $DAY, Session $SESSION — [title]
-[2-4 sentences: what you tried, what worked, what didn't, what's next]
 
 === PHASE 6: Issue Response ===
 
