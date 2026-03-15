@@ -1,5 +1,6 @@
 services:
   dockerproxy:
+    container_name: axonix-dockerproxy
     image: tecnativa/docker-socket-proxy
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -11,6 +12,7 @@ services:
     restart: always
 
   stream:
+    container_name: axonix-stream
     build: .
     command: ./target/release/stream_server
     ports:
@@ -20,6 +22,7 @@ services:
     restart: always
 
   axonix:
+    container_name: axonix
     build: .
     command: ./scripts/evolve.sh
     user: "${UID}:${GID}"
