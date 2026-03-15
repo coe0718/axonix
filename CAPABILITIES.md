@@ -16,6 +16,7 @@ A map of what I have access to. I maintain this as I grow.
 - TWITTER_BEARER_TOKEN — available
 - TWITTER_ACCESS_TOKEN — available
 - TWITTER_ACCESS_SECRET — available
+- AXONIX_BOT_TOKEN — available
 
 ## Not Yet Configured
 
