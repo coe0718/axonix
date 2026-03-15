@@ -206,22 +206,37 @@ impl TelegramClient {
     /// Format a long agent response for Telegram.
     ///
     /// Telegram has a 4096-character message limit. Splits long responses
-    /// into chunks and truncates tool output noise.
+    /// into chunks at paragraph boundaries, respecting UTF-8 character boundaries.
     pub fn format_response(text: &str) -> Vec<String> {
         const MAX_LEN: usize = 3800; // leave room for formatting overhead
         if text.len() <= MAX_LEN {
             return vec![text.to_string()];
         }
-        // Split at paragraph boundaries if possible
         let mut chunks = Vec::new();
         let mut remaining = text;
         while remaining.len() > MAX_LEN {
-            // Try to split at last newline before MAX_LEN
-            let split_at = remaining[..MAX_LEN]
+            // Find a safe byte boundary at or before MAX_LEN.
+            // Walk backwards from MAX_LEN to find the start of a valid char.
+            let safe_end = (0..=MAX_LEN)
+                .rev()
+                .find(|&i| remaining.is_char_boundary(i))
+                .unwrap_or(0);
+
+            // Within that safe window, try to split at the last newline.
+            let split_at = remaining[..safe_end]
                 .rfind('\n')
-                .unwrap_or(MAX_LEN);
+                .unwrap_or(safe_end);
+
+            // Ensure split_at is also on a char boundary (rfind on '\n' always gives
+            // a char-boundary position, but guard defensively).
+            let split_at = if remaining.is_char_boundary(split_at) {
+                split_at
+            } else {
+                safe_end
+            };
+
             chunks.push(remaining[..split_at].to_string());
-            remaining = &remaining[split_at..].trim_start_matches('\n');
+            remaining = remaining[split_at..].trim_start_matches('\n');
         }
         if !remaining.is_empty() {
             chunks.push(remaining.to_string());
@@ -366,6 +381,54 @@ mod tests {
         assert!(joined.contains("First paragraph"), "joined chunks should contain original content");
         assert!(joined.contains("Second paragraph"), "joined chunks should contain original content");
         assert!(joined.contains("Third paragraph"), "joined chunks should contain original content");
+    }
+
+    /// Regression test: format_response must not panic on multi-byte UTF-8 content
+    /// when splitting long messages. Previously used `&remaining[..MAX_LEN]` which
+    /// panics if a character straddles the 3800-byte boundary.
+    #[test]
+    fn test_format_response_unicode_no_panic() {
+        // Build a response that is definitely > 3800 bytes using 4-byte emoji characters.
+        // 1000 emoji × 4 bytes = 4000 bytes, which exceeds MAX_LEN (3800).
+        // A naive `&text[..3800]` would panic because byte 3800 lands mid-emoji.
+        let emoji_text = "🦀".repeat(1000);
+        // Must not panic
+        let chunks = TelegramClient::format_response(&emoji_text);
+        assert!(chunks.len() >= 1, "should produce at least one chunk");
+        // Every chunk must be valid UTF-8 and within the limit
+        for chunk in &chunks {
+            assert!(std::str::from_utf8(chunk.as_bytes()).is_ok(), "chunk must be valid UTF-8");
+            assert!(chunk.len() <= 3800, "chunk must be within Telegram's limit: {} bytes", chunk.len());
+        }
+        // Reconstructed content should match (trimming is acceptable at boundaries)
+        let reconstructed: String = chunks.join("");
+        assert!(!reconstructed.is_empty(), "reconstructed content must not be empty");
+    }
+
+    #[test]
+    fn test_format_response_cjk_no_panic() {
+        // CJK chars are 3 bytes each. 1300 of them = 3900 bytes > 3800 limit.
+        // Byte 3800 = 3800/3 = 1266.6, which is in the middle of char 1267.
+        let cjk_text = "你好世界".repeat(325); // 1300 chars, 3900 bytes
+        let chunks = TelegramClient::format_response(&cjk_text);
+        assert!(chunks.len() >= 2, "long CJK text should be split: got {} chunk(s)", chunks.len());
+        for chunk in &chunks {
+            assert!(chunk.len() <= 3800, "chunk must not exceed Telegram limit: {} bytes", chunk.len());
+        }
+    }
+
+    #[test]
+    fn test_format_response_all_chunks_valid_utf8() {
+        // Mix of ASCII and multi-byte chars to stress the boundary detection
+        let mut text = "a".repeat(3700);
+        text.push_str(&"🎉".repeat(200)); // 3700 + 800 = 4500 bytes total
+        let chunks = TelegramClient::format_response(&text);
+        for (i, chunk) in chunks.iter().enumerate() {
+            assert!(
+                std::str::from_utf8(chunk.as_bytes()).is_ok(),
+                "chunk {i} must be valid UTF-8"
+            );
+        }
     }
 
     // ── extract_ask_commands ───────────────────────────────────────────────────

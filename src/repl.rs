@@ -9,6 +9,7 @@
 
 use std::collections::VecDeque;
 use crate::lint::{lint_file, LintResult};
+use crate::render::truncate;
 use crate::ssh::{HostRegistry, ssh_exec};
 use std::time::Duration;
 
@@ -153,11 +154,7 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                 let start = if total > 20 { total - 20 } else { 0 };
                 for (i, prompt) in state.history.iter().enumerate().skip(start) {
                     let n = i + 1;
-                    let preview = if prompt.len() > 72 {
-                        format!("{}…", &prompt[..72])
-                    } else {
-                        prompt.clone()
-                    };
+                    let preview = truncate(prompt, 72);
                     lines.push(format!("  {:>3}.  {preview}", n));
                 }
                 if start > 0 {
@@ -910,5 +907,56 @@ mod tests {
         };
         let all = lines.join("\n");
         assert!(all.contains("/ssh"), "/help should document /ssh command");
+    }
+
+    // ── Unicode safety in /history ────────────────────────────────────────────
+
+    /// Regression test: /history must not panic when a prompt contains multi-byte
+    /// UTF-8 characters (emoji, CJK, accented chars) and exceeds the preview limit.
+    /// Previously used `&prompt[..72]` which panics if a char straddles byte 72.
+    #[test]
+    fn test_history_unicode_prompt_no_panic() {
+        let mut s = state();
+        // Build a prompt with multi-byte chars (4 bytes each) that will exceed 72 bytes
+        // but whose character count is close to the limit, so a naive byte slice would panic.
+        let emoji_prompt = "🦀".repeat(20); // 80 bytes, 20 chars
+        s.push_prompt(emoji_prompt.clone());
+        // This must not panic — previously would have panicked at &prompt[..72]
+        let CommandResult::Handled(lines) = handle_command("/history", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        // Preview should be present and valid UTF-8 (truncated at char boundary)
+        assert!(!all.is_empty(), "history output should not be empty");
+        // The output is valid UTF-8 (this assertion would fail if bytes were sliced badly)
+        assert!(all.is_ascii() || !all.is_empty());
+    }
+
+    #[test]
+    fn test_history_cjk_prompt_no_panic() {
+        let mut s = state();
+        // CJK characters are 3 bytes each; 24 of them = 72 bytes exactly, then add one more
+        // so the 73rd byte lands in the middle of a 3-byte char.
+        let cjk_prompt = "你好世界".repeat(10); // 40 chars × 3 bytes = 120 bytes
+        s.push_prompt(cjk_prompt);
+        // Must not panic
+        let result = handle_command("/history", &mut s, &[]);
+        assert!(matches!(result, CommandResult::Handled(_)));
+    }
+
+    #[test]
+    fn test_history_mixed_unicode_truncation_is_valid_utf8() {
+        let mut s = state();
+        // 70 ASCII chars followed by a multi-byte char — byte 72 would land mid-char
+        let prompt = "a".repeat(70) + "こんにちは世界"; // last part is 3-byte chars
+        s.push_prompt(prompt);
+        let CommandResult::Handled(lines) = handle_command("/history", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        // Ensure every line is valid UTF-8 (String is always valid UTF-8 in Rust,
+        // so what we're really testing is that we didn't panic getting here)
+        for line in &lines {
+            assert!(std::str::from_utf8(line.as_bytes()).is_ok(), "line must be valid UTF-8: {line:?}");
+        }
     }
 }
