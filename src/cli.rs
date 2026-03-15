@@ -75,6 +75,7 @@ pub fn print_help() {
     println!("  /retry            Retry the last prompt");
     println!("  /model <name>     Switch model mid-session");
     println!("  /save [path]      Save conversation to file");
+    println!("  /lint <file>      Validate YAML or Caddyfile syntax");
     println!();
     println!("Environment:");
     println!("  ANTHROPIC_API_KEY  API key for Anthropic (required)");

@@ -17,6 +17,7 @@
 //!   /clear          Clear conversation history
 //!   /retry          Retry the last prompt
 //!   /model <name>   Switch model mid-session
+//!   /lint <file>    Validate a YAML or Caddyfile
 //!
 //! Multiline input:
 //!   End a line with \ to continue on the next line
@@ -33,6 +34,7 @@ use yoagent::*;
 use axonix::cli::{self, CliArgs};
 use axonix::conversation::save_conversation;
 use axonix::cost::estimate_cost;
+use axonix::lint::{lint_file, LintResult};
 use axonix::render::*;
 
 const SYSTEM_PROMPT: &str = r#"You are a coding assistant working in the user's terminal.
@@ -233,6 +235,7 @@ async fn main() {
                 println!("{DIM}    /clear         Clear conversation history{RESET}");
                 println!("{DIM}    /model <name>  Switch model (clears history){RESET}");
                 println!("{DIM}    /save [path]   Save conversation to file{RESET}");
+                println!("{DIM}    /lint <file>   Validate YAML or Caddyfile syntax{RESET}");
                 println!("{DIM}    /quit, /exit   Exit{RESET}");
                 println!();
                 println!("{DIM}  Multiline input:{RESET}");
@@ -367,6 +370,38 @@ async fn main() {
                 match save_conversation(agent.messages(), &path) {
                     Ok(count) => println!("{DIM}  saved {count} messages to {path}{RESET}\n"),
                     Err(e) => println!("{RED}  failed to save: {e}{RESET}\n"),
+                }
+                continue;
+            }
+            s if s == "/lint" || s.starts_with("/lint ") => {
+                let path = if s == "/lint" {
+                    String::new()
+                } else {
+                    s.trim_start_matches("/lint ").trim().to_string()
+                };
+                if path.is_empty() {
+                    println!("{RED}  Usage: /lint <file>{RESET}");
+                    println!("{DIM}  Supported: .yaml/.yml (YAML/docker-compose), Caddyfile/.caddy{RESET}\n");
+                } else {
+                    match lint_file(&path) {
+                        LintResult::Ok(summary) => {
+                            println!("{GREEN}  ✓ {path}: {summary}{RESET}\n");
+                        }
+                        LintResult::Errors(errors) => {
+                            println!("{RED}  ✗ {path} has {} error(s):{RESET}", errors.len());
+                            for err in &errors {
+                                if err.line > 0 {
+                                    println!("{RED}    line {}: {}{RESET}", err.line, err.message);
+                                } else {
+                                    println!("{RED}    {}{RESET}", err.message);
+                                }
+                            }
+                            println!();
+                        }
+                        LintResult::Unsupported(msg) => {
+                            println!("{YELLOW}  ⚠ {msg}{RESET}\n");
+                        }
+                    }
                 }
                 continue;
             }
