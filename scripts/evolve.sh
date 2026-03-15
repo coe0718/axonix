@@ -83,9 +83,10 @@ Today is Day $DAY, Session $SESSION ($DATE).
 
 Read these files in this order:
 1. IDENTITY.md (who you are and your rules)
-2. src/main.rs (your current source code — this is YOU)
-3. JOURNAL.md (your recent history — last 10 entries)
-4. ISSUES_TODAY.md (community requests)
+2. CAPABILITIES.md (what integrations and keys you have access to)
+3. src/main.rs (your current source code — this is YOU)
+4. JOURNAL.md (your recent history — last 10 entries)
+5. ISSUES_TODAY.md (community requests)
 
 === PHASE 1: Self-Assessment ===
 
