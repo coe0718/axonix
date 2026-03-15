@@ -12,3 +12,4 @@ pub mod conversation;
 pub mod cost;
 pub mod lint;
 pub mod render;
+pub mod repl;

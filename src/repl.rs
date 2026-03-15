@@ -1,0 +1,474 @@
+//! REPL state and command dispatch.
+//!
+//! `ReplState` holds all mutable state for an interactive session.
+//! `handle_command` processes a single user input against that state
+//! and returns a `CommandResult` describing what the main loop should do next.
+//!
+//! By separating state from I/O, every command path becomes testable
+//! without mocking stdin/stdout or spinning up an async runtime.
+
+use crate::lint::{lint_file, LintResult};
+
+/// All mutable state for an interactive REPL session.
+pub struct ReplState {
+    /// Current model name. May be changed via `/model`.
+    pub model: String,
+    /// Session-total input token count.
+    pub total_input: u64,
+    /// Session-total output token count.
+    pub total_output: u64,
+    /// Session-total cache-read token count.
+    pub total_cache_read: u64,
+    /// Session-total cache-write token count.
+    pub total_cache_write: u64,
+    /// The last user prompt (for `/retry`).
+    pub last_prompt: Option<String>,
+}
+
+impl ReplState {
+    /// Create a fresh REPL state with the given model.
+    pub fn new(model: impl Into<String>) -> Self {
+        Self {
+            model: model.into(),
+            total_input: 0,
+            total_output: 0,
+            total_cache_read: 0,
+            total_cache_write: 0,
+            last_prompt: None,
+        }
+    }
+
+    /// Reset all token counters (called on `/clear` and `/model`).
+    pub fn reset_tokens(&mut self) {
+        self.total_input = 0;
+        self.total_output = 0;
+        self.total_cache_read = 0;
+        self.total_cache_write = 0;
+    }
+}
+
+/// What the REPL loop should do after `handle_command` returns.
+#[derive(Debug, PartialEq)]
+pub enum CommandResult {
+    /// A normal command was handled. Continue the loop.
+    Handled(Vec<String>),
+    /// The user typed `/quit` or `/exit`. Break the loop.
+    Quit,
+    /// Not a `/command` — treat input as a prompt for the agent.
+    NotACommand,
+    /// A model switch was requested. Contains the new model name.
+    SwitchModel(String),
+    /// `/clear` — reset conversation.
+    Clear,
+    /// `/retry` — re-run the last prompt.
+    Retry,
+}
+
+/// Process a REPL input string. Returns a `CommandResult`.
+///
+/// This function is pure: it only mutates `state`, produces output lines,
+/// and returns a result describing what the loop should do next.
+/// No I/O is performed here — the caller renders the output lines.
+pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]) -> CommandResult {
+    match input {
+        "/quit" | "/exit" => CommandResult::Quit,
+
+        "/help" => {
+            let mut lines = vec![
+                "  Commands:".to_string(),
+                "    /help          Show this help".to_string(),
+                "    /status        Show session info".to_string(),
+                "    /context       Show conversation messages summary".to_string(),
+                "    /tokens        Show token usage and cost estimate".to_string(),
+                "    /retry         Retry the last prompt".to_string(),
+                "    /clear         Clear conversation history".to_string(),
+                "    /model <name>  Switch model (clears history)".to_string(),
+                "    /save [path]   Save conversation to file".to_string(),
+                "    /lint <file>   Validate YAML or Caddyfile syntax".to_string(),
+            ];
+            if !skill_names.is_empty() {
+                lines.push("    /skills        Show loaded skills".to_string());
+            }
+            lines.push("    /quit, /exit   Exit".to_string());
+            lines.push(String::new());
+            lines.push("  Multiline input:".to_string());
+            lines.push(r#"    End a line with \ to continue on the next line"#.to_string());
+            lines.push(r#"    Type """ to start a block, """ again to finish"#.to_string());
+            lines.push(String::new());
+            CommandResult::Handled(lines)
+        }
+
+        "/clear" => CommandResult::Clear,
+
+        "/retry" => CommandResult::Retry,
+
+        "/skills" => {
+            if skill_names.is_empty() {
+                CommandResult::Handled(vec![
+                    "  (no skills loaded)".to_string(),
+                    String::new(),
+                ])
+            } else {
+                let mut lines = vec![
+                    format!("  Skills ({} loaded):", skill_names.len()),
+                ];
+                for name in skill_names {
+                    lines.push(format!("    • {name}"));
+                }
+                lines.push(String::new());
+                CommandResult::Handled(lines)
+            }
+        }
+
+        s if s.starts_with("/model ") => {
+            let new_model = s.trim_start_matches("/model ").trim();
+            if new_model.is_empty() {
+                CommandResult::Handled(vec![
+                    "  Usage: /model <name>".to_string(),
+                    "  Example: /model claude-sonnet-4-20250514".to_string(),
+                    String::new(),
+                ])
+            } else {
+                state.model = new_model.to_string();
+                state.reset_tokens();
+                CommandResult::SwitchModel(new_model.to_string())
+            }
+        }
+
+        s if s == "/save" || s.starts_with("/save ") => {
+            // Path parsing only — actual save is done by caller (needs agent messages)
+            let path = if s == "/save" {
+                "conversation.md".to_string()
+            } else {
+                let p = s.trim_start_matches("/save ").trim().to_string();
+                if p.is_empty() { "conversation.md".to_string() } else { p }
+            };
+            // Return special marker so caller knows to save
+            CommandResult::Handled(vec![format!("__save:{path}")])
+        }
+
+        s if s == "/lint" || s.starts_with("/lint ") => {
+            let path = if s == "/lint" {
+                String::new()
+            } else {
+                s.trim_start_matches("/lint ").trim().to_string()
+            };
+            if path.is_empty() {
+                CommandResult::Handled(vec![
+                    "  Usage: /lint <file>".to_string(),
+                    "  Supported: .yaml/.yml (YAML/docker-compose), Caddyfile/.caddy".to_string(),
+                    String::new(),
+                ])
+            } else {
+                let lines = match lint_file(&path) {
+                    LintResult::Ok(summary) => vec![
+                        format!("__lint_ok:{}:{}", path, summary),
+                    ],
+                    LintResult::Errors(errors) => {
+                        let mut v = vec![format!("__lint_errors:{}:{}", path, errors.len())];
+                        for e in &errors {
+                            v.push(format!("__lint_error:{}:{}", e.line, e.message));
+                        }
+                        v
+                    }
+                    LintResult::Unsupported(msg) => vec![format!("__lint_unsupported:{msg}")],
+                };
+                CommandResult::Handled(lines)
+            }
+        }
+
+        s if s.starts_with('/') => {
+            // /status, /context, /tokens are handled by main (they need agent/session data)
+            // Everything else is truly unknown
+            if matches!(s, "/status" | "/context" | "/tokens") {
+                CommandResult::NotACommand // caller handles these
+            } else {
+                CommandResult::Handled(vec![
+                    format!("  Unknown command: {s}"),
+                    "  Type /help for available commands".to_string(),
+                    String::new(),
+                ])
+            }
+        }
+
+        _ => CommandResult::NotACommand,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn state() -> ReplState {
+        ReplState::new("claude-opus-4-6")
+    }
+
+    // ── Quit / exit ───────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_quit_command() {
+        let mut s = state();
+        assert_eq!(handle_command("/quit", &mut s, &[]), CommandResult::Quit);
+    }
+
+    #[test]
+    fn test_exit_command() {
+        let mut s = state();
+        assert_eq!(handle_command("/exit", &mut s, &[]), CommandResult::Quit);
+    }
+
+    // ── Help ─────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_help_returns_handled() {
+        let mut s = state();
+        let result = handle_command("/help", &mut s, &[]);
+        assert!(matches!(result, CommandResult::Handled(_)));
+    }
+
+    #[test]
+    fn test_help_contains_commands() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/help", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("/quit"), "help should list /quit");
+        assert!(all.contains("/clear"), "help should list /clear");
+        assert!(all.contains("/lint"), "help should list /lint");
+        assert!(all.contains("/save"), "help should list /save");
+    }
+
+    #[test]
+    fn test_help_shows_skills_when_present() {
+        let mut s = state();
+        let skills = vec!["evolve".to_string(), "communicate".to_string()];
+        let CommandResult::Handled(lines) = handle_command("/help", &mut s, &skills) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("/skills"), "help should list /skills when skills are loaded");
+    }
+
+    #[test]
+    fn test_help_hides_skills_when_none() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/help", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(!all.contains("/skills"), "help should not list /skills when no skills loaded");
+    }
+
+    // ── Skills ───────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_skills_empty() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/skills", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        assert!(lines.iter().any(|l| l.contains("no skills")));
+    }
+
+    #[test]
+    fn test_skills_with_loaded_skills() {
+        let mut s = state();
+        let skills = vec!["evolve".to_string(), "communicate".to_string()];
+        let CommandResult::Handled(lines) = handle_command("/skills", &mut s, &skills) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("evolve"), "should list evolve skill");
+        assert!(all.contains("communicate"), "should list communicate skill");
+        assert!(all.contains("2 loaded") || all.contains("2"), "should show count");
+    }
+
+    // ── Model switch ─────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_model_switch() {
+        let mut s = state();
+        s.total_input = 5000;
+        s.total_output = 1000;
+        let result = handle_command("/model claude-sonnet-4-20250514", &mut s, &[]);
+        assert_eq!(result, CommandResult::SwitchModel("claude-sonnet-4-20250514".to_string()));
+        assert_eq!(s.model, "claude-sonnet-4-20250514");
+        assert_eq!(s.total_input, 0, "model switch should reset token counts");
+        assert_eq!(s.total_output, 0, "model switch should reset token counts");
+    }
+
+    #[test]
+    fn test_model_switch_empty_name() {
+        let mut s = state();
+        let result = handle_command("/model ", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled for empty model name");
+        };
+        assert!(lines.iter().any(|l| l.contains("Usage")));
+        assert_eq!(s.model, "claude-opus-4-6", "model should not change on empty name");
+    }
+
+    #[test]
+    fn test_model_switch_whitespace_only() {
+        let mut s = state();
+        let result = handle_command("/model    ", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled for whitespace model name");
+        };
+        assert!(lines.iter().any(|l| l.contains("Usage")));
+    }
+
+    // ── Clear ─────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_clear_returns_clear() {
+        let mut s = state();
+        assert_eq!(handle_command("/clear", &mut s, &[]), CommandResult::Clear);
+    }
+
+    // ── Retry ─────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_retry_returns_retry() {
+        let mut s = state();
+        assert_eq!(handle_command("/retry", &mut s, &[]), CommandResult::Retry);
+    }
+
+    // ── Lint ─────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_lint_no_path() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/lint", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        assert!(lines.iter().any(|l| l.contains("Usage")));
+    }
+
+    #[test]
+    fn test_lint_valid_yaml_file() {
+        use std::io::Write;
+        let mut tmp = tempfile::NamedTempFile::with_suffix(".yaml").unwrap();
+        write!(tmp, "key: value\nother: 123\n").unwrap();
+        let path = tmp.path().to_str().unwrap().to_string();
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command(&format!("/lint {path}"), &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        assert!(lines.iter().any(|l| l.contains("__lint_ok")), "valid YAML should produce ok marker: {lines:?}");
+    }
+
+    #[test]
+    fn test_lint_invalid_yaml_file() {
+        use std::io::Write;
+        let mut tmp = tempfile::NamedTempFile::with_suffix(".yaml").unwrap();
+        write!(tmp, "key: [\nbad\n").unwrap();
+        let path = tmp.path().to_str().unwrap().to_string();
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command(&format!("/lint {path}"), &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        assert!(
+            lines.iter().any(|l| l.contains("__lint_errors")),
+            "invalid YAML should produce errors marker: {lines:?}"
+        );
+    }
+
+    #[test]
+    fn test_lint_unsupported_extension() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/lint foo.toml", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        assert!(lines.iter().any(|l| l.contains("__lint_unsupported")));
+    }
+
+    // ── Save path parsing ─────────────────────────────────────────────────────
+
+    #[test]
+    fn test_save_default_path() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/save", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        assert!(lines.iter().any(|l| l.contains("__save:conversation.md")));
+    }
+
+    #[test]
+    fn test_save_custom_path() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/save my_chat.md", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        assert!(lines.iter().any(|l| l.contains("__save:my_chat.md")));
+    }
+
+    // ── Unknown command ───────────────────────────────────────────────────────
+
+    #[test]
+    fn test_unknown_command() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/foo", &mut s, &[]) else {
+            panic!("expected Handled for unknown command");
+        };
+        assert!(lines.iter().any(|l| l.contains("Unknown")));
+    }
+
+    #[test]
+    fn test_known_slash_commands_not_unknown() {
+        let mut s = state();
+        // /status, /context, /tokens are handled by caller — they should return NotACommand
+        for cmd in &["/status", "/context", "/tokens"] {
+            assert_eq!(
+                handle_command(cmd, &mut s, &[]),
+                CommandResult::NotACommand,
+                "{cmd} should be NotACommand (handled by caller)"
+            );
+        }
+    }
+
+    // ── Non-command input ─────────────────────────────────────────────────────
+
+    #[test]
+    fn test_regular_prompt_is_not_a_command() {
+        let mut s = state();
+        assert_eq!(
+            handle_command("explain monads", &mut s, &[]),
+            CommandResult::NotACommand
+        );
+    }
+
+    #[test]
+    fn test_empty_string_is_not_a_command() {
+        let mut s = state();
+        assert_eq!(handle_command("", &mut s, &[]), CommandResult::NotACommand);
+    }
+
+    // ── ReplState ─────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_repl_state_new() {
+        let s = ReplState::new("claude-opus-4-6");
+        assert_eq!(s.model, "claude-opus-4-6");
+        assert_eq!(s.total_input, 0);
+        assert_eq!(s.total_output, 0);
+        assert_eq!(s.total_cache_read, 0);
+        assert_eq!(s.total_cache_write, 0);
+        assert!(s.last_prompt.is_none());
+    }
+
+    #[test]
+    fn test_repl_state_reset_tokens() {
+        let mut s = ReplState::new("m");
+        s.total_input = 1000;
+        s.total_output = 500;
+        s.total_cache_read = 200;
+        s.total_cache_write = 100;
+        s.reset_tokens();
+        assert_eq!(s.total_input, 0);
+        assert_eq!(s.total_output, 0);
+        assert_eq!(s.total_cache_read, 0);
+        assert_eq!(s.total_cache_write, 0);
+    }
+}
