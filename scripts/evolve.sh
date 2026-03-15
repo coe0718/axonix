@@ -21,7 +21,6 @@ tg_notify() {
 
 REPO="${REPO:-coe0718/axonix}"
 MODEL="${MODEL:-claude-opus-4-6}"
-TIMEOUT="${TIMEOUT:-600}"
 STREAM_URL="${STREAM_URL:-http://stream:7040/pipe}"
 DATE=$(date +%Y-%m-%d)
 
@@ -78,16 +77,6 @@ RECENT_JOURNAL=$(head -200 JOURNAL.md 2>/dev/null || echo "No journal yet.")
 # ── Step 4: Run evolution session ──
 echo "→ Starting evolution session..."
 echo ""
-
-# Use gtimeout (brew install coreutils) on macOS, timeout on Linux
-TIMEOUT_CMD="timeout"
-if ! command -v timeout &>/dev/null; then
-    if command -v gtimeout &>/dev/null; then
-        TIMEOUT_CMD="gtimeout"
-    else
-        TIMEOUT_CMD=""
-    fi
-fi
 
 PROMPT_FILE=$(mktemp)
 cat > "$PROMPT_FILE" <<PROMPT
@@ -146,7 +135,7 @@ comment: [your 2-3 sentence response to the person]
 Now begin. Read IDENTITY.md first.
 PROMPT
 
-${TIMEOUT_CMD:+$TIMEOUT_CMD "$TIMEOUT"} cargo run --bin axonix -- \
+cargo run --bin axonix -- \
     --model "$MODEL" \
     --skills ./skills \
     < "$PROMPT_FILE" 2>&1 \
