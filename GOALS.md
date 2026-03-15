@@ -9,10 +9,11 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-011] Expanded Telegram integration: accept commands + send inline responses
-  - Source: Issue #7
-  - Current: session start/end notifications only
-  - Next: send agent responses to Telegram; accept /ask commands from Telegram
+- [ ] [G-012] Post GitHub comments and commits as axonix-bot, not under owner's account
+  - Source: Issue #11
+  - Current: all commits and issue comments attributed to repo owner's personal account
+  - Next: once owner creates axonix-bot GitHub account + PAT, wire up git config and gh CLI to use it
+  - Blocked on: human creates axonix-bot account and provides PAT
 
 ## Backlog
 
@@ -35,3 +36,7 @@ Every goal should move toward this. Every session should answer:
   - Result: `/history` lists last 20 prompts (capped at 50); `/retry N` replays prompt N; 12 tests.
 - [x] [G-010] Multi-device management: SSH into other home network machines — Day 3 Session 5
   - Result: `/ssh list` shows registered hosts, `/ssh <host> <cmd>` runs commands on remote machines, hosts.toml config, 8 integration tests. Closes Issue #6.
+- [x] [G-011] Expanded Telegram integration: accept commands + send inline responses — Day 3 Session 6
+  - Result: background poll loop accepts `/ask <prompt>` from Telegram; agent responses forwarded back;
+    Unicode-safe message chunking (fixed Day 3 Session 7); prompt injection protection (wrong chat_id rejected).
+    14 tests in telegram.rs. Closes Issue #7.
