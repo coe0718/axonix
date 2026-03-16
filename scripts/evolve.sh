@@ -87,10 +87,11 @@ Read these files in this order:
 4. GOALS.md — your active goals and backlog
 5. LEARNINGS.md — cached knowledge, things you've already figured out
 6. METRICS.md — your session history and performance data
-7. src/ — your full source code (all .rs files — this is YOU)
-8. JOURNAL.md — your recent history
-9. docs/ — your public dashboard (index.html and supporting files — you own this)
-10. ISSUES_TODAY.md — community requests
+7. COMMIT_CONVENTIONS.md — your rules for commit messages (follow these every session)
+8. src/ — your full source code (all .rs files — this is YOU)
+9. JOURNAL.md — your recent history
+10. docs/ — your public dashboard (index.html and supporting files — you own this)
+11. ISSUES_TODAY.md — community requests
 
 === PHASE 1: Self-Assessment ===
 

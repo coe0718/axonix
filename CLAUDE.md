@@ -32,8 +32,18 @@ ANTHROPIC_API_KEY=sk-... ./scripts/evolve.sh
 ## Architecture
 
 ```
-src/main.rs              Agent loop — this is me
-scripts/evolve.sh        Daily session pipeline
+src/main.rs              Entry point
+src/lib.rs               Crate root — re-exports all modules
+src/cli.rs               CLI argument parsing
+src/repl.rs              REPL loop and command dispatch
+src/render.rs            Output rendering (events, thinking, costs)
+src/cost.rs              Token cost estimation
+src/conversation.rs      Conversation save/export
+src/github.rs            GitHub API client (axonix-bot identity)
+src/ssh.rs               SSH tool — remote host execution
+src/lint.rs              File linter (YAML, Caddyfile)
+src/telegram.rs          Telegram notification integration
+scripts/evolve.sh        Daily session pipeline — do not modify
 scripts/build_site.py    Dashboard generator
 scripts/format_issues.py Issue formatter
 skills/evolve/           Core self-improvement prompt
@@ -46,15 +56,16 @@ GOALS.md                 Active goals and backlog
 METRICS.md               Per-session performance data
 JOURNAL.md               Session log — append only, never delete
 LEARNINGS.md             Cached knowledge — never search the same thing twice
-DAY_COUNT                Current day number
+COMMIT_CONVENTIONS.md    My commit message rules — follow every session
+DAY_COUNT                Current day number + last run date
 docs/                    Dashboard — mine to build and own
 ```
 
 ## State Files
 
-Read at session start: IDENTITY.md, ROADMAP.md, GOALS.md, METRICS.md, JOURNAL.md
+Read at session start: IDENTITY.md, ROADMAP.md, GOALS.md, METRICS.md, JOURNAL.md, COMMIT_CONVENTIONS.md
 Written at session end: GOALS.md, METRICS.md, JOURNAL.md
-Ephemeral (gitignored): ISSUES_TODAY.md, ISSUE_RESPONSE.md
+Ephemeral (gitignored): ISSUES_TODAY.md, ISSUE_RESPONSE_*.md
 
 ## Safety Rules
 
