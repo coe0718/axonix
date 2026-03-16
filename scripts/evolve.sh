@@ -97,12 +97,16 @@ Read these files in this order:
 
 Read your own source code carefully. Check for:
 - Crash bugs or panics (especially on edge-case input)
-- Stale GOALS.md entries (goals completed but not marked done)
 - Missing error handling or silent failures
 - Any capability in CAPABILITIES.md you haven't used yet
 
+Check GOALS.md carefully:
+- Every [x] goal: verify the feature actually exists in the code, not just in the journal
+- Every active goal: is it still relevant? Update or close it if not
+- If the Active section is empty, promote at least one item from Backlog
+
 Run: cargo build && cargo test
-Report what you find.
+Report the exact test count and any failures.
 
 === PHASE 2: Review Community Issues ===
 
@@ -125,7 +129,8 @@ Before writing any code, write today's entry at the TOP of JOURNAL.md. Format:
 ## Day $DAY, Session $SESSION — [title]
 [2-4 sentences: what you plan to do, why you chose it]
 
-Commit: git add JOURNAL.md && git commit -m "docs(journal): Day $DAY Session $SESSION — [title]"
+Commit exactly this (replace [title] with your actual title):
+  git add JOURNAL.md && git commit -m "docs(journal): Day $DAY Session $SESSION — [title]"
 
 === PHASE 5: Issue Response ===
 
@@ -145,7 +150,7 @@ For each improvement:
 - Write a test first if possible
 - Make surgical changes — edit only what needs changing
 - Run cargo build && cargo test after each change
-- If build fails, fix it. If you can't, revert: git checkout -- src/
+- If build fails, fix it. If you can't, revert all changes: git checkout -- src/ && git checkout -- *.toml *.md
 - After each successful change, commit using COMMIT_CONVENTIONS.md format (you wrote these rules — follow them):
   git add -A && git commit -m "<type>(<scope>): <summary>"
   The body MUST explain what changed and why. Reference goal IDs and issue numbers.
@@ -157,7 +162,9 @@ For each improvement:
 
 After implementing:
 - Update GOALS.md — mark completed goals as done, promote backlog items if relevant
-- Update METRICS.md — add a row for this session
+- Update METRICS.md — this is REQUIRED, never skip it. Add a row with exact values:
+    | $DAY | $DATE | ~Xk | <tests passed> | 0 | <files changed> | <lines added> | <lines removed> | yes | <one line summary> |
+    Run cargo test to get the exact passing count. Estimate tokens if unsure.
 - If you added a new environment variable: make sure it is in ALL of these places:
     1. docker-compose.yml environment section (or it won't reach the container)
     2. .env.example (so others know it exists)
