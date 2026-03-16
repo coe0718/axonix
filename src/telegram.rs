@@ -282,6 +282,11 @@ pub fn is_help_command(text: &str) -> bool {
     matches!(text.trim(), "/help" | "/start")
 }
 
+/// Check whether a Telegram message is a `/status` command.
+pub fn is_status_command(text: &str) -> bool {
+    matches!(text.trim(), "/status")
+}
+
 /// The help text shown to Telegram users.
 ///
 /// Kept as a constant so the poll loop and tests share the same string.
@@ -289,11 +294,13 @@ pub const TELEGRAM_HELP_TEXT: &str = "\
 *Axonix Bot* — Available commands:
 
 /ask <prompt> — Send a prompt to the agent and get a response
+/status — Show current session status (model, mode, uptime)
 /help — Show this help message
 
 *Examples:*
 • /ask explain how async Rust works
 • /ask what files are in /workspace/src?
+• /status
 
 Responses may take a moment depending on prompt complexity.";
 
@@ -307,10 +314,12 @@ pub enum BotCommand {
     Ask(AskCommand),
     /// `/help` or `/start` — send help text back to the user.
     Help { message_id: i64 },
+    /// `/status` — report current session status (model, mode, uptime).
+    Status { message_id: i64 },
 }
 
 impl TelegramClient {
-    /// Scan a batch of updates for bot commands (ask, help).
+    /// Scan a batch of updates for bot commands (ask, help, status).
     ///
     /// Only processes messages from the configured chat ID (security: ignore
     /// messages from other chats to prevent prompt injection from strangers).
@@ -324,6 +333,9 @@ impl TelegramClient {
                 if is_help_command(text) {
                     return Some(BotCommand::Help { message_id: msg.message_id });
                 }
+                if is_status_command(text) {
+                    return Some(BotCommand::Status { message_id: msg.message_id });
+                }
                 let prompt = parse_ask_command(text)?;
                 Some(BotCommand::Ask(AskCommand {
                     prompt: prompt.to_string(),
@@ -331,6 +343,35 @@ impl TelegramClient {
                 }))
             })
             .collect()
+    }
+
+    /// Build a status reply string for the `/status` command.
+    ///
+    /// `model` — current model name
+    /// `mode` — "interactive" or "cron"
+    /// `elapsed_secs` — seconds since session start (0 if unknown)
+    /// `tokens_in` / `tokens_out` — session token totals
+    pub fn format_status_reply(
+        model: &str,
+        mode: &str,
+        elapsed_secs: u64,
+        tokens_in: u64,
+        tokens_out: u64,
+    ) -> String {
+        let mins = elapsed_secs / 60;
+        let secs = elapsed_secs % 60;
+        let elapsed_str = if mins > 0 {
+            format!("{mins}m {secs}s")
+        } else {
+            format!("{secs}s")
+        };
+        format!(
+            "*Axonix Status*\n\
+            🤖 model: `{model}`\n\
+            ⚙️ mode: {mode}\n\
+            ⏱ uptime: {elapsed_str}\n\
+            📊 tokens: {tokens_in} in / {tokens_out} out",
+        )
     }
 }
 
@@ -688,5 +729,92 @@ mod tests {
         ];
         let commands = client.extract_commands(&updates);
         assert!(commands.is_empty(), "commands from wrong chat_id must be rejected");
+    }
+
+    // ── is_status_command ─────────────────────────────────────────────────────
+
+    #[test]
+    fn test_is_status_command_true() {
+        assert!(is_status_command("/status"));
+        assert!(is_status_command("  /status  "));
+    }
+
+    #[test]
+    fn test_is_status_command_false_for_non_status() {
+        assert!(!is_status_command("/ask hello"));
+        assert!(!is_status_command("/help"));
+        assert!(!is_status_command("status"));
+        assert!(!is_status_command(""));
+        assert!(!is_status_command("/statuss"));
+    }
+
+    // ── extract_commands with /status ─────────────────────────────────────────
+
+    #[test]
+    fn test_extract_commands_status_detected() {
+        let client = make_client();
+        let updates = vec![make_update(1, 12345, 7, "/status")];
+        let commands = client.extract_commands(&updates);
+        assert_eq!(commands.len(), 1);
+        assert!(
+            matches!(commands[0], BotCommand::Status { message_id: 7 }),
+            "expected BotCommand::Status, got {:?}",
+            commands[0]
+        );
+    }
+
+    #[test]
+    fn test_extract_commands_status_in_mixed_batch() {
+        let client = make_client();
+        let updates = vec![
+            make_update(1, 12345, 1, "/ask first question"),
+            make_update(2, 12345, 2, "/status"),
+            make_update(3, 12345, 3, "/help"),
+            make_update(4, 12345, 4, "just a message"),
+        ];
+        let commands = client.extract_commands(&updates);
+        assert_eq!(commands.len(), 3, "3 commands: 1 ask + 1 status + 1 help");
+        assert!(matches!(commands[0], BotCommand::Ask(_)));
+        assert!(matches!(commands[1], BotCommand::Status { .. }));
+        assert!(matches!(commands[2], BotCommand::Help { .. }));
+    }
+
+    // ── format_status_reply ───────────────────────────────────────────────────
+
+    #[test]
+    fn test_format_status_reply_contains_model() {
+        let reply = TelegramClient::format_status_reply("claude-opus-4-6", "interactive", 120, 1000, 500);
+        assert!(reply.contains("claude-opus-4-6"), "status reply must show model: {reply}");
+    }
+
+    #[test]
+    fn test_format_status_reply_contains_mode() {
+        let reply = TelegramClient::format_status_reply("test-model", "cron", 30, 0, 0);
+        assert!(reply.contains("cron"), "status reply must show mode: {reply}");
+    }
+
+    #[test]
+    fn test_format_status_reply_elapsed_minutes() {
+        let reply = TelegramClient::format_status_reply("m", "interactive", 185, 0, 0);
+        assert!(reply.contains("3m"), "185s should show as 3m: {reply}");
+    }
+
+    #[test]
+    fn test_format_status_reply_elapsed_seconds_only() {
+        let reply = TelegramClient::format_status_reply("m", "interactive", 45, 0, 0);
+        assert!(reply.contains("45s"), "45s should show without minutes: {reply}");
+        assert!(!reply.contains("0m"), "should not show 0m prefix: {reply}");
+    }
+
+    #[test]
+    fn test_format_status_reply_contains_tokens() {
+        let reply = TelegramClient::format_status_reply("m", "cron", 0, 1234, 567);
+        assert!(reply.contains("1234"), "should show input tokens: {reply}");
+        assert!(reply.contains("567"), "should show output tokens: {reply}");
+    }
+
+    #[test]
+    fn test_help_text_mentions_status() {
+        assert!(TELEGRAM_HELP_TEXT.contains("/status"), "help text must mention /status command");
     }
 }
