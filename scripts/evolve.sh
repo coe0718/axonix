@@ -113,6 +113,10 @@ Read your own source code carefully. Check for:
 - Missing error handling or silent failures
 - Any capability in CAPABILITIES.md you haven't used yet
 
+Check docker-compose.yml carefully:
+- Every env var in CAPABILITIES.md must be in the axonix environment: section
+- If anything is missing, add it NOW before doing anything else
+
 Check GOALS.md carefully:
 - Every [x] goal: verify the feature actually exists in the code, not just in the journal
 - Every active goal: is it still relevant? Update or close it if not
