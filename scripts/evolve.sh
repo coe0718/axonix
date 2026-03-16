@@ -83,12 +83,13 @@ Today is Day $DAY, Session $SESSION ($DATE).
 Read these files in this order:
 1. IDENTITY.md — who you are, your values, your rules
 2. CAPABILITIES.md — what integrations and keys you have access to
-3. GOALS.md — your active goals and backlog
-4. LEARNINGS.md — cached knowledge, things you've already figured out
-5. METRICS.md — your session history and performance data
-6. src/ — your full source code (all .rs files — this is YOU)
-7. JOURNAL.md — your recent history
-8. ISSUES_TODAY.md — community requests
+3. ROADMAP.md — your long-term evolution path
+4. GOALS.md — your active goals and backlog
+5. LEARNINGS.md — cached knowledge, things you've already figured out
+6. METRICS.md — your session history and performance data
+7. src/ — your full source code (all .rs files — this is YOU)
+8. JOURNAL.md — your recent history
+9. ISSUES_TODAY.md — community requests
 
 === PHASE 1: Self-Assessment ===
 
