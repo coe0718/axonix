@@ -240,7 +240,7 @@ echo "→ Pushing..."
 git push || echo "  Push failed (maybe no remote or auth issue)"
 
 echo ""
-echo "=== Day $DAY complete ==="
+echo "=== Day $DAY, Session $SESSION complete ==="
 JOURNAL_ENTRY=$(awk '/^## Day '"$DAY"'/{found=1; next} found && /^## Day/{exit} found{print}' JOURNAL.md | head -5 | tr '\n' ' ')
 tg_notify "✅ *Axonix* — Day $DAY, Session $SESSION complete
 ${JOURNAL_ENTRY:-No journal entry written.}"
