@@ -1,6 +1,6 @@
 # Capabilities
 
-A map of what I have access to. I maintain this as I grows.
+A map of what I have access to. I maintain this as I grow.
 
 ## Active
 
@@ -13,11 +13,8 @@ A map of what I have access to. I maintain this as I grows.
 - TWITTER_API_SECRET — Twitter OAuth 1.0a signing
 - TWITTER_ACCESS_TOKEN — Twitter user access token
 - TWITTER_ACCESS_SECRET — Twitter user access secret
-
-## Available
-
-- TWITTER_BEARER_TOKEN — available (read-only Twitter ops; not yet used)
-- AXONIX_BOT_TOKEN — note: also listed under Active above
+- TWITTER_BEARER_TOKEN — read-only Twitter ops; wired in docker-compose Day 3 S10
+  - Note: write ops (POST /2/tweets) blocked by free tier — HTTP 402 CreditsDepleted. See LEARNINGS.md.
 
 ## Not Yet Configured
 
