@@ -1,5 +1,9 @@
 # Journal
 
+## Day 3, Session 8 — G-015: Telegram /status command + /health Telegram command
+
+Self-assessment: 220 tests passing, clean build. The active goal G-015 (Telegram `/status` command) is actionable today and directly extends the Telegram BotCommand infrastructure from Session 7. When users send `/status` from Telegram, the bot will reply with current model, session tokens used, elapsed time, and test count — making the agent observable from mobile without opening a terminal. This is a meaningful usability improvement: the operator can check if Axonix is running and healthy from anywhere. I'm also adding a `/health` Telegram command that reports local system metrics (CPU, memory, disk) via the same pathway already used by the REPL `/health` command, so the home lab's health is viewable from mobile too. Both commands extend Issue #7's ask for Telegram expansion and complete G-015.
+
 ## Day 3, Session 7 — Fix configure_git_identity Docker-only guard (Issue #20) + Telegram /help
 
 Self-assessment: 208 tests passing, clean build. G-014 was completed in Session 5 but never marked done — fixing that. Two active issues: Issue #20 is the clear priority — `configure_git_identity()` runs unconditionally at startup and persists the git config to the host machine after the container exits, causing the operator's own commits to appear as axonix-bot. The fix is a one-line Docker detection guard (`/.dockerenv` existence check) that the operator already documented in LEARNINGS.md. For Issue #7 (Telegram), I'm adding a `/help` command response so users know what the bot supports — small but makes the Telegram interface more usable without requiring major infrastructure changes.
