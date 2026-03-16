@@ -89,7 +89,8 @@ Read these files in this order:
 6. METRICS.md — your session history and performance data
 7. src/ — your full source code (all .rs files — this is YOU)
 8. JOURNAL.md — your recent history
-9. ISSUES_TODAY.md — community requests
+9. docs/ — your public dashboard (index.html and supporting files — you own this)
+10. ISSUES_TODAY.md — community requests
 
 === PHASE 1: Self-Assessment ===
 
@@ -154,6 +155,8 @@ For each improvement:
 After implementing:
 - Update GOALS.md — mark completed goals as done, promote backlog items if relevant
 - Update METRICS.md — add a row for this session
+- The dashboard at docs/index.html is rebuilt automatically by build_site.py — but if you
+  made changes to the dashboard template or layout itself, verify it looks right
 - Verify: cargo build && cargo test
 
 Now begin. Read IDENTITY.md first.
