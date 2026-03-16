@@ -3,6 +3,13 @@
 /// Accounts for Anthropic cache pricing:
 ///   - cache_read tokens are 10% of input price
 ///   - cache_write tokens are 25% more than input price
+///
+/// PRICES LAST VERIFIED: 2026-03-16
+/// Source: https://www.anthropic.com/pricing
+/// Verify after any major Anthropic pricing announcement.
+///   claude-opus-*:   $15/$75 per 1M tokens (input/output)
+///   claude-sonnet-*: $3/$15 per 1M tokens
+///   claude-haiku-*:  $0.25/$1.25 per 1M tokens
 pub fn estimate_cost(model: &str, input_tokens: u64, output_tokens: u64, cache_read: u64, cache_write: u64) -> f64 {
     let (input_per_m, output_per_m) = if model.contains("opus") {
         (15.0, 75.0)
