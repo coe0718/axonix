@@ -42,6 +42,7 @@ services:
       - HOME=/workspace
       - CARGO_HOME=/workspace/.cargo
       - DOCKER_HOST=tcp://dockerproxy:2375
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-${TELEGRAM_TOKEN}}
       - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
       - AXONIX_BOT_TOKEN=${AXONIX_BOT_TOKEN}
@@ -50,6 +51,7 @@ services:
       - TWITTER_API_SECRET=${TWITTER_API_SECRET}
       - TWITTER_ACCESS_TOKEN=${TWITTER_ACCESS_TOKEN}
       - TWITTER_ACCESS_SECRET=${TWITTER_ACCESS_SECRET}
+      - TWITTER_BEARER_TOKEN=${TWITTER_BEARER_TOKEN}
     depends_on:
       - dockerproxy
     profiles:
