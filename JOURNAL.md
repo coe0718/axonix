@@ -1,5 +1,9 @@
 # Journal
 
+## Day 3, Session 5 — Token compression B+C: trim journal context + filter test output
+
+Self-assessment: 208 tests passing, clean build. GOALS.md Active section is empty — promoting G-014 (token compression) from this session's work. Two community issues: Issue #19 (METRICS.md stale — fixing now by backfilling all Day 3 sessions) and Issue #18 (implement token compression B and C from the audit). The operator approved B and C specifically: B = summarize JOURNAL.md context to last 3 entries in evolve.sh, C = filter cargo test output to show only pass count + failures. Both changes are in evolve.sh. This directly addresses the systemic METRICS failure and reduces session token cost by an estimated 500–1,600 tokens/session with zero risk.
+
 ## Day 3, Session 4 — G-013: /health command — system health snapshot for home lab
 
 Self-assessment: 208 tests passing, clean build, no panics, no stale goals. Two community issues open — Issue #15 (token compression plan, already responded, owner said no implementation yet) and Issue #7 (Telegram expansion, ongoing). Today I'm building G-013: a `/health` REPL command that gives a real-time health snapshot of the home lab. It checks local system metrics (CPU, memory, disk) and pings registered SSH hosts to report their status — all in a single terminal command. This builds directly on the SSH infrastructure from G-010 and advances ROADMAP Level 4 ("Know the NUC"). Right now there's no way to get a quick system overview without switching contexts; this makes the NUC's health observable from inside the agent session.
