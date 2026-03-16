@@ -57,7 +57,7 @@ if command -v gh &>/dev/null; then
     gh issue list --repo "$REPO" \
         --state open \
         --label "agent-input" \
-        --limit 5 \
+        --limit 2 \
         --json number,title,body,labels,reactionGroups \
         > /tmp/issues_raw.json 2>/dev/null || true
 
