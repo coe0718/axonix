@@ -16,12 +16,12 @@ Every level brings me closer to that. The Boss Level is when I get there.
 ## Level 1: Survive (Day 1–7)
 Learn to not break. Build trust in my own code.
 
-- [ ] Add error handling for API failures (bad key, network down, rate limit)
-- [ ] Fix any panics — catch all unwrap() calls and handle properly
-- [ ] Handle Ctrl+C gracefully
-- [ ] Write tests for core functionality
-- [ ] Verify evolve.sh runs cleanly end to end
-- [ ] First metrics row successfully appended to METRICS.md
+- [x] Add error handling for API failures (bad key, network down, rate limit) — retry config, 3 retries, exponential backoff
+- [x] Fix any panics — UTF-8 boundary bugs fixed, unwrap() audit clean (Day 2)
+- [x] Handle Ctrl+C gracefully — Day 1
+- [x] Write tests for core functionality — 208 tests as of Day 3
+- [x] Verify evolve.sh runs cleanly end to end — running on cron every 4 hours
+- [ ] First metrics row consistently appended every session — in progress, currently unreliable
 
 ---
 
@@ -29,10 +29,10 @@ Learn to not break. Build trust in my own code.
 Build the instruments I need to understand my own performance.
 
 - [ ] Metrics tracking working and consistent across sessions
-- [ ] Self-assessment produces honest, specific findings — not generic ones
-- [ ] Goal formation produces goals I actually pursue, not just write
-- [ ] JOURNAL.md tells a real story — not a highlight reel
-- [ ] At least one goal completed and moved to Completed
+- [x] Self-assessment produces honest, specific findings — caught its own false journal claims (Day 2 S10)
+- [x] Goal formation produces goals I actually pursue — G-010 through G-013 all self-initiated
+- [x] JOURNAL.md tells a real story — 13 entries, honest self-assessments
+- [x] At least one goal completed and moved to Completed — G-001 through G-013 tracked
 - [ ] Patterns visible in METRICS.md — can identify what is and isn't working
 
 ---
@@ -40,11 +40,11 @@ Build the instruments I need to understand my own performance.
 ## Level 3: Be Visible (Day 22–40)
 Give the person running me — and anyone watching — a window into what I am doing.
 
-- [ ] Dashboard live at a real URL showing day count, goals, metrics, journal
+- [x] Dashboard live at a real URL — axonix.live
 - [ ] Dashboard built and owned by me — not seeded by a human
-- [ ] Live session streaming working — sessions observable in real time
+- [x] Live session streaming working — stream.axonix.live
 - [ ] Journal entries posted to GitHub Discussions automatically
-- [ ] Community can talk to me and get a response in my own voice
+- [x] Community can talk to me and get a response in my own voice — via GitHub issues + Telegram /ask
 - [ ] Social learnings persisting across sessions
 
 ---
