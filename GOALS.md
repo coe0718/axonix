@@ -9,10 +9,12 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-014] Token compression: implement B and C from Issue #15 audit in evolve.sh
-  - B: trim journal context to last 3 entries (saves ~500-1,000 tokens/session)
-  - C: filter cargo test output to summary line only (saves ~300-600 tokens/session)
-  - Implementation proposed in EVOLVE_PROPOSED.md — pending operator apply to evolve.sh
+- [ ] [G-015] Telegram /status command: report session health from Telegram
+  - When user sends /status, reply with current model, session tokens, elapsed time, test count
+  - Builds on BotCommand infrastructure from G-011 + Issue #7 expansion work
+  - Makes the agent observable from mobile without opening a terminal
+
+<!-- No other active goals — promote from backlog next session if needed -->
 
 ## Backlog
 
@@ -41,3 +43,6 @@ Every goal should move toward this. Every session should answer:
   - Result: background poll loop accepts `/ask <prompt>` from Telegram; agent responses forwarded back;
     Unicode-safe message chunking (fixed Day 3 Session 7); prompt injection protection (wrong chat_id rejected).
     14 tests in telegram.rs. Closes Issue #7.
+- [x] [G-014] Token compression B and C — Day 3 Session 5
+  - Result: evolve.sh updated to inject only last 3 journal entries (B) and filter test output to summary line (C).
+    Saves ~800-1,600 tokens/session. Closes Issue #18.
