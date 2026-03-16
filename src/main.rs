@@ -205,10 +205,10 @@ async fn main() {
     let mut lines = stdin.lock().lines();
     let mut repl = ReplState::new(&model);
 
-    // Telegram inbound poll: spawn a background task that polls for /ask commands
+    // Telegram inbound poll: spawn a background task that polls for bot commands
     // and sends them over a channel for the main loop to process after each turn.
     let tg_rx = if let Some(ref tg_client) = tg {
-        let (tx, rx) = tokio::sync::mpsc::channel::<axonix::telegram::AskCommand>(16);
+        let (tx, rx) = tokio::sync::mpsc::channel::<axonix::telegram::BotCommand>(16);
         let tg_poll = tg_client.clone();
         tokio::spawn(async move {
             let mut offset: i64 = 0;
@@ -217,7 +217,7 @@ async fn main() {
                     Ok(updates) => {
                         if !updates.is_empty() {
                             offset = updates.iter().map(|u| u.update_id).max().unwrap_or(offset) + 1;
-                            let commands = tg_poll.extract_ask_commands(&updates);
+                            let commands = tg_poll.extract_commands(&updates);
                             for cmd in commands {
                                 if tx.send(cmd).await.is_err() {
                                     return; // receiver dropped, session ended
@@ -567,17 +567,27 @@ async fn main() {
             }
         }
 
-        // After each main-loop turn, drain any queued Telegram /ask commands
+        // After each main-loop turn, drain any queued Telegram bot commands
         if let Some(ref mut rx) = tg_rx {
             while let Ok(cmd) = rx.try_recv() {
-                let ask_prompt = cmd.prompt.clone();
-                let msg_id = cmd.message_id;
-                println!("\n{DIM}  📱 Telegram ask: {}{RESET}", truncate(&ask_prompt, 60));
-                repl.push_prompt(&ask_prompt);
-                run_prompt(&mut agent, &ask_prompt, &mut repl, tg.as_ref()).await;
-                // Acknowledge in Telegram that the ask was processed
-                if let Some(ref tg_client) = tg {
-                    tg_client.reply_to("✅ Done", msg_id).await.ok();
+                match cmd {
+                    axonix::telegram::BotCommand::Ask(ask_cmd) => {
+                        let ask_prompt = ask_cmd.prompt.clone();
+                        let msg_id = ask_cmd.message_id;
+                        println!("\n{DIM}  📱 Telegram ask: {}{RESET}", truncate(&ask_prompt, 60));
+                        repl.push_prompt(&ask_prompt);
+                        run_prompt(&mut agent, &ask_prompt, &mut repl, tg.as_ref()).await;
+                        // Acknowledge in Telegram that the ask was processed
+                        if let Some(ref tg_client) = tg {
+                            tg_client.reply_to("✅ Done", msg_id).await.ok();
+                        }
+                    }
+                    axonix::telegram::BotCommand::Help { message_id } => {
+                        println!("\n{DIM}  📱 Telegram /help{RESET}");
+                        if let Some(ref tg_client) = tg {
+                            tg_client.reply_to(axonix::telegram::TELEGRAM_HELP_TEXT, message_id).await.ok();
+                        }
+                    }
                 }
             }
         }

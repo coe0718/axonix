@@ -277,6 +277,63 @@ pub fn is_ask_command(text: &str) -> bool {
     parse_ask_command(text).is_some()
 }
 
+/// Check whether a Telegram message is a `/help` command.
+pub fn is_help_command(text: &str) -> bool {
+    matches!(text.trim(), "/help" | "/start")
+}
+
+/// The help text shown to Telegram users.
+///
+/// Kept as a constant so the poll loop and tests share the same string.
+pub const TELEGRAM_HELP_TEXT: &str = "\
+*Axonix Bot* — Available commands:
+
+/ask <prompt> — Send a prompt to the agent and get a response
+/help — Show this help message
+
+*Examples:*
+• /ask explain how async Rust works
+• /ask what files are in /workspace/src?
+
+Responses may take a moment depending on prompt complexity.";
+
+/// A bot command parsed from an inbound Telegram update.
+///
+/// Unifies all supported command types so the main poll loop
+/// can dispatch them with a single match.
+#[derive(Debug, PartialEq, Clone)]
+pub enum BotCommand {
+    /// `/ask <prompt>` — forward prompt to the agent.
+    Ask(AskCommand),
+    /// `/help` or `/start` — send help text back to the user.
+    Help { message_id: i64 },
+}
+
+impl TelegramClient {
+    /// Scan a batch of updates for bot commands (ask, help).
+    ///
+    /// Only processes messages from the configured chat ID (security: ignore
+    /// messages from other chats to prevent prompt injection from strangers).
+    pub fn extract_commands(&self, updates: &[TelegramUpdate]) -> Vec<BotCommand> {
+        updates
+            .iter()
+            .filter_map(|u| u.message.as_ref())
+            .filter(|msg| msg.chat.id.to_string() == self.chat_id)
+            .filter_map(|msg| {
+                let text = msg.text.as_deref()?;
+                if is_help_command(text) {
+                    return Some(BotCommand::Help { message_id: msg.message_id });
+                }
+                let prompt = parse_ask_command(text)?;
+                Some(BotCommand::Ask(AskCommand {
+                    prompt: prompt.to_string(),
+                    message_id: msg.message_id,
+                }))
+            })
+            .collect()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -531,5 +588,105 @@ mod tests {
         let client = TelegramClient::new("tok", "cid");
         assert_eq!(client.token, "tok");
         assert_eq!(client.chat_id, "cid");
+    }
+
+    // ── is_help_command ────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_is_help_command_slash_help() {
+        assert!(is_help_command("/help"));
+        assert!(is_help_command("  /help  "));
+    }
+
+    #[test]
+    fn test_is_help_command_slash_start() {
+        // /start is the Telegram onboarding command — treat as help
+        assert!(is_help_command("/start"));
+    }
+
+    #[test]
+    fn test_is_help_command_false_for_non_help() {
+        assert!(!is_help_command("/ask hello"));
+        assert!(!is_help_command("help me"));
+        assert!(!is_help_command(""));
+        assert!(!is_help_command("/status"));
+    }
+
+    // ── TELEGRAM_HELP_TEXT ─────────────────────────────────────────────────────
+
+    #[test]
+    fn test_help_text_mentions_ask() {
+        assert!(TELEGRAM_HELP_TEXT.contains("/ask"), "help text must mention /ask command");
+    }
+
+    #[test]
+    fn test_help_text_mentions_help() {
+        assert!(TELEGRAM_HELP_TEXT.contains("/help"), "help text must mention /help command");
+    }
+
+    #[test]
+    fn test_help_text_not_empty() {
+        assert!(!TELEGRAM_HELP_TEXT.trim().is_empty(), "help text must not be empty");
+    }
+
+    // ── extract_commands ───────────────────────────────────────────────────────
+
+    #[test]
+    fn test_extract_commands_help_detected() {
+        let client = make_client();
+        let updates = vec![make_update(1, 12345, 1, "/help")];
+        let commands = client.extract_commands(&updates);
+        assert_eq!(commands.len(), 1);
+        assert!(matches!(commands[0], BotCommand::Help { message_id: 1 }));
+    }
+
+    #[test]
+    fn test_extract_commands_start_detected_as_help() {
+        let client = make_client();
+        let updates = vec![make_update(1, 12345, 1, "/start")];
+        let commands = client.extract_commands(&updates);
+        assert_eq!(commands.len(), 1);
+        assert!(matches!(commands[0], BotCommand::Help { .. }));
+    }
+
+    #[test]
+    fn test_extract_commands_ask_detected() {
+        let client = make_client();
+        let updates = vec![make_update(1, 12345, 1, "/ask what is Rust?")];
+        let commands = client.extract_commands(&updates);
+        assert_eq!(commands.len(), 1);
+        if let BotCommand::Ask(cmd) = &commands[0] {
+            assert_eq!(cmd.prompt, "what is Rust?");
+            assert_eq!(cmd.message_id, 1);
+        } else {
+            panic!("expected BotCommand::Ask");
+        }
+    }
+
+    #[test]
+    fn test_extract_commands_mixed_batch() {
+        let client = make_client();
+        let updates = vec![
+            make_update(1, 12345, 1, "/ask first question"),
+            make_update(2, 12345, 2, "/help"),
+            make_update(3, 12345, 3, "just a chat message"),
+            make_update(4, 12345, 4, "/ask second question"),
+        ];
+        let commands = client.extract_commands(&updates);
+        assert_eq!(commands.len(), 3, "3 commands: 2 asks + 1 help, chat ignored");
+        assert!(matches!(commands[0], BotCommand::Ask(_)));
+        assert!(matches!(commands[1], BotCommand::Help { .. }));
+        assert!(matches!(commands[2], BotCommand::Ask(_)));
+    }
+
+    #[test]
+    fn test_extract_commands_wrong_chat_ignored() {
+        let client = make_client(); // chat_id = "12345"
+        let updates = vec![
+            make_update(1, 99999, 1, "/help"),  // wrong chat
+            make_update(2, 99999, 2, "/ask something"), // wrong chat
+        ];
+        let commands = client.extract_commands(&updates);
+        assert!(commands.is_empty(), "commands from wrong chat_id must be rejected");
     }
 }
