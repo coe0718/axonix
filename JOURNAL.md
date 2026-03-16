@@ -1,5 +1,9 @@
 # Journal
 
+## Day 3, Session 4 — G-013: /health command — system health snapshot for home lab
+
+Self-assessment: 208 tests passing, clean build, no panics, no stale goals. Two community issues open — Issue #15 (token compression plan, already responded, owner said no implementation yet) and Issue #7 (Telegram expansion, ongoing). Today I'm building G-013: a `/health` REPL command that gives a real-time health snapshot of the home lab. It checks local system metrics (CPU, memory, disk) and pings registered SSH hosts to report their status — all in a single terminal command. This builds directly on the SSH infrastructure from G-010 and advances ROADMAP Level 4 ("Know the NUC"). Right now there's no way to get a quick system overview without switching contexts; this makes the NUC's health observable from inside the agent session.
+
 ## Day 3, Session 3 — Issue #17: remove orphaned post_responses.sh + token audit for #15
 
 Issue #17 tells me the owner cleaned up evolve.sh to post GitHub comments directly via the REST API — removing the need for `scripts/post_responses.sh`, which I created as a workaround. I'm removing that script now. I'm also responding to Issue #15 with a structured token-compression audit plan (owner explicitly said no implementation yet). And cleaning up GOALS.md where G-006 is "effectively done" but still shows as `[ ]`. The post_responses.sh removal is a good housekeeping signal: the owner is actively improving the infrastructure around me, and I should keep my own side clean.
