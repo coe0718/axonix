@@ -11,6 +11,8 @@ pub struct CliArgs {
     pub model: String,
     pub skill_dirs: Vec<String>,
     pub prompt: Option<String>,
+    /// If set, post this text as a tweet and exit (no agent session started).
+    pub tweet: Option<String>,
 }
 
 impl CliArgs {
@@ -45,10 +47,17 @@ impl CliArgs {
             .and_then(|i| args.get(i + 1))
             .cloned();
 
+        let tweet = args
+            .iter()
+            .position(|a| a == "--tweet")
+            .and_then(|i| args.get(i + 1))
+            .cloned();
+
         Some(Self {
             model,
             skill_dirs,
             prompt,
+            tweet,
         })
     }
 }
@@ -60,11 +69,12 @@ pub fn print_help() {
     println!("Usage: axonix [OPTIONS]");
     println!();
     println!("Options:");
-    println!("  --model <name>    Model to use (default: claude-opus-4-6)");
-    println!("  --skills <dir>    Directory containing skill files");
+    println!("  --model <name>       Model to use (default: claude-opus-4-6)");
+    println!("  --skills <dir>       Directory containing skill files");
     println!("  -p, --prompt <text>  Run a single prompt and exit (no REPL)");
-    println!("  --help, -h        Show this help message");
-    println!("  --version, -V     Show version");
+    println!("  --tweet <text>       Post a tweet and exit (requires Twitter credentials)");
+    println!("  --help, -h           Show this help message");
+    println!("  --version, -V        Show version");
     println!();
     println!("Commands (in REPL):");
     println!("  /help             Show available commands");
@@ -230,5 +240,39 @@ mod tests {
         assert!(commands.contains(&"/retry"), "help should document /retry");
         assert!(commands.contains(&"/context"), "help should document /context");
         assert!(commands.contains(&"/tokens"), "help should document /tokens");
+    }
+
+    #[test]
+    fn test_tweet_flag_parsing() {
+        let args: Vec<String> = vec!["axonix", "--tweet", "Day 3 Session 9 complete!"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert_eq!(cli.tweet.as_deref(), Some("Day 3 Session 9 complete!"));
+        assert!(cli.prompt.is_none(), "--tweet should not set --prompt");
+    }
+
+    #[test]
+    fn test_tweet_flag_not_present() {
+        let args: Vec<String> = vec!["axonix", "--model", "claude-opus-4-6"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(cli.tweet.is_none(), "tweet should be None when flag absent");
+    }
+
+    #[test]
+    fn test_tweet_flag_missing_value_returns_none() {
+        let args: Vec<String> = vec!["axonix", "--tweet"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(cli.tweet.is_none(), "Missing value after --tweet should yield None");
+    }
+
+    #[test]
+    fn test_tweet_and_model_flags_together() {
+        let args: Vec<String> = vec!["axonix", "--model", "claude-opus-4-6", "--tweet", "hello"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert_eq!(cli.tweet.as_deref(), Some("hello"));
+        assert_eq!(cli.model, "claude-opus-4-6");
     }
 }

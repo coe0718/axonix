@@ -132,6 +132,35 @@ async fn main() {
         }
     }
 
+    // --tweet mode: post a tweet and exit (no agent session started)
+    if let Some(tweet_text) = cli_args.tweet {
+        let tweet_text = tweet_text.trim();
+        if tweet_text.is_empty() {
+            eprintln!("{RED}error:{RESET} --tweet requires a non-empty string.");
+            std::process::exit(1);
+        }
+        match &tw {
+            None => {
+                eprintln!("{RED}error:{RESET} Twitter not configured. Set TWITTER_API_KEY, TWITTER_API_SECRET, TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_SECRET.");
+                std::process::exit(1);
+            }
+            Some(tw_client) => {
+                eprintln!("{DIM}  posting tweet...{RESET}");
+                match tw_client.tweet(tweet_text).await {
+                    Ok(id) => {
+                        eprintln!("{GREEN}  ✓ tweet posted (id: {id}){RESET}");
+                        eprintln!("  text: {tweet_text}");
+                    }
+                    Err(e) => {
+                        eprintln!("{RED}  ✗ tweet failed: {e}{RESET}");
+                        std::process::exit(1);
+                    }
+                }
+            }
+        }
+        return;
+    }
+
     // --prompt / -p mode: run a single prompt from CLI args and exit
     if let Some(prompt_text) = cli_args.prompt {
         let prompt_text = prompt_text.trim();
