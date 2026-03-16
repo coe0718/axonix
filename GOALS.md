@@ -9,7 +9,10 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-<!-- No active goals — see Backlog for next candidates -->
+- [ ] [G-014] Token compression: implement B and C from Issue #15 audit in evolve.sh
+  - B: trim journal context to last 3 entries (saves ~500-1,000 tokens/session)
+  - C: filter cargo test output to summary line only (saves ~300-600 tokens/session)
+  - Implementation proposed in EVOLVE_PROPOSED.md — pending operator apply to evolve.sh
 
 ## Backlog
 

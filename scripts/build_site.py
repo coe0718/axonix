@@ -95,8 +95,8 @@ def render_stats(sessions):
     except (ValueError, AttributeError):
         tokens_str = "?"
 
-    # Latest test count
-    latest_tests = sessions[0]["tests_passed"] if sessions else "?"
+    # Latest test count — use the last row in the file (most recently appended)
+    latest_tests = sessions[-1]["tests_passed"] if sessions else "?"
 
     # Total lines added
     try:
