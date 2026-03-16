@@ -287,6 +287,11 @@ pub fn is_status_command(text: &str) -> bool {
     matches!(text.trim(), "/status")
 }
 
+/// Check whether a Telegram message is a `/health` command.
+pub fn is_health_command(text: &str) -> bool {
+    matches!(text.trim(), "/health")
+}
+
 /// The help text shown to Telegram users.
 ///
 /// Kept as a constant so the poll loop and tests share the same string.
@@ -295,12 +300,14 @@ pub const TELEGRAM_HELP_TEXT: &str = "\
 
 /ask <prompt> — Send a prompt to the agent and get a response
 /status — Show current session status (model, mode, uptime)
+/health — Show system health (CPU, memory, disk, uptime)
 /help — Show this help message
 
 *Examples:*
 • /ask explain how async Rust works
 • /ask what files are in /workspace/src?
 • /status
+• /health
 
 Responses may take a moment depending on prompt complexity.";
 
@@ -316,10 +323,12 @@ pub enum BotCommand {
     Help { message_id: i64 },
     /// `/status` — report current session status (model, mode, uptime).
     Status { message_id: i64 },
+    /// `/health` — report system health (CPU, memory, disk, uptime).
+    Health { message_id: i64 },
 }
 
 impl TelegramClient {
-    /// Scan a batch of updates for bot commands (ask, help, status).
+    /// Scan a batch of updates for bot commands (ask, help, status, health).
     ///
     /// Only processes messages from the configured chat ID (security: ignore
     /// messages from other chats to prevent prompt injection from strangers).
@@ -335,6 +344,9 @@ impl TelegramClient {
                 }
                 if is_status_command(text) {
                     return Some(BotCommand::Status { message_id: msg.message_id });
+                }
+                if is_health_command(text) {
+                    return Some(BotCommand::Health { message_id: msg.message_id });
                 }
                 let prompt = parse_ask_command(text)?;
                 Some(BotCommand::Ask(AskCommand {
@@ -816,5 +828,61 @@ mod tests {
     #[test]
     fn test_help_text_mentions_status() {
         assert!(TELEGRAM_HELP_TEXT.contains("/status"), "help text must mention /status command");
+    }
+
+    // ── is_health_command ─────────────────────────────────────────────────────
+
+    #[test]
+    fn test_is_health_command_true() {
+        assert!(is_health_command("/health"));
+        assert!(is_health_command("  /health  "));
+    }
+
+    #[test]
+    fn test_is_health_command_false_for_non_health() {
+        assert!(!is_health_command("/ask hello"));
+        assert!(!is_health_command("/help"));
+        assert!(!is_health_command("/status"));
+        assert!(!is_health_command("health"));
+        assert!(!is_health_command(""));
+        assert!(!is_health_command("/healthcheck"));
+    }
+
+    // ── extract_commands with /health ─────────────────────────────────────────
+
+    #[test]
+    fn test_extract_commands_health_detected() {
+        let client = make_client();
+        let updates = vec![make_update(1, 12345, 9, "/health")];
+        let commands = client.extract_commands(&updates);
+        assert_eq!(commands.len(), 1);
+        assert!(
+            matches!(commands[0], BotCommand::Health { message_id: 9 }),
+            "expected BotCommand::Health, got {:?}",
+            commands[0]
+        );
+    }
+
+    #[test]
+    fn test_extract_commands_health_in_mixed_batch() {
+        let client = make_client();
+        let updates = vec![
+            make_update(1, 12345, 1, "/ask first question"),
+            make_update(2, 12345, 2, "/status"),
+            make_update(3, 12345, 3, "/health"),
+            make_update(4, 12345, 4, "/help"),
+            make_update(5, 12345, 5, "just a message"),
+        ];
+        let commands = client.extract_commands(&updates);
+        assert_eq!(commands.len(), 4, "4 commands: ask + status + health + help");
+        assert!(matches!(commands[0], BotCommand::Ask(_)));
+        assert!(matches!(commands[1], BotCommand::Status { .. }));
+        assert!(matches!(commands[2], BotCommand::Health { .. }));
+        assert!(matches!(commands[3], BotCommand::Help { .. }));
+    }
+
+    #[test]
+    fn test_help_text_mentions_health() {
+        assert!(TELEGRAM_HELP_TEXT.contains("/health"), "help text must mention /health command");
     }
 }

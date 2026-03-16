@@ -708,6 +708,13 @@ async fn main() {
                             tg_client.reply_to(&reply, message_id).await.ok();
                         }
                     }
+                    axonix::telegram::BotCommand::Health { message_id } => {
+                        println!("\n{DIM}  📱 Telegram /health{RESET}");
+                        if let Some(ref tg_client) = tg {
+                            let snapshot = axonix::health::HealthSnapshot::collect();
+                            tg_client.reply_to(&snapshot.format(), message_id).await.ok();
+                        }
+                    }
                 }
             }
         }
@@ -755,6 +762,10 @@ fn spawn_telegram_cron_poll(
                                         0,
                                     );
                                     tg_poll.reply_to(&reply, message_id).await.ok();
+                                }
+                                axonix::telegram::BotCommand::Health { message_id } => {
+                                    let snapshot = axonix::health::HealthSnapshot::collect();
+                                    tg_poll.reply_to(&snapshot.format(), message_id).await.ok();
                                 }
                                 axonix::telegram::BotCommand::Ask(ask_cmd) => {
                                     // Queue for processing after main prompt completes
