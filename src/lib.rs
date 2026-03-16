@@ -9,6 +9,7 @@
 //! - `lint` — YAML and Caddyfile validation (for docker compose, Caddy server config)
 //! - `ssh` — multi-device management via SSH
 //! - `telegram` — Telegram bot integration (notifications + inbound /ask commands)
+//! - `twitter` — Twitter API integration (session announcements via OAuth 1.0a)
 
 pub mod cli;
 pub mod conversation;
@@ -19,3 +20,4 @@ pub mod render;
 pub mod repl;
 pub mod ssh;
 pub mod telegram;
+pub mod twitter;
