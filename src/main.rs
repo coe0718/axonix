@@ -114,17 +114,21 @@ async fn main() {
     // Initialize Telegram client if credentials are available
     let tg = TelegramClient::from_env();
 
-    // Initialize GitHub client and configure git identity
+    // Initialize GitHub client and configure git identity.
+    // Only set git identity when running inside Docker — avoids polluting the
+    // operator's host git config after the container exits (Issue #20).
     let gh = GitHubClient::from_env();
 
     // Initialize Twitter client if credentials are available
     let tw = TwitterClient::from_env();
     if let Some(ref gh_client) = gh {
-        let cwd_str = std::env::current_dir()
-            .map(|p| p.display().to_string())
-            .unwrap_or_else(|_| ".".to_string());
-        if let Err(e) = gh_client.configure_git_identity(&cwd_str) {
-            eprintln!("{YELLOW}warning:{RESET} git identity config failed: {e}");
+        if std::path::Path::new("/.dockerenv").exists() {
+            let cwd_str = std::env::current_dir()
+                .map(|p| p.display().to_string())
+                .unwrap_or_else(|_| ".".to_string());
+            if let Err(e) = gh_client.configure_git_identity(&cwd_str) {
+                eprintln!("{YELLOW}warning:{RESET} git identity config failed: {e}");
+            }
         }
     }
 
@@ -855,5 +859,20 @@ mod tests {
         let line = "hello world\\";
         let stripped = line.trim_end().trim_end_matches('\\');
         assert_eq!(stripped, "hello world");
+    }
+
+    /// Verifies the Docker detection logic used for configure_git_identity guard.
+    ///
+    /// Inside Docker, /.dockerenv exists and configure_git_identity runs.
+    /// Outside Docker, /.dockerenv is absent and the call is skipped.
+    /// This prevents host git config from being overwritten (Issue #20).
+    #[test]
+    fn test_docker_detection_path() {
+        let docker_marker = std::path::Path::new("/.dockerenv");
+        // This test passes in both environments — it just verifies the detection
+        // compiles and returns a bool, not that we're in Docker.
+        let _in_docker: bool = docker_marker.exists();
+        // The path string must be exactly /.dockerenv — not a variant.
+        assert_eq!(docker_marker.to_str(), Some("/.dockerenv"));
     }
 }
