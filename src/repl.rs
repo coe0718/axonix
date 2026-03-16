@@ -101,6 +101,9 @@ pub enum CommandResult {
     /// `/retry` or `/retry N` — re-run a prompt from history.
     /// Carries the prompt text to replay.
     Retry(String),
+    /// `/issues [N]` — fetch open GitHub issues sorted by reactions.
+    /// Carries the limit (default 10, max 30).
+    FetchIssues(u8),
 }
 
 /// Process a REPL input string. Returns a `CommandResult`.
@@ -129,6 +132,7 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                 "    /ssh <h> <cmd> Run command on a remote host".to_string(),
                 "    /comment <n> <text> Post comment on GitHub issue #n".to_string(),
                 "    /tweet <text>       Post a tweet (≤280 chars)".to_string(),
+                "    /issues [N]         List open GitHub issues (default 10, sorted by reactions)".to_string(),
             ];
             if !skill_names.is_empty() {
                 lines.push("    /skills        Show loaded skills".to_string());
@@ -445,6 +449,42 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                     ])
                 }
             }
+        }
+
+        s if s == "/issues" || s.starts_with("/issues ") => {
+            // Usage: /issues [N]
+            // Fetches open GitHub issues sorted by reactions.
+            // The actual API call is done by caller (needs async GitHubClient).
+            // Returns FetchIssues(limit) so main loop can handle it.
+            let arg = if s == "/issues" {
+                ""
+            } else {
+                s.trim_start_matches("/issues ").trim()
+            };
+
+            let limit: u8 = if arg.is_empty() {
+                10 // default
+            } else {
+                match arg.parse::<u8>() {
+                    Ok(n) if n > 0 && n <= 30 => n,
+                    Ok(0) => {
+                        return CommandResult::Handled(vec![
+                            "  Error: limit must be between 1 and 30.".to_string(),
+                            "  Usage: /issues [N] (default: 10, max: 30)".to_string(),
+                            String::new(),
+                        ]);
+                    }
+                    _ => {
+                        return CommandResult::Handled(vec![
+                            format!("  Error: invalid limit '{arg}'. Must be a number 1–30."),
+                            "  Usage: /issues [N] (default: 10, max: 30)".to_string(),
+                            String::new(),
+                        ]);
+                    }
+                }
+            };
+
+            CommandResult::FetchIssues(limit)
         }
 
         s if s.starts_with('/') => {
@@ -1178,5 +1218,71 @@ mod tests {
         };
         let all = lines.join("\n");
         assert!(all.contains("/tweet"), "/help should document /tweet command");
+    }
+
+    // ── /issues command ──────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_issues_no_args_returns_fetch_issues_default() {
+        let mut s = state();
+        let result = handle_command("/issues", &mut s, &[]);
+        assert_eq!(result, CommandResult::FetchIssues(10), "/issues with no args should fetch 10");
+    }
+
+    #[test]
+    fn test_issues_with_valid_limit() {
+        let mut s = state();
+        let result = handle_command("/issues 5", &mut s, &[]);
+        assert_eq!(result, CommandResult::FetchIssues(5), "/issues 5 should fetch 5");
+    }
+
+    #[test]
+    fn test_issues_with_max_limit() {
+        let mut s = state();
+        let result = handle_command("/issues 30", &mut s, &[]);
+        assert_eq!(result, CommandResult::FetchIssues(30), "/issues 30 should be accepted");
+    }
+
+    #[test]
+    fn test_issues_over_max_limit_shows_error() {
+        let mut s = state();
+        let result = handle_command("/issues 31", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled for over-limit: {result:?}");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("Error") || all.contains("1–30"), "over-limit should show error: {all}");
+    }
+
+    #[test]
+    fn test_issues_zero_limit_shows_error() {
+        let mut s = state();
+        let result = handle_command("/issues 0", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled for zero limit: {result:?}");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("Error") || all.contains("Usage"), "zero limit should show error: {all}");
+    }
+
+    #[test]
+    fn test_issues_invalid_arg_shows_error() {
+        let mut s = state();
+        let result = handle_command("/issues abc", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled for invalid arg: {result:?}");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("Error") || all.contains("invalid"), "invalid arg should show error: {all}");
+    }
+
+    #[test]
+    fn test_help_includes_issues_command() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/help", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("/issues"), "/help should document /issues command");
     }
 }

@@ -18,6 +18,7 @@
 //!   /retry          Retry the last prompt
 //!   /model <name>   Switch model mid-session
 //!   /lint <file>    Validate a YAML or Caddyfile
+//!   /issues [N]     List open GitHub issues sorted by reactions
 //!
 //! Multiline input:
 //!   End a line with \ to continue on the next line
@@ -316,6 +317,48 @@ async fn main() {
                 println!("{DIM}  (retrying: {}){RESET}", truncate(prompt, 60));
                 let prompt = prompt.clone();
                 run_prompt(&mut agent, &prompt, &mut repl, tg.as_ref()).await;
+                continue;
+            }
+
+            CommandResult::FetchIssues(limit) => {
+                match &gh {
+                    None => {
+                        println!("{YELLOW}  ⚠ No GitHub token available — set GH_TOKEN or AXONIX_BOT_TOKEN{RESET}\n");
+                    }
+                    Some(gh_client) => {
+                        print!("{DIM}  fetching open issues for coe0718/axonix...{RESET}");
+                        io::stdout().flush().ok();
+                        match gh_client.list_issues("coe0718/axonix", limit).await {
+                            Err(e) => println!("\n{RED}  ✗ failed to fetch issues: {e}{RESET}\n"),
+                            Ok(issues) => {
+                                println!();
+                                if issues.is_empty() {
+                                    println!("{DIM}  (no open issues){RESET}\n");
+                                } else {
+                                    println!("{DIM}  Open issues ({} shown, sorted by 👍):{RESET}", issues.len());
+                                    for issue in &issues {
+                                        let label_str = if issue.labels.is_empty() {
+                                            String::new()
+                                        } else {
+                                            format!(" [{}]", issue.labels.join(", "))
+                                        };
+                                        let reaction_str = if issue.reactions > 0 {
+                                            format!(" 👍{}", issue.reactions)
+                                        } else {
+                                            String::new()
+                                        };
+                                        println!(
+                                            "{DIM}  #{:<4}{RESET} {}{reaction_str}{YELLOW}{label_str}{RESET}",
+                                            issue.number,
+                                            truncate(&issue.title, 70)
+                                        );
+                                    }
+                                    println!();
+                                }
+                            }
+                        }
+                    }
+                }
                 continue;
             }
 

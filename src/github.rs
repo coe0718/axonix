@@ -190,6 +190,93 @@ impl GitHubClient {
     pub fn is_bot(&self) -> bool {
         self.identity == GitHubIdentity::Bot
     }
+
+    /// Fetch open issues for a repo, sorted by most reactions first.
+    ///
+    /// `repo` should be in `owner/name` format (e.g., `"coe0718/axonix"`).
+    /// `limit` caps the number of issues returned (max 100 from GitHub API).
+    ///
+    /// Returns a list of `IssueEntry` sorted descending by reaction count.
+    pub async fn list_issues(
+        &self,
+        repo: &str,
+        limit: u8,
+    ) -> Result<Vec<IssueEntry>, String> {
+        let per_page = limit.max(1);
+        let url = format!(
+            "https://api.github.com/repos/{repo}/issues?state=open&per_page={per_page}&sort=created&direction=desc"
+        );
+
+        let res = self
+            .client
+            .get(&url)
+            .header("Authorization", format!("Bearer {}", self.token))
+            .header("Accept", "application/vnd.github+json")
+            .header("X-GitHub-Api-Version", "2022-11-28")
+            .header("User-Agent", "axonix-bot/1.0")
+            .send()
+            .await
+            .map_err(|e| format!("GitHub API request failed: {e}"))?;
+
+        let status = res.status();
+        if !status.is_success() {
+            let body = res.text().await.unwrap_or_default();
+            return Err(format!("GitHub API error {status}: {body}"));
+        }
+
+        let json: serde_json::Value = res
+            .json()
+            .await
+            .map_err(|e| format!("GitHub response parse error: {e}"))?;
+
+        let issues = json
+            .as_array()
+            .ok_or_else(|| "GitHub response was not an array".to_string())?;
+
+        let mut entries: Vec<IssueEntry> = issues
+            .iter()
+            .filter_map(|issue| {
+                // Skip pull requests (GitHub includes PRs in /issues endpoint)
+                if issue.get("pull_request").is_some() {
+                    return None;
+                }
+                let number = issue.get("number")?.as_u64()? as u32;
+                let title = issue.get("title")?.as_str()?.to_string();
+                let reactions = issue
+                    .get("reactions")
+                    .and_then(|r| r.get("total_count"))
+                    .and_then(|c| c.as_u64())
+                    .unwrap_or(0) as u32;
+                let labels: Vec<String> = issue
+                    .get("labels")
+                    .and_then(|l| l.as_array())
+                    .map(|arr| {
+                        arr.iter()
+                            .filter_map(|label| label.get("name")?.as_str().map(|s| s.to_string()))
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                Some(IssueEntry { number, title, reactions, labels })
+            })
+            .collect();
+
+        // Sort by reactions descending (most-voted issues first)
+        entries.sort_by(|a, b| b.reactions.cmp(&a.reactions));
+        Ok(entries)
+    }
+}
+
+/// A GitHub issue entry with priority-relevant metadata.
+#[derive(Debug, Clone, PartialEq)]
+pub struct IssueEntry {
+    /// Issue number.
+    pub number: u32,
+    /// Issue title.
+    pub title: String,
+    /// Total reaction count (👍 etc.) — used to prioritize community requests.
+    pub reactions: u32,
+    /// Labels attached to the issue.
+    pub labels: Vec<String>,
 }
 
 #[cfg(test)]
@@ -245,5 +332,45 @@ mod tests {
         let client = GitHubClient::new("owner_token", GitHubIdentity::Owner);
         assert!(!client.is_bot());
         assert_eq!(client.identity.display_name(), "coe0718 (owner)");
+    }
+
+    // ── IssueEntry ────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_issue_entry_fields() {
+        let entry = IssueEntry {
+            number: 7,
+            title: "Add Telegram features".to_string(),
+            reactions: 3,
+            labels: vec!["enhancement".to_string()],
+        };
+        assert_eq!(entry.number, 7);
+        assert_eq!(entry.title, "Add Telegram features");
+        assert_eq!(entry.reactions, 3);
+        assert_eq!(entry.labels, vec!["enhancement"]);
+    }
+
+    #[test]
+    fn test_issue_entry_no_labels() {
+        let entry = IssueEntry {
+            number: 1,
+            title: "Test issue".to_string(),
+            reactions: 0,
+            labels: vec![],
+        };
+        assert!(entry.labels.is_empty());
+    }
+
+    #[test]
+    fn test_issue_sort_by_reactions() {
+        let mut issues = vec![
+            IssueEntry { number: 1, title: "low".to_string(), reactions: 1, labels: vec![] },
+            IssueEntry { number: 2, title: "high".to_string(), reactions: 10, labels: vec![] },
+            IssueEntry { number: 3, title: "mid".to_string(), reactions: 5, labels: vec![] },
+        ];
+        issues.sort_by(|a, b| b.reactions.cmp(&a.reactions));
+        assert_eq!(issues[0].number, 2, "highest reaction issue should be first");
+        assert_eq!(issues[1].number, 3);
+        assert_eq!(issues[2].number, 1);
     }
 }
