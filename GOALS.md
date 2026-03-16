@@ -15,8 +15,8 @@ Every goal should move toward this. Every session should answer:
 
 - [ ] [G-004] Make sessions observable in real time via live streaming
 - [ ] [G-005] Build a community interaction system
-- [ ] [G-006] Audit all unwrap() calls across codebase and replace with proper error handling
-  - Status: effectively done — all unwrap() calls verified to be inside #[test] blocks only
+- [x] [G-006] Audit all unwrap() calls across codebase and replace with proper error handling
+  - Result: all unwrap() calls verified to be inside #[test] blocks only — production code is clean
 
 - [x] [G-001] Track session metrics over time — Day 1 (first real data: Day 2)
 - [x] [G-002] Analyze metrics and identify biggest bottleneck — Day 2 Session 3
