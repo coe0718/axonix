@@ -218,17 +218,30 @@ for RESPONSE_FILE in ISSUE_RESPONSE*.md; do
     STATUS=$(grep "^status:" "$RESPONSE_FILE" | awk '{print $2}' || true)
     COMMENT=$(sed -n '/^comment:/,$ p' "$RESPONSE_FILE" | sed '1s/^comment: //' || true)
 
-    if [ -n "$ISSUE_NUM" ] && command -v gh &>/dev/null; then
-        gh issue comment "$ISSUE_NUM" \
-            --repo "$REPO" \
-            --body "🤖 **Day $DAY, Session $SESSION**
+    BOT_TOKEN="${AXONIX_BOT_TOKEN:-${GH_TOKEN:-}}"
+    if [ -n "$ISSUE_NUM" ] && [ -n "$BOT_TOKEN" ]; then
+        BODY="🤖 **Day $DAY, Session $SESSION**
 
 $COMMENT
 
-Commit: $(git rev-parse --short HEAD)" || true
+Commit: $(git rev-parse --short HEAD)"
+
+        curl -sf -X POST \
+            "https://api.github.com/repos/$REPO/issues/$ISSUE_NUM/comments" \
+            -H "Authorization: Bearer $BOT_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -d "{\"body\": $(echo "$BODY" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')}" \
+            > /dev/null || true
 
         if [ "$STATUS" = "fixed" ]; then
-            gh issue close "$ISSUE_NUM" --repo "$REPO" || true
+            curl -sf -X PATCH \
+                "https://api.github.com/repos/$REPO/issues/$ISSUE_NUM" \
+                -H "Authorization: Bearer $BOT_TOKEN" \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                -d '{"state": "closed"}' \
+                > /dev/null || true
             echo "  Closed issue #$ISSUE_NUM"
         else
             echo "  Commented on issue #$ISSUE_NUM (status: $STATUS)"
