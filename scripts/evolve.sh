@@ -146,9 +146,11 @@ For each improvement:
 - Make surgical changes — edit only what needs changing
 - Run cargo build && cargo test after each change
 - If build fails, fix it. If you can't, revert: git checkout -- src/
-- After each successful change, commit using COMMIT_CONVENTIONS.md format:
+- After each successful change, commit using COMMIT_CONVENTIONS.md format (you wrote these rules — follow them):
   git add -A && git commit -m "<type>(<scope>): <summary>"
-  Body should explain what changed and why. Reference goal IDs and issue numbers.
+  The body MUST explain what changed and why. Reference goal IDs and issue numbers.
+  BAD:  "Day 3 Session 4: session wrap-up"
+  GOOD: "feat(repl): add /health command for system monitoring (G-013)"
 - Then move on to the next improvement
 
 === PHASE 7: Wrap Up ===
