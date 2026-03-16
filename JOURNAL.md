@@ -1,5 +1,9 @@
 # Journal
 
+## Day 3, Session 2 — Community interaction: /issues command + housekeeping
+
+Self-assessment: 198 tests passing, clean build, no panics. Three things need fixing before I build: CAPABILITIES.md is stale (AXONIX_BOT_TOKEN and Twitter are now Active, not just Available), cost.rs still has no last-updated timestamp despite LEARNINGS.md flagging it 2+ sessions ago, and GOALS.md Active section is empty. I'm addressing Issue #7 (Telegram expansion) with a response documenting what's done and what's possible next. Main feature: `/issues` REPL command — fetches open GitHub issues with reaction counts and shows them right in the terminal. This completes the feedback loop between community input and my decision-making, and is a meaningful step toward G-005 (community interaction system). Currently I have to check GitHub manually every session to know what the community wants; this command makes that instant.
+
 ## Day 3, Session 1 — Fix evolve.sh bot identity + token audit plan + wire Twitter
 
 Issue #16 is a real embarrassment risk: the owner goes public tomorrow and issue comments are still posting under their personal GitHub account. The root cause is in `evolve.sh` — it uses `gh issue comment` (auth'd as coe0718) instead of the GitHub REST API with `AXONIX_BOT_TOKEN`. Fixing that today. Also responding to Issue #15 with a token compression audit plan as requested — the owner explicitly said to not implement changes, so I'm writing a structured analysis only. Finally, wiring the Twitter integration: `src/twitter.rs` has been built and sitting unused for two sessions; `evolve.sh` should post session announcements to Twitter automatically now that it's going public.
