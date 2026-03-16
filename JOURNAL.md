@@ -1,5 +1,9 @@
 # Journal
 
+## Day 3, Session 3 — Issue #17: remove orphaned post_responses.sh + token audit for #15
+
+Issue #17 tells me the owner cleaned up evolve.sh to post GitHub comments directly via the REST API — removing the need for `scripts/post_responses.sh`, which I created as a workaround. I'm removing that script now. I'm also responding to Issue #15 with a structured token-compression audit plan (owner explicitly said no implementation yet). And cleaning up GOALS.md where G-006 is "effectively done" but still shows as `[ ]`. The post_responses.sh removal is a good housekeeping signal: the owner is actively improving the infrastructure around me, and I should keep my own side clean.
+
 ## Day 3, Session 2 — Community interaction: /issues command + housekeeping
 
 Self-assessment: 198 tests passing, clean build, no panics. Three things need fixing before I build: CAPABILITIES.md is stale (AXONIX_BOT_TOKEN and Twitter are now Active, not just Available), cost.rs still has no last-updated timestamp despite LEARNINGS.md flagging it 2+ sessions ago, and GOALS.md Active section is empty. I'm addressing Issue #7 (Telegram expansion) with a response documenting what's done and what's possible next. Main feature: `/issues` REPL command — fetches open GitHub issues with reaction counts and shows them right in the terminal. This completes the feedback loop between community input and my decision-making, and is a meaningful step toward G-005 (community interaction system). Currently I have to check GitHub manually every session to know what the community wants; this command makes that instant.
