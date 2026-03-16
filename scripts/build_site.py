@@ -128,6 +128,108 @@ def render_stats(sessions):
     return "\n".join(parts)
 
 
+def parse_goals(content):
+    """Parse GOALS.md into active and completed goal lists.
+
+    Returns a dict with:
+      - 'active':    list of {id, text} for [ ] items in ## Active
+      - 'backlog':   list of {id, text} for [ ] items in ## Backlog
+      - 'completed': list of {id, text} for [x] items anywhere
+    """
+    active = []
+    backlog = []
+    completed = []
+
+    sections = re.split(r"^## ", content, flags=re.MULTILINE)
+    for section in sections:
+        section = section.strip()
+        if not section:
+            continue
+        lines = section.split("\n")
+        header = lines[0].strip().lower()
+        is_active = header.startswith("active")
+        is_backlog = header.startswith("backlog")
+
+        for line in lines[1:]:
+            # Match "- [ ] [G-NNN] description" or "- [x] [G-NNN] description"
+            m = re.match(r"^\s*-\s+\[([ xX])\]\s+(\[G-\d+\])?\s*(.+)$", line)
+            if not m:
+                continue
+            checked = m.group(1).lower() == "x"
+            goal_id = m.group(2) or ""
+            text = m.group(3).strip()
+            # Strip trailing "— Day N..." annotation from completed goals for brevity
+            text = re.sub(r"\s*[—–]\s*Day \d+.*$", "", text)
+            entry = {"id": goal_id, "text": text}
+            if checked:
+                completed.append(entry)
+            elif is_active:
+                active.append(entry)
+            elif is_backlog:
+                backlog.append(entry)
+
+    return {"active": active, "backlog": backlog, "completed": completed}
+
+
+def render_goals(goals):
+    """Render the goals section HTML."""
+    active = goals["active"]
+    backlog = goals["backlog"]
+    completed = goals["completed"]
+
+    if not active and not backlog and not completed:
+        return '      <p class="goals-empty">No goals recorded yet.</p>'
+
+    parts = []
+
+    if active:
+        parts.append('      <div class="goals-group">')
+        parts.append('        <span class="goals-group-label">active</span>')
+        parts.append('        <ul class="goals-list">')
+        for g in active:
+            label = f'<span class="goal-id">{html.escape(g["id"])}</span> ' if g["id"] else ""
+            parts.append(
+                f'          <li class="goal goal-active">'
+                f'<span class="goal-marker">→</span>'
+                f'{label}<span class="goal-text">{md_inline(g["text"])}</span>'
+                f'</li>'
+            )
+        parts.append("        </ul>")
+        parts.append("      </div>")
+
+    if backlog:
+        parts.append('      <div class="goals-group">')
+        parts.append('        <span class="goals-group-label">backlog</span>')
+        parts.append('        <ul class="goals-list">')
+        for g in backlog:
+            label = f'<span class="goal-id">{html.escape(g["id"])}</span> ' if g["id"] else ""
+            parts.append(
+                f'          <li class="goal goal-backlog">'
+                f'<span class="goal-marker">·</span>'
+                f'{label}<span class="goal-text">{md_inline(g["text"])}</span>'
+                f'</li>'
+            )
+        parts.append("        </ul>")
+        parts.append("      </div>")
+
+    if completed:
+        parts.append('      <div class="goals-group">')
+        parts.append('        <span class="goals-group-label">completed</span>')
+        parts.append('        <ul class="goals-list">')
+        for g in completed:
+            label = f'<span class="goal-id">{html.escape(g["id"])}</span> ' if g["id"] else ""
+            parts.append(
+                f'          <li class="goal goal-done">'
+                f'<span class="goal-marker">✓</span>'
+                f'{label}<span class="goal-text">{md_inline(g["text"])}</span>'
+                f'</li>'
+            )
+        parts.append("        </ul>")
+        parts.append("      </div>")
+
+    return "\n".join(parts)
+
+
 def parse_identity(content):
     intro_lines = []
     rules = []
@@ -226,6 +328,7 @@ HTML_TEMPLATE = """\
     <div class="nav-links">
       <a href="#stats">stats</a>
       <a href="#journal">journal</a>
+      <a href="#goals">goals</a>
       <a href="#identity">identity</a>
       <a href="https://github.com/coe0718/axonix" target="_blank" rel="noopener">github \u2197</a>
     </div>
@@ -248,6 +351,11 @@ HTML_TEMPLATE = """\
       <div class="timeline">
 {journal_html}
       </div>
+    </section>
+
+    <section id="goals">
+      <h2 class="section-label">// goals</h2>
+{goals_html}
     </section>
 
     <section id="identity">
@@ -573,6 +681,84 @@ section {
 }
 
 
+/* ── goals ── */
+
+.goals-empty {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.goals-group {
+  margin-bottom: 1.5rem;
+}
+
+.goals-group-label {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.goals-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.goal {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  border-bottom: 1px solid var(--border);
+}
+
+.goal-marker {
+  flex-shrink: 0;
+  width: 1.2rem;
+  text-align: center;
+  font-size: 0.75rem;
+}
+
+.goal-active .goal-marker {
+  color: var(--cyan);
+}
+
+.goal-backlog .goal-marker {
+  color: var(--text-dim);
+}
+
+.goal-done .goal-marker {
+  color: var(--green);
+}
+
+.goal-id {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  font-weight: 300;
+}
+
+.goal-text {
+  color: var(--text);
+}
+
+.goal-active .goal-text {
+  color: var(--text-bright);
+}
+
+.goal-done .goal-text {
+  color: var(--text-dim);
+  text-decoration: line-through;
+  text-decoration-color: var(--border);
+}
+
+
 /* ── footer ── */
 
 footer {
@@ -632,12 +818,14 @@ def build():
     metrics = parse_metrics(read_file("METRICS.md"))
     stats_html = render_stats(metrics)
     journal_html = render_journal(parse_journal(read_file("JOURNAL.md")))
+    goals_html = render_goals(parse_goals(read_file("GOALS.md")))
     identity_html = render_identity(parse_identity(read_file("IDENTITY.md")))
 
     page = HTML_TEMPLATE.format(
         day_count=day_count,
         stats_html=stats_html,
         journal_html=journal_html,
+        goals_html=goals_html,
         identity_html=identity_html,
     )
 

@@ -306,6 +306,84 @@ section {
 }
 
 
+/* ── goals ── */
+
+.goals-empty {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.goals-group {
+  margin-bottom: 1.5rem;
+}
+
+.goals-group-label {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.goals-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.goal {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  border-bottom: 1px solid var(--border);
+}
+
+.goal-marker {
+  flex-shrink: 0;
+  width: 1.2rem;
+  text-align: center;
+  font-size: 0.75rem;
+}
+
+.goal-active .goal-marker {
+  color: var(--cyan);
+}
+
+.goal-backlog .goal-marker {
+  color: var(--text-dim);
+}
+
+.goal-done .goal-marker {
+  color: var(--green);
+}
+
+.goal-id {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  font-weight: 300;
+}
+
+.goal-text {
+  color: var(--text);
+}
+
+.goal-active .goal-text {
+  color: var(--text-bright);
+}
+
+.goal-done .goal-text {
+  color: var(--text-dim);
+  text-decoration: line-through;
+  text-decoration-color: var(--border);
+}
+
+
 /* ── footer ── */
 
 footer {
