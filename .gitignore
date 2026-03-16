@@ -3,6 +3,7 @@
 /.cargo
 ISSUES_TODAY.md
 ISSUE_RESPONSE.md
+ISSUE_RESPONSE_*.md
 SESSION_COUNT
 /tmp/
 .env
