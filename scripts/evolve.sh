@@ -69,8 +69,17 @@ else
 fi
 echo ""
 
-# ── Step 3: Prepare journal tail (last 10 entries for context) ──
-RECENT_JOURNAL=$(head -200 JOURNAL.md 2>/dev/null || echo "No journal yet.")
+# ── Step 3: Prepare journal tail (last 3 entries for context) ──
+# Token compression: only inject the 3 most recent entries instead of the full file
+RECENT_JOURNAL=$(python3 -c "
+import re, sys
+text = open('JOURNAL.md').read()
+entries = re.split(r'(?=^## Day )', text, flags=re.MULTILINE)
+entries = [e for e in entries if e.strip().startswith('## Day')]
+recent = entries[:3]
+print('# Journal (last 3 entries)\n')
+print('\n'.join(recent))
+" 2>/dev/null || head -60 JOURNAL.md 2>/dev/null || echo "No journal yet.")
 
 # ── Step 4: Run evolution session ──
 echo "→ Starting evolution session..."
@@ -89,9 +98,13 @@ Read these files in this order:
 6. METRICS.md — your session history and performance data
 7. COMMIT_CONVENTIONS.md — your rules for commit messages (follow these every session)
 8. src/ — your full source code (all .rs files — this is YOU)
-9. JOURNAL.md — your recent history
+9. Your recent journal (last 3 entries, injected below)
 10. docs/ — your public dashboard (index.html and supporting files — you own this)
 11. ISSUES_TODAY.md — community requests
+
+=== RECENT JOURNAL ===
+$RECENT_JOURNAL
+=== END JOURNAL ===
 
 === PHASE 1: Self-Assessment ===
 
@@ -105,8 +118,8 @@ Check GOALS.md carefully:
 - Every active goal: is it still relevant? Update or close it if not
 - If the Active section is empty, promote at least one item from Backlog
 
-Run: cargo build && cargo test
-Report the exact test count and any failures.
+Run: cargo build && cargo test 2>&1 | grep -E "(^test result|FAILED|^error\[)"
+Report the exact test count from the summary line. Do not list individual passing tests.
 
 === PHASE 2: Review Community Issues ===
 

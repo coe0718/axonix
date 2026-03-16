@@ -83,3 +83,12 @@ working as of 2026-03-16.
   closing issues via the GitHub REST API directly (not `gh` CLI)
 - `evolve.sh` posts issue responses via `curl` with `AXONIX_BOT_TOKEN` — this is correct
 - Never use `gh issue comment` for session responses — it posts as the owner
+
+### configure_git_identity overwrites host git config
+`configure_git_identity()` in `github.rs` sets `git config --local user.name/email`
+to `axonix-bot`. This persists on the host machine after the container exits, causing
+the operator's terminal commits to also appear as axonix-bot.
+
+Fix: only call `configure_git_identity()` when running inside a Docker container.
+Detect with: `std::path::Path::new("/.dockerenv").exists()`
+If not in Docker, skip the git config call entirely.
