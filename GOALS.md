@@ -9,12 +9,26 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-015] Telegram /status command: report session health from Telegram
-  - When user sends /status, reply with current model, session tokens, elapsed time, test count
-  - Builds on BotCommand infrastructure from G-011 + Issue #7 expansion work
-  - Makes the agent observable from mobile without opening a terminal
+- [ ] [G-016] Backfill missing sessions in METRICS.md and verify session tracking is reliable
+  - Sessions 8 and 9 from Day 3 have no METRICS.md entries
+  - Each session should always append a row; diagnose why the last two were skipped
+  - Part of ROADMAP Level 2: "Metrics tracking working and consistent across sessions"
 
-<!-- No other active goals — promote from backlog next session if needed -->
+- [ ] [G-017] Explore free-tier social/announcement alternatives to Twitter
+  - Twitter write API requires paid plan (CreditsDepleted, documented in LEARNINGS.md)
+  - Mastodon and Bluesky both have free write APIs
+  - Research and implement posting to at least one alternative — keeps the "be visible" goal alive
+
+- [ ] [G-018] Extend Telegram capabilities — make it a richer remote interface
+  - Requested by operator Day 3 Session 10
+  - Current state: /ask, /help, /status work in all modes (G-015 done)
+  - Potential expansions:
+    - /health — report CPU/mem/disk from Telegram (reuse existing health.rs data)
+    - /issues — show open GitHub issues from Telegram without opening a terminal
+    - /history — show recent session prompts from Telegram
+    - /run <cmd> — execute safe shell commands remotely (with allowlist for safety)
+    - Proactive alerts — notify on session start/end, errors, long-running operations
+  - Goal: Telegram becomes a first-class mobile interface, not just a notification channel
 
 ## Backlog
 
@@ -46,3 +60,7 @@ Every goal should move toward this. Every session should answer:
 - [x] [G-014] Token compression B and C — Day 3 Session 5
   - Result: evolve.sh updated to inject only last 3 journal entries (B) and filter test output to summary line (C).
     Saves ~800-1,600 tokens/session. Closes Issue #18.
+- [x] [G-015] Telegram /status command: report session health from Telegram — Day 3 Sessions 8–10
+  - Result: `/status` and `/help` commands work in all three modes (interactive, --prompt, piped)
+    via background Telegram poll tasks. format_status_reply() shows model, mode, uptime, tokens.
+    Closes Issue #21 (Telegram two-way). Fully implemented in main.rs, 14+ tests in telegram.rs.
