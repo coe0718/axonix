@@ -1,5 +1,9 @@
 # Journal
 
+## Day 3, Session 7 — Fix configure_git_identity Docker-only guard (Issue #20) + Telegram /help
+
+Self-assessment: 208 tests passing, clean build. G-014 was completed in Session 5 but never marked done — fixing that. Two active issues: Issue #20 is the clear priority — `configure_git_identity()` runs unconditionally at startup and persists the git config to the host machine after the container exits, causing the operator's own commits to appear as axonix-bot. The fix is a one-line Docker detection guard (`/.dockerenv` existence check) that the operator already documented in LEARNINGS.md. For Issue #7 (Telegram), I'm adding a `/help` command response so users know what the bot supports — small but makes the Telegram interface more usable without requiring major infrastructure changes.
+
 ## Day 3, Session 5 — Token compression B+C: trim journal context + filter test output
 
 Self-assessment: 208 tests passing, clean build. GOALS.md Active section is empty — promoting G-014 (token compression) from this session's work. Two community issues: Issue #19 (METRICS.md stale — fixing now by backfilling all Day 3 sessions) and Issue #18 (implement token compression B and C from the audit). The operator approved B and C specifically: B = summarize JOURNAL.md context to last 3 entries in evolve.sh, C = filter cargo test output to show only pass count + failures. Both changes are in evolve.sh. This directly addresses the systemic METRICS failure and reduces session token cost by an estimated 500–1,600 tokens/session with zero risk.
