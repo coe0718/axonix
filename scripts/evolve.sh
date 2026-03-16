@@ -1,5 +1,5 @@
 #!/bin/bash
-# scripts/evolve.sh — One evolution cycle. Run daily via GitHub Actions or manually.
+# scripts/evolve.sh — One evolution cycle. Run on cron or manually.
 #
 # Usage:
 #   ANTHROPIC_API_KEY=sk-... ./scripts/evolve.sh
@@ -7,8 +7,7 @@
 # Environment:
 #   ANTHROPIC_API_KEY  — required
 #   REPO               — GitHub repo (default: coe0718/axonix)
-#   MODEL              — LLM model (default: claude-opus-4-6)
-#   TIMEOUT            — Max session time in seconds (default: 600)
+#   MODEL              — LLM model (default: claude-sonnet-4-6)
 
 set -euo pipefail
 
@@ -82,30 +81,40 @@ cat > "$PROMPT_FILE" <<PROMPT
 Today is Day $DAY, Session $SESSION ($DATE).
 
 Read these files in this order:
-1. IDENTITY.md (who you are and your rules)
-2. CAPABILITIES.md (what integrations and keys you have access to)
-3. src/main.rs (your current source code — this is YOU)
-4. JOURNAL.md (your recent history — last 10 entries)
-5. ISSUES_TODAY.md (community requests)
+1. IDENTITY.md — who you are, your values, your rules
+2. CAPABILITIES.md — what integrations and keys you have access to
+3. GOALS.md — your active goals and backlog
+4. LEARNINGS.md — cached knowledge, things you've already figured out
+5. METRICS.md — your session history and performance data
+6. src/ — your full source code (all .rs files — this is YOU)
+7. JOURNAL.md — your recent history
+8. ISSUES_TODAY.md — community requests
 
 === PHASE 1: Self-Assessment ===
 
-Read your own source code carefully. Then try a small task to test
-yourself — for example, read a file, edit something, run a command.
-Note any friction, bugs, crashes, or missing capabilities.
+Read your own source code carefully. Check for:
+- Crash bugs or panics (especially on edge-case input)
+- Stale GOALS.md entries (goals completed but not marked done)
+- Missing error handling or silent failures
+- Any capability in CAPABILITIES.md you haven't used yet
+
+Run: cargo build && cargo test
+Report what you find.
 
 === PHASE 2: Review Community Issues ===
 
 Read ISSUES_TODAY.md. These are real people asking you to improve.
 Issues with more 👍 reactions should be prioritized higher.
+Read any comments on issues — they may contain follow-up feedback.
 
 === PHASE 3: Decide ===
 
 Choose what to work on this session. Prioritize:
 1. Self-discovered crash or data loss bug
 2. Community issue with most 👍 (if actionable today)
-3. Self-discovered UX friction or missing error handling
-4. Whatever you think will make you most useful to real developers
+3. Active goal from GOALS.md
+4. Self-discovered UX friction or missing error handling
+5. Whatever you think will make you most useful to the person running you
 
 === PHASE 4: Journal ===
 
@@ -113,24 +122,38 @@ Before writing any code, write today's entry at the TOP of JOURNAL.md. Format:
 ## Day $DAY, Session $SESSION — [title]
 [2-4 sentences: what you plan to do, why you chose it]
 
-Then commit it: git add JOURNAL.md && git commit -m "Day $DAY Session $SESSION: journal"
+Commit: git add JOURNAL.md && git commit -m "docs(journal): Day $DAY Session $SESSION — [title]"
 
 === PHASE 5: Issue Response ===
 
-If you are working on a community GitHub issue, write to ISSUE_RESPONSE.md now:
+For each community issue you are addressing, write a separate response file:
+ISSUE_RESPONSE_<N>.md (e.g. ISSUE_RESPONSE_5.md for issue #5)
+
+Format:
 issue_number: [N]
 status: fixed|partial|wontfix
-comment: [your 2-3 sentence response to the person]
+comment: [your response — what you did, why, what changed]
+
+Write all response files before starting implementation.
 
 === PHASE 6: Implement ===
 
-For each improvement, follow the evolve skill rules:
+For each improvement:
 - Write a test first if possible
-- Use edit_file for surgical changes
-- Run cargo build && cargo test after changes
-- If build fails, try to fix it. If you can't, revert with: bash git checkout -- src/
-- After each successful change, commit: git add -A && git commit -m "Day $DAY Session $SESSION: <short description>"
+- Make surgical changes — edit only what needs changing
+- Run cargo build && cargo test after each change
+- If build fails, fix it. If you can't, revert: git checkout -- src/
+- After each successful change, commit using COMMIT_CONVENTIONS.md format:
+  git add -A && git commit -m "<type>(<scope>): <summary>"
+  Body should explain what changed and why. Reference goal IDs and issue numbers.
 - Then move on to the next improvement
+
+=== PHASE 7: Wrap Up ===
+
+After implementing:
+- Update GOALS.md — mark completed goals as done, promote backlog items if relevant
+- Update METRICS.md — add a row for this session
+- Verify: cargo build && cargo test
 
 Now begin. Read IDENTITY.md first.
 PROMPT
@@ -174,25 +197,26 @@ echo "  Site rebuilt."
 # Commit any remaining uncommitted changes (journal, roadmap, day counter, site, etc.)
 git add -A
 if ! git diff --cached --quiet; then
-    git commit -m "Day $DAY Session $SESSION: session wrap-up"
+    git commit -m "chore: Day $DAY Session $SESSION wrap-up"
     echo "  Committed session wrap-up."
 else
     echo "  No uncommitted changes remaining."
 fi
 
-# ── Step 6: Handle issue response ──
-if [ -f ISSUE_RESPONSE.md ]; then
+# ── Step 6: Handle issue responses ──
+for RESPONSE_FILE in ISSUE_RESPONSE*.md; do
+    [ -f "$RESPONSE_FILE" ] || continue
     echo ""
-    echo "→ Posting issue response..."
-    
-    ISSUE_NUM=$(grep "^issue_number:" ISSUE_RESPONSE.md | awk '{print $2}' || true)
-    STATUS=$(grep "^status:" ISSUE_RESPONSE.md | awk '{print $2}' || true)
-    COMMENT=$(sed -n '/^comment:/,$ p' ISSUE_RESPONSE.md | sed '1s/^comment: //' || true)
-    
+    echo "→ Posting issue response from $RESPONSE_FILE..."
+
+    ISSUE_NUM=$(grep "^issue_number:" "$RESPONSE_FILE" | awk '{print $2}' || true)
+    STATUS=$(grep "^status:" "$RESPONSE_FILE" | awk '{print $2}' || true)
+    COMMENT=$(sed -n '/^comment:/,$ p' "$RESPONSE_FILE" | sed '1s/^comment: //' || true)
+
     if [ -n "$ISSUE_NUM" ] && command -v gh &>/dev/null; then
         gh issue comment "$ISSUE_NUM" \
             --repo "$REPO" \
-            --body "🤖 **Day $DAY**
+            --body "🤖 **Day $DAY, Session $SESSION**
 
 $COMMENT
 
@@ -205,9 +229,9 @@ Commit: $(git rev-parse --short HEAD)" || true
             echo "  Commented on issue #$ISSUE_NUM (status: $STATUS)"
         fi
     fi
-    
-    rm -f ISSUE_RESPONSE.md
-fi
+
+    rm -f "$RESPONSE_FILE"
+done
 
 # ── Step 7: Push ──
 echo ""
