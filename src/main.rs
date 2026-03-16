@@ -32,6 +32,7 @@ use yoagent::tools::default_tools;
 use yoagent::retry::RetryConfig;
 use yoagent::*;
 
+use axonix::bluesky::BlueskyClient;
 use axonix::cli::{self, CliArgs};
 use axonix::conversation::save_conversation;
 use axonix::cost::estimate_cost;
@@ -121,6 +122,9 @@ async fn main() {
 
     // Initialize Twitter client if credentials are available
     let tw = TwitterClient::from_env();
+
+    // Initialize Bluesky client if credentials are available
+    let bsky = BlueskyClient::from_env();
     if let Some(ref gh_client) = gh {
         if std::path::Path::new("/.dockerenv").exists() {
             let cwd_str = std::env::current_dir()
@@ -153,6 +157,35 @@ async fn main() {
                     }
                     Err(e) => {
                         eprintln!("{RED}  ✗ tweet failed: {e}{RESET}");
+                        std::process::exit(1);
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+    // --bluesky-post mode: post to Bluesky and exit (no agent session started)
+    if let Some(post_text) = cli_args.bluesky_post {
+        let post_text = post_text.trim();
+        if post_text.is_empty() {
+            eprintln!("{RED}error:{RESET} --bluesky-post requires a non-empty string.");
+            std::process::exit(1);
+        }
+        match &bsky {
+            None => {
+                eprintln!("{RED}error:{RESET} Bluesky not configured. Set BLUESKY_IDENTIFIER and BLUESKY_APP_PASSWORD.");
+                std::process::exit(1);
+            }
+            Some(bsky_client) => {
+                eprintln!("{DIM}  posting to Bluesky...{RESET}");
+                match bsky_client.post(post_text).await {
+                    Ok(uri) => {
+                        eprintln!("{GREEN}  ✓ Bluesky post created (uri: {uri}){RESET}");
+                        eprintln!("  text: {post_text}");
+                    }
+                    Err(e) => {
+                        eprintln!("{RED}  ✗ Bluesky post failed: {e}{RESET}");
                         std::process::exit(1);
                     }
                 }
@@ -254,6 +287,9 @@ async fn main() {
     }
     if tw.is_some() {
         println!("{DIM}  twitter:  connected — use /tweet <text> to post{RESET}");
+    }
+    if bsky.is_some() {
+        println!("{DIM}  bluesky:  connected — use --bluesky-post <text> to post{RESET}");
     }
     println!("{DIM}  Type /help for commands{RESET}\n");
 

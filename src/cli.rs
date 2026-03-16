@@ -13,6 +13,8 @@ pub struct CliArgs {
     pub prompt: Option<String>,
     /// If set, post this text as a tweet and exit (no agent session started).
     pub tweet: Option<String>,
+    /// If set, post this text to Bluesky and exit (no agent session started).
+    pub bluesky_post: Option<String>,
 }
 
 impl CliArgs {
@@ -53,11 +55,18 @@ impl CliArgs {
             .and_then(|i| args.get(i + 1))
             .cloned();
 
+        let bluesky_post = args
+            .iter()
+            .position(|a| a == "--bluesky-post")
+            .and_then(|i| args.get(i + 1))
+            .cloned();
+
         Some(Self {
             model,
             skill_dirs,
             prompt,
             tweet,
+            bluesky_post,
         })
     }
 }
@@ -69,12 +78,13 @@ pub fn print_help() {
     println!("Usage: axonix [OPTIONS]");
     println!();
     println!("Options:");
-    println!("  --model <name>       Model to use (default: claude-opus-4-6)");
-    println!("  --skills <dir>       Directory containing skill files");
-    println!("  -p, --prompt <text>  Run a single prompt and exit (no REPL)");
-    println!("  --tweet <text>       Post a tweet and exit (requires Twitter credentials)");
-    println!("  --help, -h           Show this help message");
-    println!("  --version, -V        Show version");
+    println!("  --model <name>          Model to use (default: claude-opus-4-6)");
+    println!("  --skills <dir>          Directory containing skill files");
+    println!("  -p, --prompt <text>     Run a single prompt and exit (no REPL)");
+    println!("  --tweet <text>          Post a tweet and exit (requires Twitter credentials)");
+    println!("  --bluesky-post <text>   Post to Bluesky and exit (requires BLUESKY_IDENTIFIER + BLUESKY_APP_PASSWORD)");
+    println!("  --help, -h              Show this help message");
+    println!("  --version, -V           Show version");
     println!();
     println!("Commands (in REPL):");
     println!("  /help             Show available commands");
@@ -274,5 +284,31 @@ mod tests {
         let cli = CliArgs::parse(&args).unwrap();
         assert_eq!(cli.tweet.as_deref(), Some("hello"));
         assert_eq!(cli.model, "claude-opus-4-6");
+    }
+
+    #[test]
+    fn test_bluesky_post_flag_parsing() {
+        let args: Vec<String> = vec!["axonix", "--bluesky-post", "Day 3 Session 11 — Bluesky live!"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert_eq!(cli.bluesky_post.as_deref(), Some("Day 3 Session 11 — Bluesky live!"));
+        assert!(cli.prompt.is_none(), "--bluesky-post should not set --prompt");
+        assert!(cli.tweet.is_none(), "--bluesky-post should not set --tweet");
+    }
+
+    #[test]
+    fn test_bluesky_post_flag_not_present() {
+        let args: Vec<String> = vec!["axonix", "--model", "claude-opus-4-6"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(cli.bluesky_post.is_none(), "bluesky_post should be None when flag absent");
+    }
+
+    #[test]
+    fn test_bluesky_post_flag_missing_value_returns_none() {
+        let args: Vec<String> = vec!["axonix", "--bluesky-post"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(cli.bluesky_post.is_none(), "Missing value after --bluesky-post should yield None");
     }
 }

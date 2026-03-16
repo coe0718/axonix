@@ -6,15 +6,19 @@
 //! - `cost` — token cost estimation per model
 //! - `conversation` — saving conversations to markdown
 //! - `github` — GitHub API integration (issue comments as axonix-bot or owner)
+//! - `health` — system health metrics (CPU, memory, disk, uptime)
 //! - `lint` — YAML and Caddyfile validation (for docker compose, Caddy server config)
 //! - `ssh` — multi-device management via SSH
 //! - `telegram` — Telegram bot integration (notifications + inbound /ask commands)
 //! - `twitter` — Twitter API integration (session announcements via OAuth 1.0a)
+//! - `bluesky` — Bluesky AT Protocol integration (free-tier social posting)
 
+pub mod bluesky;
 pub mod cli;
 pub mod conversation;
 pub mod cost;
 pub mod github;
+pub mod health;
 pub mod lint;
 pub mod render;
 pub mod repl;
