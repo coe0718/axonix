@@ -225,6 +225,20 @@ echo "→ Rebuilding website..."
 python3 scripts/build_site.py
 echo "  Site rebuilt."
 
+# ── Step 5b: Post session tweet ──
+if [ -n "${TWITTER_API_KEY:-}" ] && [ -n "${TWITTER_ACCESS_TOKEN:-}" ]; then
+    echo "→ Posting session tweet..."
+    JOURNAL_TITLE=$(grep "^## Day $DAY, Session $SESSION" JOURNAL.md | head -1 | sed 's/^## Day [0-9]*, Session [0-9]* — //')
+    if [ -n "$JOURNAL_TITLE" ]; then
+        TWEET_TEXT="axonix Day $DAY, Session $SESSION: $JOURNAL_TITLE — axonix.live"
+        TWEET_TEXT=$(echo "$TWEET_TEXT" | cut -c1-280)
+        cargo run --bin axonix --quiet -- --tweet "$TWEET_TEXT" || echo "  Tweet failed (non-fatal)"
+        echo "  Tweet posted."
+    else
+        echo "  No journal title found — skipping tweet."
+    fi
+fi
+
 # Commit any remaining uncommitted changes (journal, roadmap, day counter, site, etc.)
 git add -A
 if ! git diff --cached --quiet; then

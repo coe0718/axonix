@@ -46,6 +46,10 @@ services:
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
       - AXONIX_BOT_TOKEN=${AXONIX_BOT_TOKEN}
       - MODEL=${MODEL:-claude-sonnet-4-6}
+      - TWITTER_API_KEY=${TWITTER_API_KEY}
+      - TWITTER_API_SECRET=${TWITTER_API_SECRET}
+      - TWITTER_ACCESS_TOKEN=${TWITTER_ACCESS_TOKEN}
+      - TWITTER_ACCESS_SECRET=${TWITTER_ACCESS_SECRET}
     depends_on:
       - dockerproxy
     profiles:
