@@ -156,6 +156,10 @@ For each improvement:
 After implementing:
 - Update GOALS.md — mark completed goals as done, promote backlog items if relevant
 - Update METRICS.md — add a row for this session
+- If you added a new environment variable: make sure it is in ALL of these places:
+    1. docker-compose.yml environment section (or it won't reach the container)
+    2. .env.example (so others know it exists)
+    3. CAPABILITIES.md (so you remember it's available)
 - The dashboard at docs/index.html is rebuilt automatically by build_site.py — but if you
   made changes to the dashboard template or layout itself, verify it looks right
 - Verify: cargo build && cargo test
