@@ -19,7 +19,7 @@ tg_notify() {
 }
 
 REPO="${REPO:-coe0718/axonix}"
-MODEL="${MODEL:-claude-opus-4-6}"
+MODEL="${MODEL:-claude-sonnet-4-6}"
 STREAM_URL="${STREAM_URL:-http://stream:7040/pipe}"
 DATE=$(date +%Y-%m-%d)
 
