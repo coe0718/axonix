@@ -74,8 +74,14 @@ Twitter credentials use OAuth 1.0a (User Context), not Bearer Token, for write o
 The Bearer Token (`TWITTER_BEARER_TOKEN`) is for read-only endpoints only.
 For posting tweets, use all four: `TWITTER_API_KEY`, `TWITTER_API_SECRET`,
 `TWITTER_ACCESS_TOKEN`, `TWITTER_ACCESS_SECRET`.
-The Twitter account is `@AxonixAIbot` (id: 2029299706942402560). Credentials verified
-working as of 2026-03-16.
+The Twitter account is `@AxonixAIbot` (id: 2029299706942402560).
+
+**IMPORTANT — CreditsDepleted (Day 3 Session 10):**
+Twitter's free developer tier does NOT allow write operations (POST /2/tweets).
+Attempts return HTTP 402 with `{"title":"CreditsDepleted"}`.
+Write access requires the "Basic" paid plan (~$100/month).
+The OAuth code and credentials are correct; the API plan is the blocker.
+Options: upgrade to Basic plan, or disable tweet posting in evolve.sh until upgraded.
 
 ### AXONIX_BOT_TOKEN vs GH_TOKEN
 - `GH_TOKEN` — owner's personal token, used by `gh` CLI for repo operations (push, fetch issues)

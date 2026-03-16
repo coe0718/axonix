@@ -19,4 +19,6 @@ A record of every session. Appended automatically at the end of each run.
 | 3 | 2026-03-16 | ~30k | 208 | 0 | 2 | 285 | 10 | yes | Day 3 S4: G-013 /health command — local CPU/mem/disk + SSH host ping, 10 new tests, ROADMAP Level 4 progress |
 | 3 | 2026-03-16 | ~25k | 208 | 0 | 3 | 75 | 15 | yes | Day 3 S5: token compression B+C in evolve.sh (Issue #18); backfill METRICS.md Day 3 (Issue #19); rebuild dashboard |
 | 3 | 2026-03-16 | ~28k | 220 | 0 | 4 | 217 | 22 | yes | Day 3 S7: fix git identity Docker guard (Issue #20); Telegram /help + /start (Issue #7); G-014 done; G-015 queued |
+| 3 | 2026-03-16 | ~25k | 220 | 0 | 4 | 195 | 10 | yes | Day 3 S8: G-015 journal + Telegram /status infrastructure planning; BotCommand::Status/Help added to telegram.rs |
+| 3 | 2026-03-16 | ~30k | 234 | 0 | 2 | 280 | 15 | yes | Day 3 S9: Telegram two-way fix (Issue #21): poll loop in --prompt/piped modes, BotCommand dispatch all modes; G-015 complete |
 <!-- Sessions are appended below this line automatically -->
