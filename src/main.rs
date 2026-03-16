@@ -38,6 +38,7 @@ use axonix::github::GitHubClient;
 use axonix::render::*;
 use axonix::repl::{handle_command, CommandResult, ReplState};
 use axonix::telegram::TelegramClient;
+use axonix::twitter::TwitterClient;
 
 const SYSTEM_PROMPT: &str = r#"You are a coding assistant working in the user's terminal.
 You have access to the filesystem and shell. Be direct and concise.
@@ -114,6 +115,9 @@ async fn main() {
 
     // Initialize GitHub client and configure git identity
     let gh = GitHubClient::from_env();
+
+    // Initialize Twitter client if credentials are available
+    let tw = TwitterClient::from_env();
     if let Some(ref gh_client) = gh {
         let cwd_str = std::env::current_dir()
             .map(|p| p.display().to_string())
@@ -172,6 +176,9 @@ async fn main() {
     }
     if let Some(ref gh_client) = gh {
         println!("{DIM}  github:   {} — use /comment <n> <text> to post issue comments{RESET}", gh_client.identity.display_name());
+    }
+    if tw.is_some() {
+        println!("{DIM}  twitter:  connected — use /tweet <text> to post{RESET}");
     }
     println!("{DIM}  Type /help for commands{RESET}\n");
 
@@ -315,6 +322,7 @@ async fn main() {
             CommandResult::Handled(ref output_lines) => {
                 // Render the output lines, interpreting special markers
                 let mut gh_comment_request: Option<(u64, String)> = None;
+                let mut tweet_request: Option<String> = None;
                 for line in output_lines {
                     if let Some(rest) = line.strip_prefix("__save:") {
                         // Perform the actual save (needs agent messages)
@@ -322,6 +330,9 @@ async fn main() {
                             Ok(count) => println!("{DIM}  saved {count} messages to {rest}{RESET}\n"),
                             Err(e) => println!("{RED}  failed to save: {e}{RESET}\n"),
                         }
+                    } else if let Some(rest) = line.strip_prefix("__tweet:") {
+                        // Collect tweet text for async dispatch after sync loop
+                        tweet_request = Some(rest.to_string());
                     } else if let Some(rest) = line.strip_prefix("__gh_comment:") {
                         // format: "__gh_comment:<issue>:<body>"
                         // Collect for async dispatch after the sync loop
@@ -399,6 +410,20 @@ async fn main() {
                             match gh_client.post_comment("coe0718/axonix", issue_n, &body).await {
                                 Ok(url) => println!("\n{GREEN}  ✓ comment posted: {url}{RESET}\n"),
                                 Err(e) => println!("\n{RED}  ✗ failed to post comment: {e}{RESET}\n"),
+                            }
+                        }
+                    }
+                }
+                // Handle async tweet posting
+                if let Some(tweet_text) = tweet_request {
+                    match &tw {
+                        None => println!("{YELLOW}  ⚠ Twitter not configured (set TWITTER_API_KEY, TWITTER_API_SECRET, TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_SECRET){RESET}\n"),
+                        Some(tw_client) => {
+                            print!("{YELLOW}  ▶ posting tweet...{RESET}");
+                            io::stdout().flush().ok();
+                            match tw_client.tweet(&tweet_text).await {
+                                Ok(id) => println!("\n{GREEN}  ✓ tweeted (id: {id}): {}{RESET}\n", truncate(&tweet_text, 60)),
+                                Err(e) => println!("\n{RED}  ✗ failed to tweet: {e}{RESET}\n"),
                             }
                         }
                     }
