@@ -34,6 +34,7 @@ use yoagent::*;
 use axonix::cli::{self, CliArgs};
 use axonix::conversation::save_conversation;
 use axonix::cost::estimate_cost;
+use axonix::github::GitHubClient;
 use axonix::render::*;
 use axonix::repl::{handle_command, CommandResult, ReplState};
 use axonix::telegram::TelegramClient;
@@ -111,6 +112,17 @@ async fn main() {
     // Initialize Telegram client if credentials are available
     let tg = TelegramClient::from_env();
 
+    // Initialize GitHub client and configure git identity
+    let gh = GitHubClient::from_env();
+    if let Some(ref gh_client) = gh {
+        let cwd_str = std::env::current_dir()
+            .map(|p| p.display().to_string())
+            .unwrap_or_else(|_| ".".to_string());
+        if let Err(e) = gh_client.configure_git_identity(&cwd_str) {
+            eprintln!("{YELLOW}warning:{RESET} git identity config failed: {e}");
+        }
+    }
+
     // --prompt / -p mode: run a single prompt from CLI args and exit
     if let Some(prompt_text) = cli_args.prompt {
         let prompt_text = prompt_text.trim();
@@ -157,6 +169,9 @@ async fn main() {
     println!("{DIM}  cwd:   {cwd}{RESET}");
     if tg.is_some() {
         println!("{DIM}  telegram: connected — send /ask <prompt> to chat with me{RESET}");
+    }
+    if let Some(ref gh_client) = gh {
+        println!("{DIM}  github:   {} — use /comment <n> <text> to post issue comments{RESET}", gh_client.identity.display_name());
     }
     println!("{DIM}  Type /help for commands{RESET}\n");
 
@@ -299,12 +314,22 @@ async fn main() {
 
             CommandResult::Handled(ref output_lines) => {
                 // Render the output lines, interpreting special markers
+                let mut gh_comment_request: Option<(u64, String)> = None;
                 for line in output_lines {
                     if let Some(rest) = line.strip_prefix("__save:") {
                         // Perform the actual save (needs agent messages)
                         match save_conversation(agent.messages(), rest) {
                             Ok(count) => println!("{DIM}  saved {count} messages to {rest}{RESET}\n"),
                             Err(e) => println!("{RED}  failed to save: {e}{RESET}\n"),
+                        }
+                    } else if let Some(rest) = line.strip_prefix("__gh_comment:") {
+                        // format: "__gh_comment:<issue>:<body>"
+                        // Collect for async dispatch after the sync loop
+                        let mut parts = rest.splitn(2, ':');
+                        let issue_str = parts.next().unwrap_or("0");
+                        let body = parts.next().unwrap_or("").to_string();
+                        if let Ok(n) = issue_str.parse::<u64>() {
+                            gh_comment_request = Some((n, body));
                         }
                     } else if let Some(rest) = line.strip_prefix("__lint_ok:") {
                         // format: "__lint_ok:<path>:<summary>"
@@ -363,6 +388,20 @@ async fn main() {
                 let has_lint_error = output_lines.iter().any(|l| l.starts_with("__lint_errors:"));
                 if has_lint_error {
                     println!();
+                }
+                // Handle async GitHub comment posting
+                if let Some((issue_n, body)) = gh_comment_request {
+                    match &gh {
+                        None => println!("{YELLOW}  ⚠ No GitHub token available (set GH_TOKEN or AXONIX_BOT_TOKEN){RESET}\n"),
+                        Some(gh_client) => {
+                            print!("{YELLOW}  ▶ posting comment on issue #{issue_n} as {}...{RESET}", gh_client.identity.display_name());
+                            io::stdout().flush().ok();
+                            match gh_client.post_comment("coe0718/axonix", issue_n, &body).await {
+                                Ok(url) => println!("\n{GREEN}  ✓ comment posted: {url}{RESET}\n"),
+                                Err(e) => println!("\n{RED}  ✗ failed to post comment: {e}{RESET}\n"),
+                            }
+                        }
+                    }
                 }
                 continue;
             }

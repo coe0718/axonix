@@ -127,6 +127,7 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                 "    /lint <file>   Validate YAML or Caddyfile syntax".to_string(),
                 "    /ssh list      List registered SSH hosts".to_string(),
                 "    /ssh <h> <cmd> Run command on a remote host".to_string(),
+                "    /comment <n> <text> Post comment on GitHub issue #n".to_string(),
             ];
             if !skill_names.is_empty() {
                 lines.push("    /skills        Show loaded skills".to_string());
@@ -366,6 +367,48 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                             }
                         }
                     }
+                }
+            }
+        }
+
+        s if s == "/comment" || s.starts_with("/comment ") => {
+            // Usage: /comment <issue_number> <text>
+            // The actual POST is done by caller (needs async GitHubClient).
+            // We return a __gh_comment:<issue>:<body> marker.
+            let arg = if s == "/comment" {
+                ""
+            } else {
+                s.trim_start_matches("/comment ").trim()
+            };
+
+            if arg.is_empty() {
+                return CommandResult::Handled(vec![
+                    "  Usage: /comment <issue_number> <text>".to_string(),
+                    "  Example: /comment 13 Thanks for the report — fixed in this session.".to_string(),
+                    String::new(),
+                ]);
+            }
+
+            let mut parts = arg.splitn(2, ' ');
+            let issue_str = parts.next().unwrap_or("").trim();
+            let body = parts.next().unwrap_or("").trim();
+
+            match issue_str.parse::<u64>() {
+                Err(_) | Ok(0) => CommandResult::Handled(vec![
+                    format!("  Error: issue number must be a positive integer, got '{issue_str}'"),
+                    "  Usage: /comment <issue_number> <text>".to_string(),
+                    String::new(),
+                ]),
+                Ok(_) if body.is_empty() => CommandResult::Handled(vec![
+                    format!("  Error: comment body cannot be empty"),
+                    format!("  Usage: /comment {issue_str} <text>"),
+                    String::new(),
+                ]),
+                Ok(n) => {
+                    // Return marker for caller to handle async POST
+                    CommandResult::Handled(vec![
+                        format!("__gh_comment:{n}:{body}"),
+                    ])
                 }
             }
         }
@@ -958,5 +1001,78 @@ mod tests {
         for line in &lines {
             assert!(std::str::from_utf8(line.as_bytes()).is_ok(), "line must be valid UTF-8: {line:?}");
         }
+    }
+
+    // ── /comment command ─────────────────────────────────────────────────────
+
+    #[test]
+    fn test_comment_no_args_shows_usage() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/comment", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("Usage"), "/comment with no args should show usage");
+        assert!(all.contains("issue_number"), "should mention issue_number");
+    }
+
+    #[test]
+    fn test_comment_valid_issue_returns_marker() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/comment 13 Fixed in this session.", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("__gh_comment:13:Fixed in this session."), "should return gh_comment marker: {all}");
+    }
+
+    #[test]
+    fn test_comment_preserves_spaces_in_body() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/comment 7 Great feature idea!", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("__gh_comment:7:Great feature idea!"), "body with spaces should be preserved: {all}");
+    }
+
+    #[test]
+    fn test_comment_non_numeric_issue_shows_error() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/comment abc some text", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("Error") || all.contains("integer"), "non-numeric issue should show error: {all}");
+    }
+
+    #[test]
+    fn test_comment_zero_issue_shows_error() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/comment 0 some text", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("Error") || all.contains("Usage"), "issue 0 should show error: {all}");
+    }
+
+    #[test]
+    fn test_comment_missing_body_shows_error() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/comment 5", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("Error") || all.contains("empty"), "missing body should show error: {all}");
+    }
+
+    #[test]
+    fn test_help_includes_comment_command() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/help", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("/comment"), "/help should document /comment command");
     }
 }

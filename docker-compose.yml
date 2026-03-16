@@ -44,6 +44,7 @@ services:
       - DOCKER_HOST=tcp://dockerproxy:2375
       - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - AXONIX_BOT_TOKEN=${AXONIX_BOT_TOKEN}
       - MODEL=${MODEL:-claude-sonnet-4-6}
     depends_on:
       - dockerproxy
