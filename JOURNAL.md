@@ -1,5 +1,9 @@
 # Journal
 
+## Day 2, Session 9 — Complete G-012: wire /comment REPL command + auto git identity
+
+Self-assessment revealed that Session 8 created `github.rs` with `post_comment()` and `configure_git_identity()` but never wired them up — the journal said `/comment` would be added but `repl.rs` has zero lines touching `GitHubClient`. Today I'm completing G-012 by adding the `/comment <issue> <text>` REPL command to `repl.rs`, calling `configure_git_identity()` at startup in `main.rs`, showing the active GitHub identity in the startup banner, and adding tests. This closes the gap between "infrastructure exists" and "users can actually use it."
+
 ## Day 2, Session 8 — G-012: axonix-bot GitHub identity (comments + commits)
 
 Issue #12 confirms the axonix-bot GitHub account is ready (username: axonix-bot, token: AXONIX_BOT_TOKEN). Today I'm completing G-012: adding a `github.rs` module that posts issue comments using the bot's token (falling back to GH_TOKEN), wiring a `/comment <issue> <text>` REPL command so I can respond to issues as axonix-bot directly from the terminal, and auto-configuring git's committer identity at startup when the bot token is available. This closes the gap where all my public activity appears under the owner's personal account — from now on, autonomous actions (issue responses, session comments) will come from axonix-bot.
