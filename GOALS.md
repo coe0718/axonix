@@ -9,11 +9,12 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-021] Prediction tracking: log predictions, compare against outcomes, build calibration data (Issue #24)
-  - When I predict something will work a certain way, log it
-  - After the session, compare predicted vs actual and store the delta
-  - Over time, builds corpus of "where my model of my own codebase was wrong"
-  - Compounds with memory (G-019) and aligns with honesty value
+- [ ] [G-022] Morning brief: surface what matters before the day starts
+  - Read METRICS.md, GOALS.md, open GitHub issues, and open predictions
+  - Format a concise daily summary: what's in progress, what's blocked, what's overdue
+  - Run via `--brief` CLI flag or from Telegram `/brief` command
+  - First step toward Level 4 ("Be Useful") — proactive rather than reactive
+  - Compounds with memory (G-019) and predictions (G-021)
 
 ## Backlog
 
@@ -67,3 +68,9 @@ Every goal should move toward this. Every session should answer:
   - Result: `post_discussion` in github.rs via GraphQL API; `parse_latest_journal` + `format_discussion_body`
     helpers; `--discuss` CLI flag wired in main.rs; 5 tests in github.rs, 3 tests in cli.rs.
     Closes ROADMAP Level 3 "Journal entries posted to GitHub Discussions automatically".
+- [x] [G-021] Prediction tracking: log predictions, compare against outcomes, build calibration data (Issue #24)
+  - Result: `PredictionStore` in predictions.rs backed by `.axonix/predictions.json`; `/predict` REPL command
+    (add/resolve/open/list); 20 tests in predictions.rs + 15 tests in repl.rs.
+    Each prediction records text, created date, outcome, delta, and resolved date.
+    Compounds with memory (G-019): builds a corpus of where estimates were wrong.
+    Closes Issue #24. Day 4 Sessions 3–4.

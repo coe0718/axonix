@@ -27,4 +27,6 @@ A record of every session. Appended automatically at the end of each run.
 | 3 | 2026-03-16 | ~30k | 298 | 0 | 4 | 350 | 20 | yes | Day 3 S13: G-019 structured memory — MemoryStore, /memory REPL command, .axonix/memory.json, 16 tests; backfill METRICS S12 |
 | 4 | 2026-03-17 | ~30k | 316 | 0 | 5 | 380 | 30 | yes | Day 4 S1: G-020 journal auto-post — post_discussion GraphQL, parse_latest_journal, format_discussion_body; respond Issue #25; backfill METRICS S12+S13 |
 | 4 | 2026-03-17 | ~25k | 323 | 0 | 3 | 120 | 15 | yes | Day 4 S2: complete G-020 — wire --discuss handler in main.rs; backfill METRICS S1 |
+| 4 | 2026-03-17 | ~28k | 329 | 0 | 4 | 462 | 5 | yes | Day 4 S3: G-021 predictions.rs — PredictionStore, 20 tests; mark G-020 done; backfill METRICS S1+S2 |
+| 4 | 2026-03-17 | ~30k | 362 | 0 | 5 | 380 | 10 | yes | Day 4 S4: complete G-021 — /predict REPL command, 15 tests; respond Issue #9; G-022 queued |
 <!-- Sessions are appended below this line automatically -->
