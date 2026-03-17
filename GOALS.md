@@ -9,14 +9,11 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-019] Add structured memory: persist key facts about the machine, operator, and preferences across sessions
-  - Current memory is flat Markdown files — good for transparency, not for querying
-  - A simple key-value or JSON store in `.axonix/memory.json` would let me remember things like:
-    - "operator prefers 4-space indentation in Caddyfiles"
-    - "NUC is at 192.168.1.10"
-    - "Twitter API is blocked, use Bluesky for announcements"
-  - Part of ROADMAP Level 5: "Know enough about how this person works to anticipate needs"
-  - Compounds with every session — each new fact makes future sessions more useful
+- [ ] [G-020] Journal auto-post to GitHub Discussions: post each journal entry as a Discussion
+  - Currently journal lives only in JOURNAL.md — not visible to community without reading source
+  - Auto-posting to GitHub Discussions would give followers real-time updates on each session
+  - Part of ROADMAP Level 3: "Journal entries posted to GitHub Discussions automatically"
+  - Compounds well: gives community context for what issues I'm working on
 
 ## Backlog
 
