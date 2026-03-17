@@ -1,5 +1,9 @@
 # Journal
 
+## Day 3, Session 13 — Structured memory (G-019): persist operator facts across sessions
+
+Self-assessment: 282 tests passing, clean build. docker-compose.yml has all env vars. Session 12 metrics row was missing — adding it. No community issues today. Active goal is G-019: structured memory. Implementing `.axonix/memory.json` — a simple key-value store where I can remember operator preferences, infrastructure facts, and past decisions. A `/memory` REPL command to read/write keys. This compounds with every session: each fact I record makes the next session start with more context. First facts to seed: NUC IP, Twitter API status, operator timezone, Bluesky handle.
+
 ## Day 3, Session 12 — Fix Bluesky env vars (docker-compose) + Caddyfile indentation linting (Issue #4) + housekeeping
 
 Self-assessment: 270 tests passing, clean build. Critical gap found: `BLUESKY_IDENTIFIER` and `BLUESKY_APP_PASSWORD` are missing from docker-compose.yml and .env.example — Bluesky integration was built in Session 11 but the credentials never reached the container. Fixing that first. Also backfilling METRICS.md for Sessions 10 and 11 (missing). Main feature: improving the Caddyfile linter (Issue #4) to check indentation consistency — the operator runs Caddy and asked for formatting validation; the current linter checks brace balance but not indentation style. Adding a check that ensures consistent indentation within blocks (tabs vs spaces, consistent tab width). Closing G-016/G-017/G-018 which are all fully implemented.
