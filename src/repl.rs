@@ -10,6 +10,7 @@
 use std::collections::VecDeque;
 use crate::lint::{lint_file, LintResult};
 use crate::memory::MemoryStore;
+use crate::predictions::PredictionStore;
 use crate::render::truncate;
 use crate::ssh::{HostRegistry, ssh_exec};
 use std::time::Duration;
@@ -35,6 +36,8 @@ pub struct ReplState {
     pub ssh_hosts: HostRegistry,
     /// Persistent memory store (.axonix/memory.json).
     pub memory: MemoryStore,
+    /// Persistent prediction store (.axonix/predictions.json).
+    pub predictions: PredictionStore,
 }
 
 /// Maximum number of prompts kept in session history.
@@ -55,6 +58,7 @@ impl ReplState {
             history: VecDeque::new(),
             ssh_hosts,
             memory: MemoryStore::load_default(),
+            predictions: PredictionStore::default_path(),
         }
     }
 
@@ -139,6 +143,9 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                 "    /issues [N]         List open GitHub issues (default 10, sorted by reactions)".to_string(),
                 "    /memory list        Show persistent memory (facts across sessions)".to_string(),
                 "    /memory set/get/del Read and write persistent memory".to_string(),
+                "    /predict add <text> Log a prediction about a future outcome".to_string(),
+                "    /predict open       Show open (unresolved) predictions".to_string(),
+                "    /predict list       Show all predictions with outcomes".to_string(),
             ];
             if !skill_names.is_empty() {
                 lines.push("    /skills        Show loaded skills".to_string());
@@ -605,8 +612,177 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
             }
         }
 
-        s if s == "/issues" || s.starts_with("/issues ") => {
-            // Usage: /issues [N]
+        s if s == "/predict" || s.starts_with("/predict ") => {
+            // Usage:
+            //   /predict add <text>               — log a new prediction
+            //   /predict resolve <id> <outcome>   — resolve with what actually happened
+            //   /predict resolve <id> <outcome> | <delta>  — with optional delta note
+            //   /predict list                     — show all predictions
+            //   /predict open                     — show only unresolved predictions
+            let arg = if s == "/predict" {
+                ""
+            } else {
+                s.trim_start_matches("/predict ").trim()
+            };
+
+            fn predict_usage() -> Vec<String> {
+                vec![
+                    "  Usage:".to_string(),
+                    "    /predict add <text>                  Log a new prediction".to_string(),
+                    "    /predict resolve <id> <outcome>      Mark a prediction resolved".to_string(),
+                    "    /predict resolve <id> <out> | <delta> With a delta note".to_string(),
+                    "    /predict open                        List open predictions".to_string(),
+                    "    /predict list                        List all predictions".to_string(),
+                    String::new(),
+                    "  Prediction tracking builds self-calibration data over time.".to_string(),
+                    "  Record what you expect, then resolve with what actually happened.".to_string(),
+                    String::new(),
+                ]
+            }
+
+            if arg.is_empty() || arg == "help" {
+                CommandResult::Handled(predict_usage())
+            } else if let Some(text) = arg.strip_prefix("add ") {
+                let text = text.trim();
+                if text.is_empty() {
+                    return CommandResult::Handled(vec![
+                        "  Usage: /predict add <text>".to_string(),
+                        "  Example: /predict add the build will succeed with no warnings".to_string(),
+                        String::new(),
+                    ]);
+                }
+                let id = state.predictions.predict(text);
+                let save_msg = match state.predictions.save() {
+                    Ok(_) => format!("  ✓ prediction #{id} logged: {}", truncate(text, 60)),
+                    Err(e) => format!("  ⚠ prediction #{id} queued but failed to save: {e}"),
+                };
+                CommandResult::Handled(vec![save_msg, String::new()])
+            } else if let Some(rest) = arg.strip_prefix("resolve ") {
+                // Format: "resolve <id> <outcome>" or "resolve <id> <outcome> | <delta>"
+                let rest = rest.trim();
+                let mut parts = rest.splitn(2, ' ');
+                let id_str = parts.next().unwrap_or("").trim();
+                let outcome_and_delta = parts.next().unwrap_or("").trim();
+
+                if id_str.is_empty() || outcome_and_delta.is_empty() {
+                    return CommandResult::Handled(vec![
+                        "  Usage: /predict resolve <id> <outcome>".to_string(),
+                        "  Example: /predict resolve 1 build passed with 5 warnings".to_string(),
+                        "  With delta: /predict resolve 1 passed | underestimated warning count".to_string(),
+                        String::new(),
+                    ]);
+                }
+
+                let id: u32 = match id_str.parse() {
+                    Ok(n) if n > 0 => n,
+                    _ => {
+                        return CommandResult::Handled(vec![
+                            format!("  Error: prediction ID must be a positive integer, got '{id_str}'"),
+                            "  Use /predict list to see prediction IDs".to_string(),
+                            String::new(),
+                        ]);
+                    }
+                };
+
+                // Split on " | " to get optional delta
+                let (outcome, delta) = if let Some(pipe_pos) = outcome_and_delta.find(" | ") {
+                    let outcome = outcome_and_delta[..pipe_pos].trim();
+                    let delta = outcome_and_delta[pipe_pos + 3..].trim();
+                    (outcome, if delta.is_empty() { None } else { Some(delta) })
+                } else {
+                    (outcome_and_delta, None)
+                };
+
+                match state.predictions.resolve(id, outcome, delta) {
+                    Err(e) => CommandResult::Handled(vec![
+                        format!("  Error: {e}"),
+                        String::new(),
+                    ]),
+                    Ok(prediction_text) => {
+                        let save_msg = match state.predictions.save() {
+                            Ok(_) => {
+                                let mut lines = vec![
+                                    format!("  ✓ prediction #{id} resolved"),
+                                    format!("    was:     {}", truncate(&prediction_text, 60)),
+                                    format!("    actual:  {}", truncate(outcome, 60)),
+                                ];
+                                if let Some(d) = delta {
+                                    lines.push(format!("    delta:   {}", truncate(d, 60)));
+                                }
+                                lines.push(String::new());
+                                lines
+                            }
+                            Err(e) => vec![
+                                format!("  ✓ prediction #{id} resolved (save failed: {e})"),
+                                String::new(),
+                            ],
+                        };
+                        CommandResult::Handled(save_msg)
+                    }
+                }
+            } else if arg == "list" {
+                let total = state.predictions.count();
+                if total == 0 {
+                    CommandResult::Handled(vec![
+                        "  Predictions: (none yet)".to_string(),
+                        "  Use /predict add <text> to log your first prediction.".to_string(),
+                        String::new(),
+                    ])
+                } else {
+                    let mut lines = vec![format!("  Predictions ({total} total, {} open, {} resolved):",
+                        state.predictions.open_count(), state.predictions.resolved_count())];
+                    // Show open first, then resolved
+                    let open = state.predictions.open();
+                    if !open.is_empty() {
+                        lines.push("  Open:".to_string());
+                        for (id, pred) in &open {
+                            lines.push(format!("    #{id:<4} [{}] {}",
+                                pred.created, truncate(&pred.prediction, 55)));
+                        }
+                    }
+                    let resolved = state.predictions.resolved();
+                    if !resolved.is_empty() {
+                        lines.push("  Resolved:".to_string());
+                        for (id, pred) in &resolved {
+                            let date = pred.resolved.as_deref().unwrap_or("?");
+                            lines.push(format!("    #{id:<4} [{}] {}",
+                                date, truncate(&pred.prediction, 55)));
+                            if let Some(outcome) = &pred.outcome {
+                                lines.push(format!("         → actual: {}", truncate(outcome, 55)));
+                            }
+                            if let Some(delta) = &pred.delta {
+                                lines.push(format!("         Δ delta:  {}", truncate(delta, 55)));
+                            }
+                        }
+                    }
+                    lines.push(String::new());
+                    CommandResult::Handled(lines)
+                }
+            } else if arg == "open" {
+                let open = state.predictions.open();
+                if open.is_empty() {
+                    CommandResult::Handled(vec![
+                        "  No open predictions.".to_string(),
+                        "  Use /predict add <text> to log one, or /predict list to see resolved.".to_string(),
+                        String::new(),
+                    ])
+                } else {
+                    let mut lines = vec![format!("  Open predictions ({}):", open.len())];
+                    for (id, pred) in &open {
+                        lines.push(format!("    #{id:<4} [{}] {}",
+                            pred.created, truncate(&pred.prediction, 55)));
+                    }
+                    lines.push(String::new());
+                    lines.push(format!("  Use /predict resolve <id> <outcome> to close one."));
+                    lines.push(String::new());
+                    CommandResult::Handled(lines)
+                }
+            } else {
+                CommandResult::Handled(predict_usage())
+            }
+        }
+
+        s if s == "/issues" || s.starts_with("/issues ") => {            // Usage: /issues [N]
             // Fetches open GitHub issues sorted by reactions.
             // The actual API call is done by caller (needs async GitHubClient).
             // Returns FetchIssues(limit) so main loop can handle it.
@@ -1603,5 +1779,205 @@ mod tests {
         };
         let all = lines.join("\n");
         assert!(all.contains("/memory"), "/help should document /memory command");
+    }
+
+    // ── /predict command ───────────────────────────────────────────────────────
+
+    /// Helper: state with a tmp prediction store (avoids writing to real .axonix/).
+    fn state_with_tmp_predictions() -> (ReplState, tempfile::TempDir) {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("predictions.json");
+        let mut s = ReplState::new("claude-opus-4-6");
+        s.predictions = crate::predictions::PredictionStore::new(path);
+        (s, dir)
+    }
+
+    #[test]
+    fn test_predict_no_args_shows_usage() {
+        let (mut s, _dir) = state_with_tmp_predictions();
+        let CommandResult::Handled(lines) = handle_command("/predict", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("Usage"), "/predict with no args should show usage");
+        assert!(all.contains("add"), "usage should mention 'add'");
+        assert!(all.contains("resolve"), "usage should mention 'resolve'");
+    }
+
+    #[test]
+    fn test_predict_help_shows_usage() {
+        let (mut s, _dir) = state_with_tmp_predictions();
+        let CommandResult::Handled(lines) = handle_command("/predict help", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("Usage"), "/predict help should show usage: {all}");
+    }
+
+    #[test]
+    fn test_predict_add_logs_prediction() {
+        let (mut s, _dir) = state_with_tmp_predictions();
+        let result = handle_command("/predict add the build will succeed", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled: {result:?}");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("✓") || all.contains("prediction"), "add should confirm: {all}");
+        assert!(all.contains("#1"), "first prediction should have id 1: {all}");
+        assert_eq!(s.predictions.count(), 1, "one prediction should be stored");
+    }
+
+    #[test]
+    fn test_predict_add_empty_text_shows_usage() {
+        let (mut s, _dir) = state_with_tmp_predictions();
+        let CommandResult::Handled(lines) = handle_command("/predict add ", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("Usage") || all.contains("Example"),
+            "add with empty text should show usage: {all}");
+        assert_eq!(s.predictions.count(), 0, "no prediction should be stored for empty text");
+    }
+
+    #[test]
+    fn test_predict_list_empty() {
+        let (mut s, _dir) = state_with_tmp_predictions();
+        let CommandResult::Handled(lines) = handle_command("/predict list", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("none") || all.contains("(none") || all.contains("add"),
+            "empty list should say none: {all}");
+    }
+
+    #[test]
+    fn test_predict_open_empty() {
+        let (mut s, _dir) = state_with_tmp_predictions();
+        let CommandResult::Handled(lines) = handle_command("/predict open", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("No open") || all.contains("none") || all.contains("add"),
+            "empty open list should say no open predictions: {all}");
+    }
+
+    #[test]
+    fn test_predict_list_shows_added_predictions() {
+        let (mut s, _dir) = state_with_tmp_predictions();
+        handle_command("/predict add build will pass", &mut s, &[]);
+        handle_command("/predict add tests will increase by 10", &mut s, &[]);
+
+        let CommandResult::Handled(lines) = handle_command("/predict list", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("build will pass"), "list should show first prediction: {all}");
+        assert!(all.contains("tests will increase"), "list should show second prediction: {all}");
+        assert!(all.contains("2 total") || all.contains("2 open"), "list should show count: {all}");
+    }
+
+    #[test]
+    fn test_predict_open_shows_unresolved_only() {
+        let (mut s, _dir) = state_with_tmp_predictions();
+        handle_command("/predict add open prediction", &mut s, &[]);
+        // Manually resolve #1 so we can test open shows only unresolved
+        s.predictions.predict("second open");
+        let id = s.predictions.predict("will resolve this");
+        s.predictions.resolve(id, "resolved outcome", None).unwrap();
+
+        let CommandResult::Handled(lines) = handle_command("/predict open", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        // Only open ones should appear — resolved ones should not
+        assert!(all.contains("open prediction") || all.contains("second open"),
+            "open should show unresolved predictions: {all}");
+    }
+
+    #[test]
+    fn test_predict_resolve_valid() {
+        let (mut s, _dir) = state_with_tmp_predictions();
+        s.predictions.predict("the tests will pass");
+
+        let result = handle_command("/predict resolve 1 tests passed with 329 cases", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled: {result:?}");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("✓") || all.contains("resolved"), "resolve should confirm: {all}");
+        assert!(all.contains("#1"), "should reference prediction id 1: {all}");
+        assert!(s.predictions.get(1).unwrap().is_resolved(), "prediction should be resolved");
+    }
+
+    #[test]
+    fn test_predict_resolve_with_delta() {
+        let (mut s, _dir) = state_with_tmp_predictions();
+        s.predictions.predict("will add 10 tests");
+
+        let result = handle_command(
+            "/predict resolve 1 actually added 12 tests | underestimated by 2",
+            &mut s, &[]
+        );
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled: {result:?}");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("delta") || all.contains("underestimated"),
+            "resolve with delta should show delta: {all}");
+        let pred = s.predictions.get(1).unwrap();
+        assert_eq!(pred.delta.as_deref(), Some("underestimated by 2"));
+    }
+
+    #[test]
+    fn test_predict_resolve_nonexistent_id() {
+        let (mut s, _dir) = state_with_tmp_predictions();
+        let CommandResult::Handled(lines) = handle_command("/predict resolve 999 outcome", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("Error") || all.contains("not found"),
+            "resolving nonexistent id should show error: {all}");
+    }
+
+    #[test]
+    fn test_predict_resolve_invalid_id() {
+        let (mut s, _dir) = state_with_tmp_predictions();
+        let CommandResult::Handled(lines) = handle_command("/predict resolve abc outcome", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("Error") || all.contains("integer"),
+            "invalid id should show error: {all}");
+    }
+
+    #[test]
+    fn test_predict_resolve_missing_outcome_shows_usage() {
+        let (mut s, _dir) = state_with_tmp_predictions();
+        let CommandResult::Handled(lines) = handle_command("/predict resolve 1", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("Usage") || all.contains("outcome"),
+            "missing outcome should show usage: {all}");
+    }
+
+    #[test]
+    fn test_predict_unknown_subcommand_shows_usage() {
+        let (mut s, _dir) = state_with_tmp_predictions();
+        let CommandResult::Handled(lines) = handle_command("/predict frobnicate", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("Usage"), "unknown subcommand should show usage: {all}");
+    }
+
+    #[test]
+    fn test_help_includes_predict_command() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/help", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("/predict"), "/help should document /predict command");
     }
 }

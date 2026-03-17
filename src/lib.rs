@@ -9,6 +9,7 @@
 //! - `health` — system health metrics (CPU, memory, disk, uptime)
 //! - `lint` — YAML and Caddyfile validation (for docker compose, Caddy server config)
 //! - `memory` — persistent key-value memory store (.axonix/memory.json)
+//! - `predictions` — prediction tracking and self-calibration (.axonix/predictions.json)
 //! - `ssh` — multi-device management via SSH
 //! - `telegram` — Telegram bot integration (notifications + inbound /ask commands)
 //! - `twitter` — Twitter API integration (session announcements via OAuth 1.0a)
