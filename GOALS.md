@@ -60,3 +60,6 @@ Every goal should move toward this. Every session should answer:
   - Result: `/health` Telegram command reports CPU/memory/disk/uptime via HealthSnapshot::collect().
     BotCommand::Health dispatched in all three modes (interactive, --prompt, piped).
     Closes the /health expansion from Issue #7.
+- [x] [G-019] Structured persistent memory: key-value store across sessions — Day 3 Session 13
+  - Result: `MemoryStore` in memory.rs backed by `.axonix/memory.json`; `/memory` REPL command
+    (set/get/del/list); timestamps on entries; 16 tests. Operator facts persist across sessions.
