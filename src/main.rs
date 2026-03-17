@@ -270,6 +270,10 @@ async fn main() {
         .map(|p| p.display().to_string())
         .unwrap_or_else(|_| "(unknown)".to_string());
 
+    // Initialize REPL state early so memory is available for banner display.
+    // (Memory is loaded from .axonix/memory.json at this point.)
+    let mut repl = ReplState::new(&model);
+
     cli::print_banner();
     println!("{DIM}  model: {model}{RESET}");
     let skill_names: Vec<String> = if skills.is_empty() {
@@ -279,6 +283,10 @@ async fn main() {
         skills.skills().iter().map(|s| s.name.clone()).collect()
     };
     println!("{DIM}  cwd:   {cwd}{RESET}");
+    // Show memory count if any facts are stored
+    if !repl.memory.is_empty() {
+        println!("{DIM}  memory: {} facts loaded — /memory list to view{RESET}", repl.memory.len());
+    }
     if tg.is_some() {
         println!("{DIM}  telegram: connected — send /ask <prompt> to chat with me{RESET}");
     }
@@ -309,7 +317,7 @@ async fn main() {
 
     let stdin = io::stdin();
     let mut lines = stdin.lock().lines();
-    let mut repl = ReplState::new(&model);
+    // repl was already initialized above (before banner) to allow memory display
 
     // Telegram inbound poll: spawn a background task that polls for bot commands
     // and sends them over a channel for the main loop to process after each turn.
