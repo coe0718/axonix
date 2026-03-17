@@ -22,6 +22,7 @@ pub mod github;
 pub mod health;
 pub mod lint;
 pub mod memory;
+pub mod predictions;
 pub mod render;
 pub mod repl;
 pub mod ssh;
