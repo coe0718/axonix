@@ -125,6 +125,8 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
 
         "/help" => {
             let mut lines = vec![
+                "  🤖 AXONIX COMMAND MANIFEST — beep-boop, here's what I can do:".to_string(),
+                String::new(),
                 "  Commands:".to_string(),
                 "    /help          Show this help".to_string(),
                 "    /status        Show session info".to_string(),

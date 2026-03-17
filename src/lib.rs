@@ -1,6 +1,7 @@
 //! axonix — a coding agent that evolves itself.
 //!
 //! This crate provides the modular components of the axonix agent:
+//! - `brief` — morning brief: surface what matters before the day starts (G-022)
 //! - `cli` — command-line argument parsing and help output
 //! - `render` — ANSI colors, text truncation, usage display
 //! - `cost` — token cost estimation per model
@@ -15,6 +16,7 @@
 //! - `twitter` — Twitter API integration (session announcements via OAuth 1.0a)
 //! - `bluesky` — Bluesky AT Protocol integration (free-tier social posting)
 
+pub mod brief;
 pub mod bluesky;
 pub mod cli;
 pub mod conversation;

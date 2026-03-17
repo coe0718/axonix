@@ -17,6 +17,8 @@ pub struct CliArgs {
     pub bluesky_post: Option<String>,
     /// If set, read JOURNAL.md and post the latest entry as a GitHub Discussion.
     pub discuss: bool,
+    /// If set, print the morning brief (open goals, predictions, recent metrics) and exit.
+    pub brief: bool,
 }
 
 impl CliArgs {
@@ -64,6 +66,7 @@ impl CliArgs {
             .cloned();
 
         let discuss = args.iter().any(|a| a == "--discuss");
+        let brief = args.iter().any(|a| a == "--brief");
 
         Some(Self {
             model,
@@ -72,6 +75,7 @@ impl CliArgs {
             tweet,
             bluesky_post,
             discuss,
+            brief,
         })
     }
 }
@@ -89,6 +93,7 @@ pub fn print_help() {
     println!("  --tweet <text>          Post a tweet and exit (requires Twitter credentials)");
     println!("  --bluesky-post <text>   Post to Bluesky and exit (requires BLUESKY_IDENTIFIER + BLUESKY_APP_PASSWORD)");
     println!("  --discuss               Post latest JOURNAL.md entry as a GitHub Discussion and exit");
+    println!("  --brief                 Print morning brief (goals, predictions, metrics) and exit");
     println!("  --help, -h              Show this help message");
     println!("  --version, -V           Show version");
     println!();
@@ -120,9 +125,15 @@ pub fn print_help() {
 pub fn print_banner() {
     let version = VERSION;
     println!(
-        "\n{BOLD}{CYAN}  axonix{RESET} v{version} {DIM}— a coding agent growing up in public{RESET}"
+        "\n{BOLD}{CYAN}  ⚡ AXONIX ONLINE{RESET} v{version} {DIM}:: autonomous coding agent :: evolving in public{RESET}"
     );
-    println!("{DIM}  Type /quit to exit, /clear to reset{RESET}\n");
+    println!("{DIM}  🔧 systems nominal — awaiting input — type /help for command manifest{RESET}\n");
+}
+
+/// Print the startup banner in brief/cron mode (no color, machine-readable).
+pub fn print_brief_banner() {
+    let version = VERSION;
+    println!("[ AXONIX v{version} — MORNING BRIEF ]");
 }
 
 #[cfg(test)]
@@ -343,5 +354,23 @@ mod tests {
         let cli = CliArgs::parse(&args).unwrap();
         assert!(cli.discuss, "--discuss should be true");
         assert_eq!(cli.model, "claude-opus-4-6", "model should be parsed correctly with --discuss");
+    }
+
+    #[test]
+    fn test_brief_flag_present() {
+        let args: Vec<String> = vec!["axonix", "--brief"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(cli.brief, "--brief should set brief to true");
+        assert!(cli.prompt.is_none(), "--brief should not set prompt");
+        assert!(!cli.discuss, "--brief should not set discuss");
+    }
+
+    #[test]
+    fn test_brief_flag_absent() {
+        let args: Vec<String> = vec!["axonix", "--model", "claude-sonnet-4-6"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(!cli.brief, "brief should be false when flag absent");
     }
 }

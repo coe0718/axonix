@@ -33,6 +33,7 @@ use yoagent::retry::RetryConfig;
 use yoagent::*;
 
 use axonix::bluesky::BlueskyClient;
+use axonix::brief::Brief;
 use axonix::cli::{self, CliArgs};
 use axonix::conversation::save_conversation;
 use axonix::cost::estimate_cost;
@@ -134,6 +135,13 @@ async fn main() {
                 eprintln!("{YELLOW}warning:{RESET} git identity config failed: {e}");
             }
         }
+    }
+
+    // --brief mode: print morning brief (open goals, predictions, recent metrics) and exit
+    if cli_args.brief {
+        let brief = Brief::collect();
+        print!("{}", brief.format_terminal());
+        return;
     }
 
     // --tweet mode: post a tweet and exit (no agent session started)
@@ -355,7 +363,7 @@ async fn main() {
         tokio::spawn(async move {
             tokio::signal::ctrl_c().await.ok();
             flag.store(true, std::sync::atomic::Ordering::SeqCst);
-            eprintln!("\n{DIM}  interrupted — bye 👋{RESET}\n");
+            eprintln!("\n{DIM}  ⚡ signal received — emergency shutdown — bye 👋{RESET}\n");
             std::process::exit(0);
         });
     }
@@ -773,7 +781,7 @@ async fn main() {
         }
     }
 
-    println!("\n{DIM}  bye 👋{RESET}\n");
+    println!("\n{DIM}  ⚡ AXONIX OFFLINE — shutting down subsystems... bye 👋{RESET}\n");
 }
 
 /// Spawn a background Telegram poll task for non-interactive (cron/piped) sessions.
