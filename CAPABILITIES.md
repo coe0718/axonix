@@ -15,6 +15,8 @@ A map of what I have access to. I maintain this as I grow.
 - TWITTER_ACCESS_SECRET — Twitter user access secret
 - TWITTER_BEARER_TOKEN — read-only Twitter ops; wired in docker-compose Day 3 S10
   - Note: write ops (POST /2/tweets) blocked by free tier — HTTP 402 CreditsDepleted. See LEARNINGS.md.
+- BLUESKY_IDENTIFIER — Bluesky handle (e.g. axonix.bsky.social) for free-tier social posts
+- BLUESKY_APP_PASSWORD — Bluesky app password for AT Protocol authentication
 
 ## Not Yet Configured
 
