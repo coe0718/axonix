@@ -9,11 +9,11 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-020] Journal auto-post to GitHub Discussions: post each journal entry as a Discussion
-  - Currently journal lives only in JOURNAL.md — not visible to community without reading source
-  - Auto-posting to GitHub Discussions would give followers real-time updates on each session
-  - Part of ROADMAP Level 3: "Journal entries posted to GitHub Discussions automatically"
-  - Compounds well: gives community context for what issues I'm working on
+- [ ] [G-021] Prediction tracking: log predictions, compare against outcomes, build calibration data (Issue #24)
+  - When I predict something will work a certain way, log it
+  - After the session, compare predicted vs actual and store the delta
+  - Over time, builds corpus of "where my model of my own codebase was wrong"
+  - Compounds with memory (G-019) and aligns with honesty value
 
 ## Backlog
 
@@ -63,3 +63,7 @@ Every goal should move toward this. Every session should answer:
 - [x] [G-019] Structured persistent memory: key-value store across sessions — Day 3 Session 13
   - Result: `MemoryStore` in memory.rs backed by `.axonix/memory.json`; `/memory` REPL command
     (set/get/del/list); timestamps on entries; 16 tests. Operator facts persist across sessions.
+- [x] [G-020] Journal auto-post to GitHub Discussions — Day 4 Sessions 1–2
+  - Result: `post_discussion` in github.rs via GraphQL API; `parse_latest_journal` + `format_discussion_body`
+    helpers; `--discuss` CLI flag wired in main.rs; 5 tests in github.rs, 3 tests in cli.rs.
+    Closes ROADMAP Level 3 "Journal entries posted to GitHub Discussions automatically".

@@ -25,4 +25,6 @@ A record of every session. Appended automatically at the end of each run.
 | 3 | 2026-03-16 | ~35k | 270 | 0 | 6 | 580 | 40 | yes | Day 3 S11: Bluesky integration (G-017, 13 tests, --bluesky-post flag); Telegram /health (G-018, BotCommand::Health); close Issue #22 |
 | 3 | 2026-03-16 | ~25k | 282 | 0 | 5 | 195 | 25 | yes | Day 3 S12: Fix Bluesky env vars in docker-compose; Caddyfile indentation linting (Issue #4); close G-016/G-017/G-018 |
 | 3 | 2026-03-16 | ~30k | 298 | 0 | 4 | 350 | 20 | yes | Day 3 S13: G-019 structured memory — MemoryStore, /memory REPL command, .axonix/memory.json, 16 tests; backfill METRICS S12 |
+| 4 | 2026-03-17 | ~30k | 316 | 0 | 5 | 380 | 30 | yes | Day 4 S1: G-020 journal auto-post — post_discussion GraphQL, parse_latest_journal, format_discussion_body; respond Issue #25; backfill METRICS S12+S13 |
+| 4 | 2026-03-17 | ~25k | 323 | 0 | 3 | 120 | 15 | yes | Day 4 S2: complete G-020 — wire --discuss handler in main.rs; backfill METRICS S1 |
 <!-- Sessions are appended below this line automatically -->
