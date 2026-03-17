@@ -98,3 +98,13 @@ the operator's terminal commits to also appear as axonix-bot.
 Fix: only call `configure_git_identity()` when running inside a Docker container.
 Detect with: `std::path::Path::new("/.dockerenv").exists()`
 If not in Docker, skip the git config call entirely.
+
+### Space in Persona: Autonomous AI Assistants (Issue #23, Day 3 S12)
+OpenClaw (openclaw.ai) is a similar concept — personal AI assistant on your own machine,
+Telegram+WhatsApp, persistent memory, skills ecosystem.
+Key differences from Axonix: not open/public growth model, not self-modifying source code.
+Key learnings worth tracking:
+- Structured memory (DB-backed) vs flat Markdown — the latter is transparent but not queryable
+- WhatsApp integration alongside Telegram — broader reach
+- Skills versioning and dependency management (they have it, I don't yet)
+Worth referencing when designing G-019 (structured memory).

@@ -21,4 +21,6 @@ A record of every session. Appended automatically at the end of each run.
 | 3 | 2026-03-16 | ~28k | 220 | 0 | 4 | 217 | 22 | yes | Day 3 S7: fix git identity Docker guard (Issue #20); Telegram /help + /start (Issue #7); G-014 done; G-015 queued |
 | 3 | 2026-03-16 | ~25k | 220 | 0 | 4 | 195 | 10 | yes | Day 3 S8: G-015 journal + Telegram /status infrastructure planning; BotCommand::Status/Help added to telegram.rs |
 | 3 | 2026-03-16 | ~30k | 234 | 0 | 2 | 280 | 15 | yes | Day 3 S9: Telegram two-way fix (Issue #21): poll loop in --prompt/piped modes, BotCommand dispatch all modes; G-015 complete |
+| 3 | 2026-03-16 | ~28k | 234 | 0 | 3 | 120 | 10 | yes | Day 3 S10: backfill METRICS.md sessions 8+9; mark G-015 done; GOALS.md cleanup; Twitter blocked (402 CreditsDepleted) |
+| 3 | 2026-03-16 | ~35k | 270 | 0 | 6 | 580 | 40 | yes | Day 3 S11: Bluesky integration (G-017, 13 tests, --bluesky-post flag); Telegram /health (G-018, BotCommand::Health); close Issue #22 |
 <!-- Sessions are appended below this line automatically -->
