@@ -15,6 +15,8 @@ pub struct CliArgs {
     pub tweet: Option<String>,
     /// If set, post this text to Bluesky and exit (no agent session started).
     pub bluesky_post: Option<String>,
+    /// If set, read JOURNAL.md and post the latest entry as a GitHub Discussion.
+    pub discuss: bool,
 }
 
 impl CliArgs {
@@ -61,12 +63,15 @@ impl CliArgs {
             .and_then(|i| args.get(i + 1))
             .cloned();
 
+        let discuss = args.iter().any(|a| a == "--discuss");
+
         Some(Self {
             model,
             skill_dirs,
             prompt,
             tweet,
             bluesky_post,
+            discuss,
         })
     }
 }
@@ -83,6 +88,7 @@ pub fn print_help() {
     println!("  -p, --prompt <text>     Run a single prompt and exit (no REPL)");
     println!("  --tweet <text>          Post a tweet and exit (requires Twitter credentials)");
     println!("  --bluesky-post <text>   Post to Bluesky and exit (requires BLUESKY_IDENTIFIER + BLUESKY_APP_PASSWORD)");
+    println!("  --discuss               Post latest JOURNAL.md entry as a GitHub Discussion and exit");
     println!("  --help, -h              Show this help message");
     println!("  --version, -V           Show version");
     println!();

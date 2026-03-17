@@ -191,6 +191,82 @@ impl GitHubClient {
         self.identity == GitHubIdentity::Bot
     }
 
+    /// Post a discussion to a GitHub repository using the GraphQL API.
+    ///
+    /// `repo_id` is the GraphQL node ID of the repository (e.g., `"R_kgDORnAZ_w"`).
+    /// `category_id` is the GraphQL node ID of the discussion category (e.g., `"DIC_kwDORnAZ_84C4ask"`).
+    /// `title` is the discussion title.
+    /// `body` is the Markdown body of the discussion.
+    ///
+    /// Returns the URL of the created discussion on success.
+    pub async fn post_discussion(
+        &self,
+        repo_id: &str,
+        category_id: &str,
+        title: &str,
+        body: &str,
+    ) -> Result<String, String> {
+        let query = r#"mutation($repoId: ID!, $catId: ID!, $title: String!, $body: String!) {
+            createDiscussion(input: {
+                repositoryId: $repoId,
+                categoryId: $catId,
+                title: $title,
+                body: $body
+            }) {
+                discussion {
+                    id
+                    url
+                }
+            }
+        }"#;
+
+        let variables = serde_json::json!({
+            "repoId": repo_id,
+            "catId": category_id,
+            "title": title,
+            "body": body,
+        });
+
+        let payload = serde_json::json!({
+            "query": query,
+            "variables": variables,
+        });
+
+        let res = self
+            .client
+            .post("https://api.github.com/graphql")
+            .header("Authorization", format!("Bearer {}", self.token))
+            .header("User-Agent", "axonix-bot/1.0")
+            .json(&payload)
+            .send()
+            .await
+            .map_err(|e| format!("GitHub GraphQL request failed: {e}"))?;
+
+        let status = res.status();
+        if !status.is_success() {
+            let body = res.text().await.unwrap_or_default();
+            return Err(format!("GitHub GraphQL error {status}: {body}"));
+        }
+
+        let json: serde_json::Value = res
+            .json()
+            .await
+            .map_err(|e| format!("GitHub GraphQL response parse error: {e}"))?;
+
+        // Check for GraphQL-level errors
+        if let Some(errors) = json.get("errors") {
+            return Err(format!("GitHub GraphQL errors: {errors}"));
+        }
+
+        let url = json
+            .pointer("/data/createDiscussion/discussion/url")
+            .and_then(|v| v.as_str())
+            .unwrap_or("(url unavailable)")
+            .to_string();
+
+        Ok(url)
+    }
+
     /// Fetch open issues for a repo, sorted by most reactions first.
     ///
     /// `repo` should be in `owner/name` format (e.g., `"coe0718/axonix"`).
@@ -277,6 +353,56 @@ pub struct IssueEntry {
     pub reactions: u32,
     /// Labels attached to the issue.
     pub labels: Vec<String>,
+}
+
+/// Format a journal entry for posting as a GitHub Discussion.
+///
+/// Takes the raw journal title and body and wraps them for the Discussions format.
+/// The title becomes the discussion title; the body gets a footer linking back to the repo.
+pub fn format_discussion_body(journal_body: &str) -> String {
+    let mut body = journal_body.to_string();
+    body.push_str("\n\n---\n*Posted automatically by Axonix — [source](https://github.com/coe0718/axonix/blob/main/JOURNAL.md)*");
+    body
+}
+
+/// Parse the latest journal entry from JOURNAL.md content.
+///
+/// Returns `(title, body)` where title is the `## Day N, Session M — ...` heading
+/// and body is everything until the next `## ` heading or end of content.
+/// Returns `None` if no entry is found.
+pub fn parse_latest_journal(content: &str) -> Option<(String, String)> {
+    let lines: Vec<&str> = content.lines().collect();
+
+    // Find the first ## heading (skip the # Journal top-level heading)
+    let mut start = None;
+    for (i, line) in lines.iter().enumerate() {
+        if line.starts_with("## ") {
+            start = Some(i);
+            break;
+        }
+    }
+
+    let start = start?;
+    let title = lines[start].trim_start_matches("## ").trim().to_string();
+
+    // Find the end: next ## heading or end of file
+    let mut end = lines.len();
+    for i in (start + 1)..lines.len() {
+        if lines[i].starts_with("## ") {
+            end = i;
+            break;
+        }
+    }
+
+    // Collect body lines (skip empty lines at start and end)
+    let body_lines: Vec<&str> = lines[(start + 1)..end].to_vec();
+    let body = body_lines.join("\n").trim().to_string();
+
+    if title.is_empty() {
+        return None;
+    }
+
+    Some((title, body))
 }
 
 #[cfg(test)]
@@ -372,5 +498,62 @@ mod tests {
         assert_eq!(issues[0].number, 2, "highest reaction issue should be first");
         assert_eq!(issues[1].number, 3);
         assert_eq!(issues[2].number, 1);
+    }
+
+    // ── Discussion ──────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_format_discussion_body_adds_footer() {
+        let body = format_discussion_body("Session went well.");
+        assert!(body.contains("Session went well."), "body should contain original text");
+        assert!(body.contains("Posted automatically by Axonix"), "body should have footer");
+        assert!(body.contains("JOURNAL.md"), "footer should link to JOURNAL.md");
+    }
+
+    #[test]
+    fn test_format_discussion_body_preserves_markdown() {
+        let input = "## Highlights\n\n- Fixed a bug\n- Added tests";
+        let body = format_discussion_body(input);
+        assert!(body.contains("## Highlights"), "should preserve markdown headings");
+        assert!(body.contains("- Fixed a bug"), "should preserve list items");
+    }
+
+    #[test]
+    fn test_parse_latest_journal_simple() {
+        let content = "# Journal\n\n## Day 4, Session 1 — Big feature\n\nDid some work.\n\n## Day 3, Session 13 — Old entry\n\nOld stuff.\n";
+        let result = parse_latest_journal(content);
+        assert!(result.is_some(), "should find latest entry");
+        let (title, body) = result.unwrap();
+        assert_eq!(title, "Day 4, Session 1 — Big feature");
+        assert_eq!(body, "Did some work.");
+    }
+
+    #[test]
+    fn test_parse_latest_journal_multiline_body() {
+        let content = "# Journal\n\n## Day 4, Session 1 — Title\n\nLine one.\nLine two.\nLine three.\n\n## Day 3 — Older\n\nOld.\n";
+        let (title, body) = parse_latest_journal(content).unwrap();
+        assert_eq!(title, "Day 4, Session 1 — Title");
+        assert!(body.contains("Line one."));
+        assert!(body.contains("Line two."));
+        assert!(body.contains("Line three."));
+    }
+
+    #[test]
+    fn test_parse_latest_journal_no_entries() {
+        let content = "# Journal\n\nNothing here yet.\n";
+        assert!(parse_latest_journal(content).is_none(), "should return None when no ## headings");
+    }
+
+    #[test]
+    fn test_parse_latest_journal_empty() {
+        assert!(parse_latest_journal("").is_none());
+    }
+
+    #[test]
+    fn test_parse_latest_journal_single_entry_no_trailing_heading() {
+        let content = "# Journal\n\n## Day 1, Session 1 — First\n\nOnly entry.\n";
+        let (title, body) = parse_latest_journal(content).unwrap();
+        assert_eq!(title, "Day 1, Session 1 — First");
+        assert_eq!(body, "Only entry.");
     }
 }
