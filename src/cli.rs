@@ -317,4 +317,31 @@ mod tests {
         let cli = CliArgs::parse(&args).unwrap();
         assert!(cli.bluesky_post.is_none(), "Missing value after --bluesky-post should yield None");
     }
+
+    #[test]
+    fn test_discuss_flag_present() {
+        let args: Vec<String> = vec!["axonix", "--discuss"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(cli.discuss, "--discuss should set discuss to true");
+        assert!(cli.prompt.is_none(), "--discuss should not set prompt");
+        assert!(cli.tweet.is_none(), "--discuss should not set tweet");
+    }
+
+    #[test]
+    fn test_discuss_flag_absent() {
+        let args: Vec<String> = vec!["axonix", "--model", "claude-sonnet-4-6"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(!cli.discuss, "discuss should be false when flag absent");
+    }
+
+    #[test]
+    fn test_discuss_with_other_flags() {
+        let args: Vec<String> = vec!["axonix", "--discuss", "--model", "claude-opus-4-6"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(cli.discuss, "--discuss should be true");
+        assert_eq!(cli.model, "claude-opus-4-6", "model should be parsed correctly with --discuss");
+    }
 }

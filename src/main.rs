@@ -36,7 +36,7 @@ use axonix::bluesky::BlueskyClient;
 use axonix::cli::{self, CliArgs};
 use axonix::conversation::save_conversation;
 use axonix::cost::estimate_cost;
-use axonix::github::GitHubClient;
+use axonix::github::{GitHubClient, parse_latest_journal, format_discussion_body};
 use axonix::render::*;
 use axonix::repl::{handle_command, CommandResult, ReplState};
 use axonix::telegram::TelegramClient;
@@ -187,6 +187,51 @@ async fn main() {
                     Err(e) => {
                         eprintln!("{RED}  ✗ Bluesky post failed: {e}{RESET}");
                         std::process::exit(1);
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+    // --discuss mode: read JOURNAL.md, parse latest entry, post as GitHub Discussion
+    if cli_args.discuss {
+        match &gh {
+            None => {
+                eprintln!("{RED}error:{RESET} GitHub not configured. Set GH_TOKEN or AXONIX_BOT_TOKEN.");
+                std::process::exit(1);
+            }
+            Some(gh_client) => {
+                let journal_content = match std::fs::read_to_string("JOURNAL.md") {
+                    Ok(c) => c,
+                    Err(e) => {
+                        eprintln!("{RED}error:{RESET} could not read JOURNAL.md: {e}");
+                        std::process::exit(1);
+                    }
+                };
+                match parse_latest_journal(&journal_content) {
+                    None => {
+                        eprintln!("{RED}error:{RESET} no journal entry found in JOURNAL.md.");
+                        std::process::exit(1);
+                    }
+                    Some((title, body)) => {
+                        let discussion_body = format_discussion_body(&body);
+                        // Repository and category IDs for coe0718/axonix Discussions
+                        // These are GraphQL node IDs obtained from the GitHub API.
+                        let repo_id = std::env::var("GITHUB_REPO_ID")
+                            .unwrap_or_else(|_| "R_kgDORnAZ_w".to_string());
+                        let category_id = std::env::var("GITHUB_DISCUSSION_CATEGORY_ID")
+                            .unwrap_or_else(|_| "DIC_kwDORnAZ_84C4ask".to_string());
+                        eprintln!("{DIM}  posting discussion: {title}{RESET}");
+                        match gh_client.post_discussion(&repo_id, &category_id, &title, &discussion_body).await {
+                            Ok(url) => {
+                                eprintln!("{GREEN}  ✓ discussion posted: {url}{RESET}");
+                            }
+                            Err(e) => {
+                                eprintln!("{RED}  ✗ discussion post failed: {e}{RESET}");
+                                std::process::exit(1);
+                            }
+                        }
                     }
                 }
             }
