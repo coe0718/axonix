@@ -9,26 +9,14 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-016] Backfill missing sessions in METRICS.md and verify session tracking is reliable
-  - Sessions 8 and 9 from Day 3 have no METRICS.md entries
-  - Each session should always append a row; diagnose why the last two were skipped
-  - Part of ROADMAP Level 2: "Metrics tracking working and consistent across sessions"
-
-- [ ] [G-017] Explore free-tier social/announcement alternatives to Twitter
-  - Twitter write API requires paid plan (CreditsDepleted, documented in LEARNINGS.md)
-  - Mastodon and Bluesky both have free write APIs
-  - Research and implement posting to at least one alternative — keeps the "be visible" goal alive
-
-- [ ] [G-018] Extend Telegram capabilities — make it a richer remote interface
-  - Requested by operator Day 3 Session 10
-  - Current state: /ask, /help, /status work in all modes (G-015 done)
-  - Potential expansions:
-    - /health — report CPU/mem/disk from Telegram (reuse existing health.rs data)
-    - /issues — show open GitHub issues from Telegram without opening a terminal
-    - /history — show recent session prompts from Telegram
-    - /run <cmd> — execute safe shell commands remotely (with allowlist for safety)
-    - Proactive alerts — notify on session start/end, errors, long-running operations
-  - Goal: Telegram becomes a first-class mobile interface, not just a notification channel
+- [ ] [G-019] Add structured memory: persist key facts about the machine, operator, and preferences across sessions
+  - Current memory is flat Markdown files — good for transparency, not for querying
+  - A simple key-value or JSON store in `.axonix/memory.json` would let me remember things like:
+    - "operator prefers 4-space indentation in Caddyfiles"
+    - "NUC is at 192.168.1.10"
+    - "Twitter API is blocked, use Bluesky for announcements"
+  - Part of ROADMAP Level 5: "Know enough about how this person works to anticipate needs"
+  - Compounds with every session — each new fact makes future sessions more useful
 
 ## Backlog
 
@@ -64,3 +52,14 @@ Every goal should move toward this. Every session should answer:
   - Result: `/status` and `/help` commands work in all three modes (interactive, --prompt, piped)
     via background Telegram poll tasks. format_status_reply() shows model, mode, uptime, tokens.
     Closes Issue #21 (Telegram two-way). Fully implemented in main.rs, 14+ tests in telegram.rs.
+- [x] [G-016] Backfill missing sessions in METRICS.md and verify session tracking is reliable
+  - Result: Sessions 8, 9, 10, 11 all backfilled. METRICS.md now has complete history Day 1–Day 3 S11.
+  - Session tracking now reliable (evolve.sh appends rows via build_site.py at end of each session).
+- [x] [G-017] Bluesky integration: free-tier social posting alternative to Twitter — Day 3 Session 11
+  - Result: `BlueskyClient` in bluesky.rs posts to Bluesky AT Protocol free API; `--bluesky-post` CLI flag;
+    `format_session_post()` for session announcements; 13 tests. Env vars fixed in docker-compose.yml (Session 12).
+    Closes Issue #22 (free alternative to blocked Twitter write API).
+- [x] [G-018] Extend Telegram capabilities: /health command — Day 3 Session 11
+  - Result: `/health` Telegram command reports CPU/memory/disk/uptime via HealthSnapshot::collect().
+    BotCommand::Health dispatched in all three modes (interactive, --prompt, piped).
+    Closes the /health expansion from Issue #7.
