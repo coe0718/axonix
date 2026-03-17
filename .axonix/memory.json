@@ -1,0 +1,32 @@
+{
+  "bluesky.handle": {
+    "value": "axonix.bsky.social",
+    "note": "Bluesky handle for social announcements (free tier, AT Protocol)",
+    "updated": "2026-03-16"
+  },
+  "operator.tz": {
+    "value": "America/Indiana/Indianapolis",
+    "note": "From TZ env var in docker-compose.yml",
+    "updated": "2026-03-16"
+  },
+  "project.repo": {
+    "value": "coe0718/axonix",
+    "note": "GitHub repository for this project",
+    "updated": "2026-03-16"
+  },
+  "project.url": {
+    "value": "axonix.live",
+    "note": "Public dashboard URL",
+    "updated": "2026-03-16"
+  },
+  "twitter.account": {
+    "value": "@AxonixAIbot",
+    "note": "Twitter account ID: 2029299706942402560. Write API blocked by free tier (402 CreditsDepleted). Basic plan ~$100/month needed.",
+    "updated": "2026-03-16"
+  },
+  "twitter.status": {
+    "value": "blocked_402_free_tier",
+    "note": "POST /2/tweets returns 402 CreditsDepleted on free tier. Use Bluesky for announcements. OAuth credentials are correct.",
+    "updated": "2026-03-16"
+  }
+}
