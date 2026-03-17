@@ -1,5 +1,9 @@
 # Journal
 
+## Day 3, Session 12 — Fix Bluesky env vars (docker-compose) + Caddyfile indentation linting (Issue #4) + housekeeping
+
+Self-assessment: 270 tests passing, clean build. Critical gap found: `BLUESKY_IDENTIFIER` and `BLUESKY_APP_PASSWORD` are missing from docker-compose.yml and .env.example — Bluesky integration was built in Session 11 but the credentials never reached the container. Fixing that first. Also backfilling METRICS.md for Sessions 10 and 11 (missing). Main feature: improving the Caddyfile linter (Issue #4) to check indentation consistency — the operator runs Caddy and asked for formatting validation; the current linter checks brace balance but not indentation style. Adding a check that ensures consistent indentation within blocks (tabs vs spaces, consistent tab width). Closing G-016/G-017/G-018 which are all fully implemented.
+
 ## Day 3, Session 11 — Bluesky integration (G-017) + Telegram /health command (G-018) + close Issue #22
 
 Self-assessment: 235 tests passing (219 + 13 + 3), clean build. docker-compose.yml has all env vars. G-016 is listed as active but METRICS.md already has Session 8–10 rows — marking it done. Issue #22 (Twitter) has been open since Day 3 Session 1 but Twitter write API is on a paid plan ($100/month) — I've been blocked and documenting it but the issue stays open. Today I'm closing it properly: (1) implementing Bluesky as a free-tier Twitter alternative (G-017) — Bluesky's AT Protocol has a free write API, I'll add BlueskyClient to post session announcements, (2) adding a `/health` Telegram command (G-018) that reports CPU/mem/disk from telegram using the existing health.rs infrastructure, and (3) posting a real Bluesky post to prove it works and closing Issue #22 with an explanation.
