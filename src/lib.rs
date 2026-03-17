@@ -8,6 +8,7 @@
 //! - `github` — GitHub API integration (issue comments as axonix-bot or owner)
 //! - `health` — system health metrics (CPU, memory, disk, uptime)
 //! - `lint` — YAML and Caddyfile validation (for docker compose, Caddy server config)
+//! - `memory` — persistent key-value memory store (.axonix/memory.json)
 //! - `ssh` — multi-device management via SSH
 //! - `telegram` — Telegram bot integration (notifications + inbound /ask commands)
 //! - `twitter` — Twitter API integration (session announcements via OAuth 1.0a)
@@ -20,6 +21,7 @@ pub mod cost;
 pub mod github;
 pub mod health;
 pub mod lint;
+pub mod memory;
 pub mod render;
 pub mod repl;
 pub mod ssh;

@@ -9,6 +9,7 @@
 
 use std::collections::VecDeque;
 use crate::lint::{lint_file, LintResult};
+use crate::memory::MemoryStore;
 use crate::render::truncate;
 use crate::ssh::{HostRegistry, ssh_exec};
 use std::time::Duration;
@@ -32,6 +33,8 @@ pub struct ReplState {
     pub history: VecDeque<String>,
     /// SSH host registry loaded from hosts.toml.
     pub ssh_hosts: HostRegistry,
+    /// Persistent memory store (.axonix/memory.json).
+    pub memory: MemoryStore,
 }
 
 /// Maximum number of prompts kept in session history.
@@ -51,6 +54,7 @@ impl ReplState {
             last_prompt: None,
             history: VecDeque::new(),
             ssh_hosts,
+            memory: MemoryStore::load_default(),
         }
     }
 
@@ -133,6 +137,8 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                 "    /comment <n> <text> Post comment on GitHub issue #n".to_string(),
                 "    /tweet <text>       Post a tweet (≤280 chars)".to_string(),
                 "    /issues [N]         List open GitHub issues (default 10, sorted by reactions)".to_string(),
+                "    /memory list        Show persistent memory (facts across sessions)".to_string(),
+                "    /memory set/get/del Read and write persistent memory".to_string(),
             ];
             if !skill_names.is_empty() {
                 lines.push("    /skills        Show loaded skills".to_string());
@@ -448,6 +454,154 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                         format!("__tweet:{text}"),
                     ])
                 }
+            }
+        }
+
+        s if s == "/memory" || s.starts_with("/memory ") => {
+            // Usage:
+            //   /memory list             — show all stored facts
+            //   /memory get <key>        — get value of a key
+            //   /memory set <key> <val>  — store a key-value pair
+            //   /memory note <key> <note> — add a note to an existing key
+            //   /memory del <key>        — delete a key
+            let arg = if s == "/memory" {
+                ""
+            } else {
+                s.trim_start_matches("/memory ").trim()
+            };
+
+            if arg.is_empty() || arg == "list" {
+                if state.memory.is_empty() {
+                    CommandResult::Handled(vec![
+                        "  Memory: (empty)".to_string(),
+                        "  Use /memory set <key> <value> to store a fact.".to_string(),
+                        String::new(),
+                    ])
+                } else {
+                    let mut lines = vec![
+                        format!("  Memory ({} entries):", state.memory.len()),
+                    ];
+                    for (key, entry) in state.memory.all() {
+                        let note_str = entry.note.as_deref()
+                            .map(|n| format!("  — {}", truncate(n, 50)))
+                            .unwrap_or_default();
+                        let date_str = entry.updated.as_deref()
+                            .map(|d| format!(" [{d}]"))
+                            .unwrap_or_default();
+                        lines.push(format!("    {:<30} = {}{note_str}{date_str}",
+                            key,
+                            truncate(&entry.value, 40)
+                        ));
+                    }
+                    lines.push(String::new());
+                    CommandResult::Handled(lines)
+                }
+            } else if let Some(rest) = arg.strip_prefix("get ") {
+                let key = rest.trim();
+                if key.is_empty() {
+                    CommandResult::Handled(vec![
+                        "  Usage: /memory get <key>".to_string(),
+                        String::new(),
+                    ])
+                } else {
+                    match state.memory.get_entry(key) {
+                        None => CommandResult::Handled(vec![
+                            format!("  Memory: '{key}' not set"),
+                            String::new(),
+                        ]),
+                        Some(entry) => {
+                            let mut lines = vec![
+                                format!("  {key} = {}", entry.value),
+                            ];
+                            if let Some(note) = &entry.note {
+                                lines.push(format!("  note: {note}"));
+                            }
+                            if let Some(updated) = &entry.updated {
+                                lines.push(format!("  updated: {updated}"));
+                            }
+                            lines.push(String::new());
+                            CommandResult::Handled(lines)
+                        }
+                    }
+                }
+            } else if let Some(rest) = arg.strip_prefix("set ") {
+                let rest = rest.trim();
+                // Split into key and value: "key value with spaces"
+                let mut parts = rest.splitn(2, ' ');
+                let key = parts.next().unwrap_or("").trim();
+                let value = parts.next().unwrap_or("").trim();
+                if key.is_empty() || value.is_empty() {
+                    CommandResult::Handled(vec![
+                        "  Usage: /memory set <key> <value>".to_string(),
+                        "  Example: /memory set nuc.ip 192.168.1.10".to_string(),
+                        String::new(),
+                    ])
+                } else {
+                    state.memory.set(key, value, None);
+                    let save_result = state.memory.save()
+                        .map(|_| format!("  ✓ memory: {key} = {value}"))
+                        .unwrap_or_else(|e| format!("  ⚠ memory saved in-session but failed to write: {e}"));
+                    CommandResult::Handled(vec![save_result, String::new()])
+                }
+            } else if let Some(rest) = arg.strip_prefix("note ") {
+                let rest = rest.trim();
+                let mut parts = rest.splitn(2, ' ');
+                let key = parts.next().unwrap_or("").trim();
+                let note = parts.next().unwrap_or("").trim();
+                if key.is_empty() || note.is_empty() {
+                    CommandResult::Handled(vec![
+                        "  Usage: /memory note <key> <note text>".to_string(),
+                        "  Adds or updates the note on an existing key.".to_string(),
+                        String::new(),
+                    ])
+                } else {
+                    match state.memory.get(key).map(|s| s.to_string()) {
+                        None => CommandResult::Handled(vec![
+                            format!("  Memory: '{key}' not set — use /memory set first"),
+                            String::new(),
+                        ]),
+                        Some(existing_value) => {
+                            state.memory.set(key, &existing_value, Some(note));
+                            let save_result = state.memory.save()
+                                .map(|_| format!("  ✓ note added to '{key}'"))
+                                .unwrap_or_else(|e| format!("  ⚠ note saved in-session but failed to write: {e}"));
+                            CommandResult::Handled(vec![save_result, String::new()])
+                        }
+                    }
+                }
+            } else if let Some(rest) = arg.strip_prefix("del ") {
+                let key = rest.trim();
+                if key.is_empty() {
+                    CommandResult::Handled(vec![
+                        "  Usage: /memory del <key>".to_string(),
+                        String::new(),
+                    ])
+                } else {
+                    if state.memory.del(key) {
+                        let save_result = state.memory.save()
+                            .map(|_| format!("  ✓ memory: '{key}' deleted"))
+                            .unwrap_or_else(|e| format!("  ⚠ deleted in-session but failed to write: {e}"));
+                        CommandResult::Handled(vec![save_result, String::new()])
+                    } else {
+                        CommandResult::Handled(vec![
+                            format!("  Memory: '{key}' not set"),
+                            String::new(),
+                        ])
+                    }
+                }
+            } else {
+                CommandResult::Handled(vec![
+                    "  Usage:".to_string(),
+                    "    /memory list              Show all stored facts".to_string(),
+                    "    /memory get <key>         Get value of a key".to_string(),
+                    "    /memory set <key> <value> Store a key-value pair".to_string(),
+                    "    /memory note <key> <text> Add a note to an existing key".to_string(),
+                    "    /memory del <key>         Delete a key".to_string(),
+                    String::new(),
+                    "  Key naming convention: category.attribute".to_string(),
+                    "  Example: nuc.ip, twitter.status, operator.tz".to_string(),
+                    String::new(),
+                ])
             }
         }
 
@@ -1284,5 +1438,170 @@ mod tests {
         };
         let all = lines.join("\n");
         assert!(all.contains("/issues"), "/help should document /issues command");
+    }
+
+    // ── /memory command ───────────────────────────────────────────────────────
+
+    /// Helper: state with a tmp memory path (no real file I/O to user dirs).
+    fn state_with_tmp_memory() -> (ReplState, tempfile::TempDir) {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("memory.json");
+        let mut s = ReplState::new("claude-opus-4-6");
+        s.memory = crate::memory::MemoryStore::new(&path);
+        (s, dir)
+    }
+
+    #[test]
+    fn test_memory_list_empty() {
+        let (mut s, _dir) = state_with_tmp_memory();
+        let CommandResult::Handled(lines) = handle_command("/memory list", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("empty") || all.contains("no entries") || all.contains("Memory:"),
+            "empty memory should report empty: {all}");
+    }
+
+    #[test]
+    fn test_memory_set_and_get() {
+        let (mut s, _dir) = state_with_tmp_memory();
+
+        // Set a key
+        let result = handle_command("/memory set nuc.ip 192.168.1.10", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled: {result:?}");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("nuc.ip") || all.contains("✓"), "set should confirm: {all}");
+
+        // Get it back
+        let result = handle_command("/memory get nuc.ip", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("192.168.1.10"), "get should return value: {all}");
+    }
+
+    #[test]
+    fn test_memory_list_shows_stored_keys() {
+        let (mut s, _dir) = state_with_tmp_memory();
+        s.memory.set("twitter.status", "blocked_402", Some("Free tier blocks writes"));
+        s.memory.set("operator.tz", "America/Indiana/Indianapolis", None);
+
+        let CommandResult::Handled(lines) = handle_command("/memory list", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("twitter.status"), "list should show twitter.status: {all}");
+        assert!(all.contains("operator.tz"), "list should show operator.tz: {all}");
+        assert!(all.contains("blocked_402"), "list should show value: {all}");
+    }
+
+    #[test]
+    fn test_memory_get_missing_key() {
+        let (mut s, _dir) = state_with_tmp_memory();
+        let CommandResult::Handled(lines) = handle_command("/memory get nonexistent", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("not set") || all.contains("nonexistent"),
+            "missing key should report not set: {all}");
+    }
+
+    #[test]
+    fn test_memory_del_existing_key() {
+        let (mut s, _dir) = state_with_tmp_memory();
+        s.memory.set("temp.key", "temp_value", None);
+
+        let CommandResult::Handled(lines) = handle_command("/memory del temp.key", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("deleted") || all.contains("✓"), "del should confirm: {all}");
+        assert!(s.memory.get("temp.key").is_none(), "key should be deleted");
+    }
+
+    #[test]
+    fn test_memory_del_missing_key() {
+        let (mut s, _dir) = state_with_tmp_memory();
+        let CommandResult::Handled(lines) = handle_command("/memory del nonexistent", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("not set") || all.contains("nonexistent"),
+            "del of missing key should report not set: {all}");
+    }
+
+    #[test]
+    fn test_memory_set_missing_value_shows_usage() {
+        let (mut s, _dir) = state_with_tmp_memory();
+        let CommandResult::Handled(lines) = handle_command("/memory set keyonly", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("Usage") || all.contains("value"),
+            "set with no value should show usage: {all}");
+    }
+
+    #[test]
+    fn test_memory_note_command() {
+        let (mut s, _dir) = state_with_tmp_memory();
+        s.memory.set("some.key", "some_value", None);
+
+        let result = handle_command("/memory note some.key this is a helpful note", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled: {result:?}");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("✓") || all.contains("note"), "note should confirm: {all}");
+        // Verify value unchanged, note added
+        let entry = s.memory.get_entry("some.key").unwrap();
+        assert_eq!(entry.value, "some_value", "value should be unchanged");
+        assert!(entry.note.as_deref().unwrap_or("").contains("helpful note"), "note should be stored");
+    }
+
+    #[test]
+    fn test_memory_note_nonexistent_key_shows_error() {
+        let (mut s, _dir) = state_with_tmp_memory();
+        let CommandResult::Handled(lines) = handle_command("/memory note ghost.key a note", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("not set") || all.contains("set first"),
+            "note on missing key should show error: {all}");
+    }
+
+    #[test]
+    fn test_memory_unknown_subcommand_shows_usage() {
+        let (mut s, _dir) = state_with_tmp_memory();
+        let CommandResult::Handled(lines) = handle_command("/memory frobnicate", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("Usage") || all.contains("list") || all.contains("set"),
+            "unknown subcommand should show usage: {all}");
+    }
+
+    #[test]
+    fn test_memory_set_value_with_spaces() {
+        let (mut s, _dir) = state_with_tmp_memory();
+        let result = handle_command("/memory set greeting hello world from axonix", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else { panic!("expected Handled") };
+        let all = lines.join("\n");
+        assert!(all.contains("✓") || all.contains("greeting"), "set should confirm: {all}");
+        // Value with spaces should be stored fully
+        assert_eq!(s.memory.get("greeting"), Some("hello world from axonix"),
+            "value with spaces should be stored fully");
+    }
+
+    #[test]
+    fn test_help_includes_memory_command() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/help", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("/memory"), "/help should document /memory command");
     }
 }
