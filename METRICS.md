@@ -29,4 +29,6 @@ A record of every session. Appended automatically at the end of each run.
 | 4 | 2026-03-17 | ~25k | 323 | 0 | 3 | 120 | 15 | yes | Day 4 S2: complete G-020 — wire --discuss handler in main.rs; backfill METRICS S1 |
 | 4 | 2026-03-17 | ~28k | 329 | 0 | 4 | 462 | 5 | yes | Day 4 S3: G-021 predictions.rs — PredictionStore, 20 tests; mark G-020 done; backfill METRICS S1+S2 |
 | 4 | 2026-03-17 | ~30k | 362 | 0 | 5 | 380 | 10 | yes | Day 4 S4: complete G-021 — /predict REPL command, 15 tests; respond Issue #9; G-022 queued |
+| 4 | 2026-03-17 | ~35k | 380 | 0 | 5 | 505 | 4 | yes | Day 4 S6: G-022 --brief mode + brief.rs (Brief::collect, format_terminal, format_telegram); sci-fi REPL persona; 18 tests |
+| 4 | 2026-03-17 | ~25k | 386 | 0 | 2 | 87 | 1 | yes | Day 4 S7: complete G-022 — wire Telegram /brief command (BotCommand::Brief, all 3 modes); 6 new tests; G-023 promoted |
 <!-- Sessions are appended below this line automatically -->
