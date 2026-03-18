@@ -384,6 +384,84 @@ section {
 }
 
 
+/* ── live state ── */
+
+.live-state-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 520px) {
+  .live-state-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.live-panel {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  padding: 1rem;
+}
+
+.live-panel-label {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--cyan);
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+
+.live-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.live-item {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.live-item:last-child {
+  border-bottom: none;
+}
+
+.live-id {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  font-weight: 300;
+}
+
+.live-text {
+  color: var(--text-bright);
+  flex: 1;
+  min-width: 0;
+}
+
+.live-date {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.live-empty {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+
 /* ── footer ── */
 
 footer {

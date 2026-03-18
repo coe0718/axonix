@@ -2,6 +2,7 @@
 """Build the axonix journey website from markdown sources."""
 
 import html
+import json
 import re
 from pathlib import Path
 
@@ -171,6 +172,87 @@ def parse_goals(content):
     return {"active": active, "backlog": backlog, "completed": completed}
 
 
+def parse_open_predictions():
+    """Read open (unresolved) predictions from .axonix/predictions.json.
+
+    Returns a list of dicts with 'id', 'created', 'text' for each open prediction.
+    Returns empty list if the file doesn't exist or can't be parsed.
+    """
+    path = ROOT / ".axonix" / "predictions.json"
+    if not path.exists():
+        return []
+    try:
+        data = json.loads(path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return []
+
+    open_preds = []
+    for key, pred in sorted(data.items(), key=lambda kv: int(kv[0]) if kv[0].isdigit() else 0):
+        # Open = no outcome recorded
+        if pred.get("outcome") is None:
+            try:
+                pred_id = int(key)
+            except ValueError:
+                continue
+            open_preds.append({
+                "id": pred_id,
+                "created": pred.get("created", "?"),
+                "text": pred.get("prediction", ""),
+            })
+    return open_preds
+
+
+def render_live_state(goals, open_predictions):
+    """Render the live state section: active goals + open predictions.
+
+    This gives visitors an at-a-glance view of what Axonix is currently
+    working on and what predictions it has made but not yet resolved.
+    """
+    active_goals = goals["active"]
+    parts = ['      <div class="live-state-grid">']
+
+    # Active goals panel
+    parts.append('        <div class="live-panel">')
+    parts.append('          <span class="live-panel-label">→ active goals</span>')
+    if active_goals:
+        parts.append('          <ul class="live-list">')
+        for g in active_goals:
+            label = f'<span class="live-id">{html.escape(g["id"])}</span> ' if g["id"] else ""
+            parts.append(
+                f'          <li class="live-item">'
+                f'{label}<span class="live-text">{md_inline(g["text"])}</span>'
+                f'</li>'
+            )
+        parts.append('          </ul>')
+    else:
+        parts.append('          <p class="live-empty">no active goals — backlog only</p>')
+    parts.append('        </div>')
+
+    # Open predictions panel
+    parts.append('        <div class="live-panel">')
+    parts.append('          <span class="live-panel-label">🔮 open predictions</span>')
+    if open_predictions:
+        parts.append('          <ul class="live-list">')
+        for pred in open_predictions:
+            text = pred["text"]
+            if len(text) > 65:
+                text = text[:62] + "..."
+            parts.append(
+                f'          <li class="live-item">'
+                f'<span class="live-id">#{pred["id"]}</span> '
+                f'<span class="live-text">{html.escape(text)}</span>'
+                f'<span class="live-date"> [{html.escape(pred["created"])}]</span>'
+                f'</li>'
+            )
+        parts.append('          </ul>')
+    else:
+        parts.append('          <p class="live-empty">no open predictions</p>')
+    parts.append('        </div>')
+
+    parts.append('      </div>')
+    return "\n".join(parts)
+
+
 def render_goals(goals):
     """Render the goals section HTML."""
     active = goals["active"]
@@ -326,6 +408,7 @@ HTML_TEMPLATE = """\
   <nav>
     <a href="#" class="nav-name">axonix</a>
     <div class="nav-links">
+      <a href="#live">live</a>
       <a href="#stats">stats</a>
       <a href="#journal">journal</a>
       <a href="#goals">goals</a>
@@ -340,6 +423,11 @@ HTML_TEMPLATE = """\
       <p class="day-count">Day {day_count}</p>
       <p class="tagline">a coding agent growing up in public</p>
     </header>
+
+    <section id="live">
+      <h2 class="section-label">// live state</h2>
+{live_state_html}
+    </section>
 
     <section id="stats">
       <h2 class="section-label">// stats</h2>
@@ -759,6 +847,84 @@ section {
 }
 
 
+/* ── live state ── */
+
+.live-state-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 520px) {
+  .live-state-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.live-panel {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  padding: 1rem;
+}
+
+.live-panel-label {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--cyan);
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+
+.live-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.live-item {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.live-item:last-child {
+  border-bottom: none;
+}
+
+.live-id {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  font-weight: 300;
+}
+
+.live-text {
+  color: var(--text-bright);
+  flex: 1;
+  min-width: 0;
+}
+
+.live-date {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.live-empty {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+
 /* ── footer ── */
 
 footer {
@@ -816,13 +982,18 @@ def build():
         pass
 
     metrics = parse_metrics(read_file("METRICS.md"))
+    goals = parse_goals(read_file("GOALS.md"))
+    open_predictions = parse_open_predictions()
+
     stats_html = render_stats(metrics)
+    live_state_html = render_live_state(goals, open_predictions)
     journal_html = render_journal(parse_journal(read_file("JOURNAL.md")))
-    goals_html = render_goals(parse_goals(read_file("GOALS.md")))
+    goals_html = render_goals(goals)
     identity_html = render_identity(parse_identity(read_file("IDENTITY.md")))
 
     page = HTML_TEMPLATE.format(
         day_count=day_count,
+        live_state_html=live_state_html,
         stats_html=stats_html,
         journal_html=journal_html,
         goals_html=goals_html,
@@ -834,7 +1005,10 @@ def build():
     (DOCS / "style.css").write_text(CSS)
     (DOCS / ".nojekyll").touch()
 
-    print(f"Site built: docs/index.html (Day {day_count}, {len(metrics)} sessions)")
+    n_open_preds = len(open_predictions)
+    n_active_goals = len(goals["active"])
+    print(f"Site built: docs/index.html (Day {day_count}, {len(metrics)} sessions, "
+          f"{n_active_goals} active goals, {n_open_preds} open predictions)")
 
 
 if __name__ == "__main__":
