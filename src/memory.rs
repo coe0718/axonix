@@ -204,6 +204,32 @@ impl MemoryStore {
     pub fn is_dirty(&self) -> bool {
         self.dirty
     }
+
+    /// Format all memory entries as a block suitable for injection into a system prompt.
+    ///
+    /// Returns `None` if the store is empty (so callers can skip appending).
+    /// Format:
+    ///   ## Operator Memory
+    ///   key: value [note if present]
+    ///
+    /// Used by G-024: inject operator context at agent startup so every conversation
+    /// is aware of stored facts without requiring a manual `/memory list` call.
+    pub fn format_for_system_prompt(&self) -> Option<String> {
+        if self.entries.is_empty() {
+            return None;
+        }
+        let mut lines = vec!["## Operator Memory".to_string()];
+        lines.push("Known facts about this operator and environment:".to_string());
+        for (key, entry) in &self.entries {
+            let note_part = entry
+                .note
+                .as_deref()
+                .map(|n| format!(" [{}]", n))
+                .unwrap_or_default();
+            lines.push(format!("- {}: {}{}", key, entry.value, note_part));
+        }
+        Some(lines.join("\n"))
+    }
 }
 
 /// Return the default path for the memory store.
@@ -472,5 +498,38 @@ mod tests {
         assert!(entry.updated.is_some(), "set should record updated timestamp");
         let updated = entry.updated.as_ref().unwrap();
         assert_eq!(updated.len(), 10, "timestamp should be YYYY-MM-DD: {updated}");
+    }
+
+    // ── format_for_system_prompt ──────────────────────────────────────────────
+
+    #[test]
+    fn test_format_for_system_prompt_empty_returns_none() {
+        let (store, _dir) = tmp_store();
+        assert!(store.format_for_system_prompt().is_none(), "empty store should return None");
+    }
+
+    #[test]
+    fn test_format_for_system_prompt_with_entries() {
+        let (mut store, _dir) = tmp_store();
+        store.set("operator.tz", "America/Indiana/Indianapolis", Some("from env"));
+        store.set("twitter.status", "blocked_402", None);
+        let block = store.format_for_system_prompt().expect("should produce a block");
+        assert!(block.contains("## Operator Memory"), "should have header");
+        assert!(block.contains("operator.tz"), "should include key");
+        assert!(block.contains("America/Indiana/Indianapolis"), "should include value");
+        assert!(block.contains("[from env]"), "should include note");
+        assert!(block.contains("twitter.status"), "should include second key");
+    }
+
+    #[test]
+    fn test_format_for_system_prompt_no_note_no_brackets() {
+        let (mut store, _dir) = tmp_store();
+        store.set("key.without.note", "value", None);
+        let block = store.format_for_system_prompt().expect("should produce a block");
+        // No note → no brackets at end of that line
+        let line = block.lines()
+            .find(|l| l.contains("key.without.note"))
+            .expect("should find the key line");
+        assert!(!line.ends_with(']'), "line without note should not end with ]");
     }
 }

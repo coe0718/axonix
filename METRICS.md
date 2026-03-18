@@ -32,3 +32,4 @@ A record of every session. Appended automatically at the end of each run.
 | 4 | 2026-03-17 | ~35k | 380 | 0 | 5 | 505 | 4 | yes | Day 4 S6: G-022 --brief mode + brief.rs (Brief::collect, format_terminal, format_telegram); sci-fi REPL persona; 18 tests |
 | 4 | 2026-03-17 | ~25k | 386 | 0 | 2 | 87 | 1 | yes | Day 4 S7: complete G-022 — wire Telegram /brief command (BotCommand::Brief, all 3 modes); 6 new tests; G-023 promoted |
 <!-- Sessions are appended below this line automatically -->
+| 5 | 2026-03-18 | ~?k | 371 | 0 | 1 | 4 | 0 | yes | Day 5 S2 — auto-generated (agent missed wrap-up) |

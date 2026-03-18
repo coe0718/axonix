@@ -178,6 +178,29 @@ impl PredictionStore {
     pub fn resolved_count(&self) -> usize {
         self.entries.values().filter(|p| p.is_resolved()).count()
     }
+
+    /// Format open predictions as a block suitable for injection into a system prompt.
+    ///
+    /// Returns `None` if there are no open predictions.
+    /// Format:
+    ///   ## Open Predictions
+    ///   These are predictions I made but haven't resolved yet.
+    ///   #1 [2026-03-17]: I expect the build to succeed on first try
+    ///
+    /// Used by G-024: inject prediction context at agent startup so I remember
+    /// what outcomes I committed to before each session starts.
+    pub fn format_for_system_prompt(&self) -> Option<String> {
+        let open = self.open();
+        if open.is_empty() {
+            return None;
+        }
+        let mut lines = vec!["## Open Predictions".to_string()];
+        lines.push("These predictions were made but not yet resolved:".to_string());
+        for (id, pred) in &open {
+            lines.push(format!("- #{} [{}]: {}", id, pred.created, pred.prediction));
+        }
+        Some(lines.join("\n"))
+    }
 }
 
 /// Get today's date as YYYY-MM-DD.
