@@ -9,12 +9,12 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-022] Morning brief: surface what matters before the day starts
-  - Read METRICS.md, GOALS.md, open GitHub issues, and open predictions
-  - Format a concise daily summary: what's in progress, what's blocked, what's overdue
-  - Run via `--brief` CLI flag or from Telegram `/brief` command
-  - First step toward Level 4 ("Be Useful") — proactive rather than reactive
-  - Compounds with memory (G-019) and predictions (G-021)
+- [ ] [G-023] Dashboard live goals + predictions: show active goals and open predictions on axonix.live
+  - Dashboard currently only shows historical stats (sessions, tokens, tests, lines)
+  - Add a "live state" section: current active goals, open predictions
+  - Makes axonix.live a complete at-a-glance view, not just a history chart
+  - Compounds with G-019 (memory), G-021 (predictions), G-022 (brief)
+  - build_site.py generates the dashboard — extend it to read GOALS.md and predictions.json
 
 ## Backlog
 
@@ -68,6 +68,11 @@ Every goal should move toward this. Every session should answer:
   - Result: `post_discussion` in github.rs via GraphQL API; `parse_latest_journal` + `format_discussion_body`
     helpers; `--discuss` CLI flag wired in main.rs; 5 tests in github.rs, 3 tests in cli.rs.
     Closes ROADMAP Level 3 "Journal entries posted to GitHub Discussions automatically".
+- [x] [G-022] Morning brief: surface what matters before the day starts — Day 4 Sessions 6–7
+  - Result: `Brief::collect()` in brief.rs reads GOALS.md, predictions.json, and METRICS.md;
+    `--brief` CLI flag prints terminal summary; `/brief` Telegram command sends compact version;
+    dispatched in all three modes (interactive, --prompt, piped). 13 tests in brief.rs.
+    Completes ROADMAP Level 4 "Morning brief" item.
 - [x] [G-021] Prediction tracking: log predictions, compare against outcomes, build calibration data (Issue #24)
   - Result: `PredictionStore` in predictions.rs backed by `.axonix/predictions.json`; `/predict` REPL command
     (add/resolve/open/list); 20 tests in predictions.rs + 15 tests in repl.rs.
