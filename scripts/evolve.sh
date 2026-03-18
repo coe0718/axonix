@@ -43,6 +43,10 @@ tg_notify "🤖 *Axonix* — Day $DAY, Session $SESSION starting"
 echo "Model: $MODEL"
 echo ""
 
+# Snapshot METRICS.md row count before the session so we can detect if the
+# agent forgot to write its row during wrap-up.
+METRICS_ROWS_BEFORE=$(grep -cE "^\| [0-9]" METRICS.md 2>/dev/null || echo "0")
+
 # ── Step 1: Verify starting state ──
 echo "→ Checking build..."
 cargo build --quiet
@@ -178,8 +182,11 @@ For each improvement:
 === PHASE 7: Wrap Up ===
 
 After implementing:
-- Update GOALS.md — mark completed goals as done, promote backlog items if relevant
-- Update METRICS.md — this is REQUIRED, never skip it. Add a row with exact values:
+- Update GOALS.md — THIS IS REQUIRED. Cross-check your journal entry against GOALS.md:
+  For every goal you mention completing in your journal, the goal MUST be marked [x] in GOALS.md.
+  If Active is now empty, promote at least one item from Backlog to Active.
+  Do not leave GOALS.md stale — if the work is done, mark it done.
+- Update METRICS.md — THIS IS REQUIRED, never skip it. Add a row with exact values:
     | $DAY | $DATE | ~Xk | <tests passed> | 0 | <files changed> | <lines added> | <lines removed> | yes | <one line summary> |
     Run cargo test to get the exact passing count. Estimate tokens if unsure.
 - If you added a new environment variable: make sure it is in ALL of these places:
@@ -224,6 +231,19 @@ fi
 
 # DAY_COUNT already updated at session start
 
+# ── Step 5a: Metrics fallback — append row if agent didn't ──
+METRICS_ROWS_AFTER=$(grep -cE "^\| [0-9]" METRICS.md 2>/dev/null || echo "0")
+if [ "$METRICS_ROWS_AFTER" -le "$METRICS_ROWS_BEFORE" ]; then
+    echo "  WARNING: METRICS.md not updated this session — appending fallback row"
+    TEST_COUNT=$(cargo test --quiet 2>/dev/null | grep "test result" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" | head -1 || echo "?")
+    DIFF_STAT=$(git diff --stat HEAD~1 HEAD 2>/dev/null | tail -1 || echo "")
+    FILES_CHANGED=$(echo "$DIFF_STAT" | grep -oE "[0-9]+ file" | grep -oE "[0-9]+" || echo "?")
+    LINES_ADDED=$(echo "$DIFF_STAT" | grep -oE "[0-9]+ insertion" | grep -oE "[0-9]+" || echo "0")
+    LINES_REMOVED=$(echo "$DIFF_STAT" | grep -oE "[0-9]+ deletion" | grep -oE "[0-9]+" || echo "0")
+    echo "| $DAY | $DATE | ~?k | ${TEST_COUNT:-?} | 0 | ${FILES_CHANGED:-?} | ${LINES_ADDED:-0} | ${LINES_REMOVED:-0} | yes | Day $DAY S$SESSION — auto-generated (agent missed wrap-up) |" >> METRICS.md
+    echo "  Fallback metrics row appended."
+fi
+
 # Rebuild website
 echo "→ Rebuilding website..."
 python3 scripts/build_site.py
@@ -240,6 +260,18 @@ if [ -n "${TWITTER_API_KEY:-}" ] && [ -n "${TWITTER_ACCESS_TOKEN:-}" ]; then
         echo "  Tweet posted."
     else
         echo "  No journal title found — skipping tweet."
+    fi
+fi
+
+# ── Step 5c: Post session journal entry as GitHub Discussion ──
+if [ -n "${AXONIX_BOT_TOKEN:-}${GH_TOKEN:-}" ]; then
+    echo "→ Posting session discussion..."
+    JOURNAL_CHECK=$(grep "^## Day $DAY, Session $SESSION" JOURNAL.md | head -1)
+    if [ -n "$JOURNAL_CHECK" ]; then
+        cargo run --bin axonix --quiet -- --discuss || echo "  Discussion post failed (non-fatal)"
+        echo "  Discussion posted."
+    else
+        echo "  No journal entry for Day $DAY Session $SESSION — skipping discussion."
     fi
 fi
 

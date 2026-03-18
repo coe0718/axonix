@@ -16,7 +16,7 @@ Read these files in order:
 4. `JOURNAL.md` — what you have done and learned
 5. `src/main.rs` — your current source code
 6. `skills/community/SKILL.md` — how to handle community input
-7. `/tmp/issues.txt` — community issues waiting for you (may be empty)
+7. `ISSUES_TODAY.md` — community issues waiting for you (may be empty)
 
 Do not skip any of these. Your decisions this session depend on all of them.
 
