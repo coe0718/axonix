@@ -15,6 +15,7 @@
 //! - `telegram` — Telegram bot integration (notifications + inbound /ask commands)
 //! - `twitter` — Twitter API integration (session announcements via OAuth 1.0a)
 //! - `bluesky` — Bluesky AT Protocol integration (free-tier social posting)
+//! - `watch` — health watch: periodic threshold checks + Telegram alerts (G-025)
 
 pub mod brief;
 pub mod bluesky;
@@ -31,3 +32,4 @@ pub mod repl;
 pub mod ssh;
 pub mod telegram;
 pub mod twitter;
+pub mod watch;

@@ -173,6 +173,23 @@ async fn main() {
         return;
     }
 
+    // --watch mode: run health watch loop, send Telegram alerts when thresholds exceeded (G-025)
+    if cli_args.watch {
+        match &tg {
+            None => {
+                eprintln!("{RED}error:{RESET} --watch requires Telegram. Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID.");
+                std::process::exit(1);
+            }
+            Some(tg_client) => {
+                eprintln!("{DIM}  axonix --watch — health monitor active{RESET}");
+                eprintln!("{DIM}  Press Ctrl+C to stop{RESET}");
+                let config = axonix::watch::WatchConfig::default();
+                axonix::watch::run_watch(config, tg_client).await;
+                return;
+            }
+        }
+    }
+
     // --tweet mode: post a tweet and exit (no agent session started)
     if let Some(tweet_text) = cli_args.tweet {
         let tweet_text = tweet_text.trim();

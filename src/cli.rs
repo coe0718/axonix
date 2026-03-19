@@ -19,6 +19,8 @@ pub struct CliArgs {
     pub discuss: bool,
     /// If set, print the morning brief (open goals, predictions, recent metrics) and exit.
     pub brief: bool,
+    /// If set, run health watch loop: check thresholds every N seconds and send Telegram alerts.
+    pub watch: bool,
 }
 
 impl CliArgs {
@@ -67,6 +69,7 @@ impl CliArgs {
 
         let discuss = args.iter().any(|a| a == "--discuss");
         let brief = args.iter().any(|a| a == "--brief");
+        let watch = args.iter().any(|a| a == "--watch");
 
         Some(Self {
             model,
@@ -76,6 +79,7 @@ impl CliArgs {
             bluesky_post,
             discuss,
             brief,
+            watch,
         })
     }
 }
@@ -94,6 +98,7 @@ pub fn print_help() {
     println!("  --bluesky-post <text>   Post to Bluesky and exit (requires BLUESKY_IDENTIFIER + BLUESKY_APP_PASSWORD)");
     println!("  --discuss               Post latest JOURNAL.md entry as a GitHub Discussion and exit");
     println!("  --brief                 Print morning brief (goals, predictions, metrics) and exit");
+    println!("  --watch                 Start health watch loop: alert via Telegram when thresholds exceeded");
     println!("  --help, -h              Show this help message");
     println!("  --version, -V           Show version");
     println!();
@@ -372,5 +377,24 @@ mod tests {
             .into_iter().map(String::from).collect();
         let cli = CliArgs::parse(&args).unwrap();
         assert!(!cli.brief, "brief should be false when flag absent");
+    }
+
+    #[test]
+    fn test_watch_flag_present() {
+        let args: Vec<String> = vec!["axonix", "--watch"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(cli.watch, "--watch should set watch to true");
+        assert!(cli.prompt.is_none(), "--watch should not set prompt");
+        assert!(!cli.discuss, "--watch should not set discuss");
+        assert!(!cli.brief, "--watch should not set brief");
+    }
+
+    #[test]
+    fn test_watch_flag_absent() {
+        let args: Vec<String> = vec!["axonix", "--model", "claude-sonnet-4-6"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(!cli.watch, "watch should be false when flag absent");
     }
 }
