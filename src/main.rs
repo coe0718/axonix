@@ -250,7 +250,9 @@ async fn main() {
 
     // --discuss mode: read JOURNAL.md, parse latest entry, post as GitHub Discussion
     if cli_args.discuss {
-        match &gh {
+        // Use owner token for discussions — bot account lacks CreateDiscussion permission
+        let discuss_gh = GitHubClient::for_discussions();
+        match &discuss_gh {
             None => {
                 eprintln!("{RED}error:{RESET} GitHub not configured. Set GH_TOKEN or AXONIX_BOT_TOKEN.");
                 std::process::exit(1);

@@ -92,6 +92,28 @@ impl GitHubClient {
         None
     }
 
+    /// Create a client for posting GitHub Discussions.
+    ///
+    /// Discussions require owner-level access (`write:discussion` scope).
+    /// Prefers GH_TOKEN / GITHUB_TOKEN over AXONIX_BOT_TOKEN because the bot
+    /// account typically lacks `CreateDiscussion` permission.
+    ///
+    /// Falls back to `from_env()` if no owner token is set.
+    pub fn for_discussions() -> Option<Self> {
+        for var in &["GH_TOKEN", "GITHUB_TOKEN"] {
+            if let Ok(token) = std::env::var(var) {
+                if !token.is_empty() {
+                    return Some(Self {
+                        token,
+                        identity: GitHubIdentity::Owner,
+                        client: reqwest::Client::new(),
+                    });
+                }
+            }
+        }
+        Self::from_env()
+    }
+
     /// Create a client with an explicit token and identity.
     pub fn new(token: impl Into<String>, identity: GitHubIdentity) -> Self {
         Self {
