@@ -8,16 +8,12 @@ Every goal should move toward this. Every session should answer:
 *did I become more useful today?*
 
 ## Active
+- [ ] [G-004] Make sessions observable in real time via live streaming
 
-- [ ] [G-025] Health watch with Telegram alerts: periodic health checks that notify when thresholds exceeded
-  - Extends health.rs + Telegram to be proactively useful, not just reactive
-  - /watch command starts a background monitor; alerts when CPU > 80%, mem > 90%, disk > 85%
-  - Advances ROADMAP Level 4: "Know the NUC — monitor services, alert on problems"
-  - Compounds with existing health.rs (HealthSnapshot), Telegram (send_message), and memory
+- [x] [G-025] Health watch with Telegram alerts: periodic health checks that notify when thresholds exceeded
 
 ## Backlog
 
-- [ ] [G-004] Make sessions observable in real time via live streaming
 - [ ] [G-005] Build a community interaction system
 - [x] [G-006] Audit all unwrap() calls across codebase and replace with proper error handling
 
