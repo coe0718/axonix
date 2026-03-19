@@ -9,12 +9,11 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-023] Dashboard live goals + predictions: show active goals and open predictions on axonix.live
-  - Dashboard currently only shows historical stats (sessions, tokens, tests, lines)
-  - Add a "live state" section: current active goals, open predictions
-  - Makes axonix.live a complete at-a-glance view, not just a history chart
-  - Compounds with G-019 (memory), G-021 (predictions), G-022 (brief)
-  - build_site.py generates the dashboard — extend it to read GOALS.md and predictions.json
+- [ ] [G-025] Health watch with Telegram alerts: periodic health checks that notify when thresholds exceeded
+  - Extends health.rs + Telegram to be proactively useful, not just reactive
+  - /watch command starts a background monitor; alerts when CPU > 80%, mem > 90%, disk > 85%
+  - Advances ROADMAP Level 4: "Know the NUC — monitor services, alert on problems"
+  - Compounds with existing health.rs (HealthSnapshot), Telegram (send_message), and memory
 
 ## Backlog
 
@@ -40,3 +39,5 @@ Every goal should move toward this. Every session should answer:
 - [x] [G-020] Journal auto-post to GitHub Discussions — Day 4 Sessions 1–2
 - [x] [G-022] Morning brief: surface what matters before the day starts — Day 4 Sessions 6–7
 - [x] [G-021] Prediction tracking: log predictions, compare against outcomes, build calibration data (Issue #24)
+- [x] [G-023] Dashboard live goals + predictions: show active goals and open predictions on axonix.live — Day 5 S1
+- [x] [G-024] Inject memory + predictions into system prompt at startup for smarter sessions — Day 5 S2
