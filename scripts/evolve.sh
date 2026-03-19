@@ -85,6 +85,9 @@ print('# Journal (last 3 entries)\n')
 print('\n'.join(recent))
 " 2>/dev/null || head -60 JOURNAL.md 2>/dev/null || echo "No journal yet.")
 
+# Snapshot HEAD before session so we can diff commits afterward
+SESSION_START_SHA=$(git rev-parse HEAD 2>/dev/null || echo "")
+
 # ── Step 4: Run evolution session ──
 echo "→ Starting evolution session..."
 echo ""
@@ -244,12 +247,45 @@ if [ "$METRICS_ROWS_AFTER" -le "$METRICS_ROWS_BEFORE" ]; then
     echo "  Fallback metrics row appended."
 fi
 
+# ── Step 5b: Auto-mark completed goals from session commit messages ──
+# If Axonix referenced a G-ID in a commit message, it's done — mark it.
+if [ -n "$SESSION_START_SHA" ]; then
+    SESSION_COMMITS=$(git log --format="%s%n%b" "${SESSION_START_SHA}..HEAD" 2>/dev/null || echo "")
+    if [ -n "$SESSION_COMMITS" ]; then
+        COMPLETED_GOALS=$(echo "$SESSION_COMMITS" | grep -oE '\bG-[0-9]+\b' | sort -u)
+        for GOAL_ID in $COMPLETED_GOALS; do
+            if grep -qE "^\- \[ \] \[${GOAL_ID}\]" GOALS.md 2>/dev/null; then
+                sed -i "s/^- \[ \] \[${GOAL_ID}\]/- [x] [${GOAL_ID}]/" GOALS.md
+                echo "  Auto-marked ${GOAL_ID} done in GOALS.md (referenced in session commits)"
+            fi
+        done
+    fi
+
+    # If Active section now has no unchecked goals, promote one from Backlog
+    ACTIVE_OPEN=$(awk '/^## Active/{f=1} /^## Backlog/{f=0} f && /^\- \[ \]/' GOALS.md | wc -l)
+    if [ "$ACTIVE_OPEN" -eq 0 ]; then
+        # Find first unchecked backlog item and move it to active section
+        BACKLOG_GOAL=$(awk '/^## Backlog/{f=1} f && /^\- \[ \]/{print; exit}' GOALS.md)
+        if [ -n "$BACKLOG_GOAL" ]; then
+            # Remove from backlog, add to active
+            GOAL_TEXT=$(echo "$BACKLOG_GOAL" | sed 's/\[/\\[/g; s/\]/\\]/g')
+            # Insert after "## Active" line
+            sed -i "/^## Active$/a\\${BACKLOG_GOAL}" GOALS.md
+            # Remove from backlog (first occurrence)
+            ESCAPED=$(echo "$BACKLOG_GOAL" | sed 's/[[\.*^$()+?{|]/\\&/g')
+            sed -i "0,/^## Backlog/! { /^${ESCAPED}$/{ s/.*/GOAL_PLACEHOLDER_DELETE/; } }" GOALS.md 2>/dev/null || true
+            sed -i '/^GOAL_PLACEHOLDER_DELETE$/d' GOALS.md
+            echo "  Promoted backlog goal to Active (Active was empty after session)"
+        fi
+    fi
+fi
+
 # Rebuild website
 echo "→ Rebuilding website..."
 python3 scripts/build_site.py
 echo "  Site rebuilt."
 
-# ── Step 5b: Post session tweet ──
+# ── Step 5c: Post session tweet ──
 if [ -n "${TWITTER_API_KEY:-}" ] && [ -n "${TWITTER_ACCESS_TOKEN:-}" ]; then
     echo "→ Posting session tweet..."
     JOURNAL_TITLE=$(grep "^## Day $DAY, Session $SESSION" JOURNAL.md | head -1 | sed 's/^## Day [0-9]*, Session [0-9]* — //')
@@ -263,13 +299,21 @@ if [ -n "${TWITTER_API_KEY:-}" ] && [ -n "${TWITTER_ACCESS_TOKEN:-}" ]; then
     fi
 fi
 
-# ── Step 5c: Post session journal entry as GitHub Discussion ──
+# ── Step 5d: Post session journal entry as GitHub Discussion (deduplicated) ──
 if [ -n "${AXONIX_BOT_TOKEN:-}${GH_TOKEN:-}" ]; then
     echo "→ Posting session discussion..."
+    mkdir -p .axonix
+    DISCUSS_FLAG=".axonix/discussed_day_${DAY}_session_${SESSION}"
     JOURNAL_CHECK=$(grep "^## Day $DAY, Session $SESSION" JOURNAL.md | head -1)
-    if [ -n "$JOURNAL_CHECK" ]; then
-        cargo run --bin axonix --quiet -- --discuss || echo "  Discussion post failed (non-fatal)"
-        echo "  Discussion posted."
+    if [ -f "$DISCUSS_FLAG" ]; then
+        echo "  Discussion already posted for Day $DAY Session $SESSION — skipping."
+    elif [ -n "$JOURNAL_CHECK" ]; then
+        if cargo run --bin axonix --quiet -- --discuss; then
+            touch "$DISCUSS_FLAG"
+            echo "  Discussion posted."
+        else
+            echo "  Discussion post failed (non-fatal)"
+        fi
     else
         echo "  No journal entry for Day $DAY Session $SESSION — skipping discussion."
     fi

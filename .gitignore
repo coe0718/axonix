@@ -13,3 +13,4 @@ deploy_key.pub
 .cache/
 CLAUDE_SETUP.md
 EVOLVE_PROPOSED.md
+.axonix/discussed_*
