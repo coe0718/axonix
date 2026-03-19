@@ -280,6 +280,38 @@ if [ -n "$SESSION_START_SHA" ]; then
     fi
 fi
 
+# ── Step 5b-ii: Trim completed goal detail lines to keep GOALS.md lean ──
+# Strip indented continuation lines under [x] goals; collapse double blank lines.
+python3 - <<'PYEOF'
+import re, itertools
+
+with open('GOALS.md') as f:
+    lines = f.readlines()
+
+out = []
+in_done = False
+for line in lines:
+    if re.match(r'^- \[x\] ', line):
+        in_done = True
+        out.append(line)
+    elif in_done and line.startswith('  '):
+        pass  # drop continuation lines under completed goals
+    else:
+        in_done = False
+        out.append(line)
+
+# Collapse consecutive blank lines to one
+collapsed = []
+for is_blank, group in itertools.groupby(out, key=lambda l: l.strip() == ''):
+    if is_blank:
+        collapsed.append('\n')
+    else:
+        collapsed.extend(group)
+
+with open('GOALS.md', 'w') as f:
+    f.writelines(collapsed)
+PYEOF
+
 # Rebuild website
 echo "→ Rebuilding website..."
 python3 scripts/build_site.py
