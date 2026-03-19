@@ -64,13 +64,19 @@ impl WatchConfig {
 /// Tracks the last time an alert was sent for each metric.
 /// Used to enforce cooldown periods and prevent alert floods.
 #[derive(Debug, Default)]
-struct AlertState {
+pub struct AlertState {
     last_cpu_alert: Option<Instant>,
     last_mem_alert: Option<Instant>,
     last_disk_alert: Option<Instant>,
 }
 
 impl AlertState {
+    /// Create a fresh AlertState (no previous alerts — all metrics can alert).
+    /// Used by the REPL `/watch` command for point-in-time checks.
+    pub fn default_for_repl() -> Self {
+        Self::default()
+    }
+
     /// Returns true if a CPU alert can be sent (not in cooldown).
     fn can_alert_cpu(&self, cooldown: Duration) -> bool {
         self.last_cpu_alert

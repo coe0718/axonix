@@ -148,6 +148,7 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                 "    /predict add <text> Log a prediction about a future outcome".to_string(),
                 "    /predict open       Show open (unresolved) predictions".to_string(),
                 "    /predict list       Show all predictions with outcomes".to_string(),
+                "    /watch             Show current health vs thresholds".to_string(),
             ];
             if !skill_names.is_empty() {
                 lines.push("    /skills        Show loaded skills".to_string());
@@ -821,9 +822,40 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
 
         s if s.starts_with('/') => {
             // /status, /context, /tokens are handled by main (they need agent/session data)
-            // Everything else is truly unknown
+            // /watch shows current health vs thresholds (point-in-time check)
             if matches!(s, "/status" | "/context" | "/tokens") {
                 CommandResult::NotACommand // caller handles these
+            } else if s == "/watch" || s.starts_with("/watch ") {
+                // /watch: show current health vs watch thresholds
+                // For a background watch loop, use --watch CLI flag
+                let snap = crate::health::HealthSnapshot::collect();
+                let config = crate::watch::WatchConfig::default();
+                let state = crate::watch::AlertState::default_for_repl();
+                let alerts = crate::watch::evaluate_thresholds(&snap, &config, &state);
+
+                let mut lines = vec![
+                    format!("  🔍 Health vs thresholds (CPU>{:.1} | Mem>{}% | Disk>{}%):",
+                        config.cpu_threshold, config.mem_threshold, config.disk_threshold),
+                    format!("  CPU load:  {}", snap.load_avg),
+                    format!("  Memory:    {}", snap.memory),
+                    format!("  Disk (/):  {}", snap.disk),
+                    format!("  Uptime:    {}", snap.uptime),
+                    String::new(),
+                ];
+                if alerts.is_empty() {
+                    lines.push("  ✅ All metrics within thresholds".to_string());
+                } else {
+                    lines.push(format!("  ⚠ {} threshold(s) exceeded:", alerts.len()));
+                    for alert in &alerts {
+                        // Extract the first line of each alert for concise display
+                        let first_line = alert.lines().next().unwrap_or("").trim();
+                        lines.push(format!("    {first_line}"));
+                    }
+                    lines.push(String::new());
+                    lines.push("  Use --watch to send alerts via Telegram.".to_string());
+                }
+                lines.push(String::new());
+                CommandResult::Handled(lines)
             } else {
                 CommandResult::Handled(vec![
                     format!("  Unknown command: {s}"),
@@ -1981,5 +2013,71 @@ mod tests {
         };
         let all = lines.join("\n");
         assert!(all.contains("/predict"), "/help should document /predict command");
+    }
+
+    // ── /watch command ────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_watch_no_args_returns_health_snapshot() {
+        let mut s = state();
+        let result = handle_command("/watch", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled for /watch: {result:?}");
+        };
+        let all = lines.join("\n");
+        // Should show health fields and thresholds
+        assert!(all.contains("CPU") || all.contains("load"), "/watch should show CPU info: {all}");
+        assert!(all.contains("Memory") || all.contains("Mem") || all.contains("memory"),
+            "/watch should show memory info: {all}");
+        assert!(all.contains("Disk") || all.contains("disk"), "/watch should show disk info: {all}");
+        assert!(all.contains("threshold"), "/watch should mention thresholds: {all}");
+    }
+
+    #[test]
+    fn test_watch_returns_ok_or_alert_message() {
+        let mut s = state();
+        let result = handle_command("/watch", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled for /watch: {result:?}");
+        };
+        let all = lines.join("\n");
+        // Must show either all-ok or threshold-exceeded — never empty
+        assert!(
+            all.contains("All metrics") || all.contains("threshold") || all.contains("exceeded"),
+            "/watch must show status: {all}"
+        );
+    }
+
+    #[test]
+    fn test_watch_with_subarg_also_returns_health() {
+        // /watch status or any subarg should work the same as /watch
+        let mut s = state();
+        let result = handle_command("/watch status", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled for /watch status: {result:?}");
+        };
+        assert!(!lines.is_empty(), "/watch status should produce output");
+    }
+
+    #[test]
+    fn test_watch_not_unknown_command() {
+        // /watch must NOT be reported as "Unknown command"
+        let mut s = state();
+        let result = handle_command("/watch", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled: {result:?}");
+        };
+        let all = lines.join("\n");
+        assert!(!all.contains("Unknown command"), "/watch should not be unknown: {all}");
+    }
+
+    #[test]
+    fn test_help_includes_watch_command() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/help", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("/watch"), "/help should document /watch command");
     }
 }
