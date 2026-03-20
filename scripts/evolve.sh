@@ -210,14 +210,28 @@ Choose what to work on this session. Prioritize:
 4. Self-discovered UX friction or missing error handling
 5. Whatever you think will make you most useful to the person running you
 
-=== PHASE 4: Journal ===
+=== PHASE 4: Journal + State Commit (DO THIS BEFORE ANY CODE) ===
 
-Before writing any code, write today's entry at the TOP of JOURNAL.md. Format:
+This entire phase must be completed and committed before touching src/.
+If the session ends early, these files must already be saved.
+
+Step 4a — Write journal entry at the TOP of JOURNAL.md:
 ## Day $DAY, Session $SESSION — [title]
 [2-4 sentences: what you plan to do, why you chose it]
 
-Commit exactly this (replace [title] with your actual title):
-  git add JOURNAL.md && git commit -m "docs(journal): Day $DAY Session $SESSION — [title]"
+Step 4b — Update GOALS.md right now:
+- If Active section is empty, promote one item from Backlog
+- For each goal you plan to complete this session, leave it [ ] but confirm it is in Active
+- For any goal you already verified is done (in code, not just journal), mark [x] now
+- Do not wait until Phase 7 — if the session ends early, GOALS.md must already reflect reality
+
+Step 4c — Write a METRICS.md stub row right now:
+Run: cargo test 2>&1 | grep "^test result" | head -1
+Write this row (fill in actual test count, leave ? for stats filled in later):
+  | $DAY | $DATE | ~?k | <tests passed> | 0 | ? | ? | ? | yes | Day $DAY S$SESSION — in progress |
+
+Step 4d — Commit all three together:
+  git add JOURNAL.md GOALS.md METRICS.md && git commit -m "docs(journal): Day $DAY Session $SESSION — [title]"
 
 === PHASE 5: Issue Response ===
 
@@ -247,20 +261,15 @@ For each improvement:
 
 === PHASE 7: Wrap Up ===
 
-After implementing:
-- Update GOALS.md — THIS IS REQUIRED. Cross-check your journal entry against GOALS.md:
-  For every goal you mention completing in your journal, the goal MUST be marked [x] in GOALS.md.
-  If Active is now empty, promote at least one item from Backlog to Active.
-  Do not leave GOALS.md stale — if the work is done, mark it done.
-- Update METRICS.md — THIS IS REQUIRED, never skip it. Add a row with exact values:
+GOALS.md and METRICS.md stub were already written in Phase 4.
+This phase finalises them with real numbers.
+
+- Update the METRICS.md stub row you wrote in Phase 4:
+    Find the "in progress" row and replace it with actual values:
     | $DAY | $DATE | ~Xk | <tests passed> | 0 | <files changed> | <lines added> | <lines removed> | yes | <one line summary> |
-    Run cargo test to get the exact passing count. Estimate tokens if unsure.
-- If you added a new environment variable: make sure it is in ALL of these places:
-    1. docker-compose.yml environment section (or it won't reach the container)
-    2. .env.example (so others know it exists)
-    3. CAPABILITIES.md (so you remember it's available)
-- The dashboard at docs/index.html is rebuilt automatically by build_site.py — but if you
-  made changes to the dashboard template or layout itself, verify it looks right
+    Run cargo test for exact count. Use git diff --stat HEAD~N HEAD to get file/line counts.
+- Cross-check GOALS.md: for every goal mentioned as done in your journal, verify it is [x].
+- If you added a new environment variable, add it to docker-compose.yml, .env.example, CAPABILITIES.md.
 - Verify: cargo build && cargo test
 
 Now begin. Read IDENTITY.md first.
@@ -297,15 +306,24 @@ fi
 
 # DAY_COUNT already updated at session start
 
-# ── Step 5a: Metrics fallback — append row if agent didn't ──
+# ── Step 5a: Metrics fallback — fill in real stats ──
+# If agent wrote a stub row ("in progress"), replace it with real numbers.
+# If agent wrote nothing, append a new row.
+TEST_COUNT=$(cargo test --quiet 2>/dev/null | grep "test result" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" | head -1 || echo "?")
+DIFF_STAT=$(git diff --stat "${SESSION_START_SHA}..HEAD" 2>/dev/null | tail -1 || echo "")
+FILES_CHANGED=$(echo "$DIFF_STAT" | grep -oE "[0-9]+ file" | grep -oE "[0-9]+" || echo "?")
+LINES_ADDED=$(echo "$DIFF_STAT" | grep -oE "[0-9]+ insertion" | grep -oE "[0-9]+" || echo "0")
+LINES_REMOVED=$(echo "$DIFF_STAT" | grep -oE "[0-9]+ deletion" | grep -oE "[0-9]+" || echo "0")
 METRICS_ROWS_AFTER=$(grep -cE "^\| [0-9]" METRICS.md 2>/dev/null || echo "0")
-if [ "$METRICS_ROWS_AFTER" -le "$METRICS_ROWS_BEFORE" ]; then
+
+if grep -q "in progress" METRICS.md 2>/dev/null; then
+    # Replace the stub row with real values
+    sed -i "s|.* in progress .*|| " METRICS.md 2>/dev/null || true
+    sed -i '/^$/d' METRICS.md 2>/dev/null || true
+    echo "| $DAY | $DATE | ~?k | ${TEST_COUNT:-?} | 0 | ${FILES_CHANGED:-?} | ${LINES_ADDED:-0} | ${LINES_REMOVED:-0} | yes | Day $DAY S$SESSION |" >> METRICS.md
+    echo "  Metrics stub row replaced with real stats."
+elif [ "$METRICS_ROWS_AFTER" -le "$METRICS_ROWS_BEFORE" ]; then
     echo "  WARNING: METRICS.md not updated this session — appending fallback row"
-    TEST_COUNT=$(cargo test --quiet 2>/dev/null | grep "test result" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" | head -1 || echo "?")
-    DIFF_STAT=$(git diff --stat HEAD~1 HEAD 2>/dev/null | tail -1 || echo "")
-    FILES_CHANGED=$(echo "$DIFF_STAT" | grep -oE "[0-9]+ file" | grep -oE "[0-9]+" || echo "?")
-    LINES_ADDED=$(echo "$DIFF_STAT" | grep -oE "[0-9]+ insertion" | grep -oE "[0-9]+" || echo "0")
-    LINES_REMOVED=$(echo "$DIFF_STAT" | grep -oE "[0-9]+ deletion" | grep -oE "[0-9]+" || echo "0")
     echo "| $DAY | $DATE | ~?k | ${TEST_COUNT:-?} | 0 | ${FILES_CHANGED:-?} | ${LINES_ADDED:-0} | ${LINES_REMOVED:-0} | yes | Day $DAY S$SESSION — auto-generated (agent missed wrap-up) |" >> METRICS.md
     echo "  Fallback metrics row appended."
 fi
