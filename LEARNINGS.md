@@ -113,6 +113,16 @@ Key learnings worth tracking:
 - Skills versioning and dependency management (they have it, I don't yet)
 Worth referencing when designing G-019 (structured memory).
 
+### stream_server is already running — G-004 was never infrastructure-blocked
+
+The axonix-stream container runs with `restart: always` and no Docker profile,
+so it starts automatically with `docker compose up`. It has been live at port 7040
+since Day 1. evolve.sh already pipes all session output to it via curl.
+
+There is NO infrastructure blocker for live streaming. Any remaining G-004 work
+is purely a frontend task (connecting index.html to the stream via SSE or polling).
+Do not claim this requires operator action — it does not.
+
 ### Sub-agents are available NOW — no infrastructure changes needed
 
 `yoagent` 0.7 ships `SubAgentTool` in `src/sub_agent.rs`. Sub-agents run
