@@ -143,7 +143,7 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                 "    /comment <n> <text> Post comment on GitHub issue #n".to_string(),
                 "    /respond <n> <text>      Post response on GitHub issue #n".to_string(),
                 "    /respond <n> close <text> Post response and close issue".to_string(),
-                "    /tweet <text>       Post a tweet (≤280 chars)".to_string(),
+
                 "    /issues [N]         List open GitHub issues (default 10, sorted by reactions)".to_string(),
                 "    /memory list        Show persistent memory (facts across sessions)".to_string(),
                 "    /memory set/get/del Read and write persistent memory".to_string(),
@@ -581,39 +581,6 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                         format!("  ✗ Failed to save cycle summary: {e}"),
                         String::new(),
                     ]),
-                }
-            }
-        }
-
-        s if s == "/tweet" || s.starts_with("/tweet ") => {
-            // Usage: /tweet <text>
-            // The actual POST is done by caller (needs async TwitterClient).
-            // We return a __tweet:<text> marker.
-            let text = if s == "/tweet" {
-                ""
-            } else {
-                s.trim_start_matches("/tweet ").trim()
-            };
-
-            if text.is_empty() {
-                CommandResult::Handled(vec![
-                    "  Usage: /tweet <text>".to_string(),
-                    "  Example: /tweet Day 3 Session 1 complete — fixed bot identity, wired Twitter".to_string(),
-                    "  Limit: 280 characters".to_string(),
-                    String::new(),
-                ])
-            } else {
-                let char_count = text.chars().count();
-                if char_count > 280 {
-                    CommandResult::Handled(vec![
-                        format!("  Error: tweet is {char_count} chars, limit is 280."),
-                        "  Shorten the text and try again.".to_string(),
-                        String::new(),
-                    ])
-                } else {
-                    CommandResult::Handled(vec![
-                        format!("__tweet:{text}"),
-                    ])
                 }
             }
         }
@@ -1665,75 +1632,6 @@ mod tests {
         assert!(all.contains("/comment"), "/help should document /comment command");
     }
 
-    // ── /tweet command ──────────────────────────────────────────────────────────
-
-    #[test]
-    fn test_tweet_no_args_shows_usage() {
-        let mut s = state();
-        let CommandResult::Handled(lines) = handle_command("/tweet", &mut s, &[]) else {
-            panic!("expected Handled");
-        };
-        let all = lines.join("\n");
-        assert!(all.contains("Usage"), "/tweet with no args should show usage");
-        assert!(all.contains("280"), "should mention character limit");
-    }
-
-    #[test]
-    fn test_tweet_valid_text_returns_marker() {
-        let mut s = state();
-        let CommandResult::Handled(lines) = handle_command("/tweet Hello from axonix!", &mut s, &[]) else {
-            panic!("expected Handled");
-        };
-        let all = lines.join("\n");
-        assert!(all.contains("__tweet:Hello from axonix!"), "should return tweet marker: {all}");
-    }
-
-    #[test]
-    fn test_tweet_over_limit_shows_error() {
-        let mut s = state();
-        let long_text = "a".repeat(281);
-        let cmd = format!("/tweet {long_text}");
-        let CommandResult::Handled(lines) = handle_command(&cmd, &mut s, &[]) else {
-            panic!("expected Handled");
-        };
-        let all = lines.join("\n");
-        assert!(all.contains("281") || all.contains("chars"), "over-limit tweet should show error: {all}");
-    }
-
-    #[test]
-    fn test_tweet_exactly_280_chars_ok() {
-        let mut s = state();
-        let text = "a".repeat(280);
-        let cmd = format!("/tweet {text}");
-        let CommandResult::Handled(lines) = handle_command(&cmd, &mut s, &[]) else {
-            panic!("expected Handled");
-        };
-        let all = lines.join("\n");
-        assert!(all.contains("__tweet:"), "280-char tweet should be accepted: {all}");
-    }
-
-    #[test]
-    fn test_tweet_unicode_text_accepted() {
-        let mut s = state();
-        // 10 emoji = 10 Twitter chars (not 40 bytes) — should be well within limit
-        let text = "🦀".repeat(10);
-        let cmd = format!("/tweet {text}");
-        let CommandResult::Handled(lines) = handle_command(&cmd, &mut s, &[]) else {
-            panic!("expected Handled");
-        };
-        let all = lines.join("\n");
-        assert!(all.contains("__tweet:"), "unicode tweet should be accepted: {all}");
-    }
-
-    #[test]
-    fn test_help_includes_tweet_command() {
-        let mut s = state();
-        let CommandResult::Handled(lines) = handle_command("/help", &mut s, &[]) else {
-            panic!("expected Handled");
-        };
-        let all = lines.join("\n");
-        assert!(all.contains("/tweet"), "/help should document /tweet command");
-    }
 
     // ── /issues command ──────────────────────────────────────────────────────────
 

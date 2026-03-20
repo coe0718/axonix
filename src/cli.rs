@@ -11,8 +11,6 @@ pub struct CliArgs {
     pub model: String,
     pub skill_dirs: Vec<String>,
     pub prompt: Option<String>,
-    /// If set, post this text as a tweet and exit (no agent session started).
-    pub tweet: Option<String>,
     /// If set, post this text to Bluesky and exit (no agent session started).
     pub bluesky_post: Option<String>,
     /// If set, read JOURNAL.md and post the latest entry as a GitHub Discussion.
@@ -59,12 +57,6 @@ impl CliArgs {
             .and_then(|i| args.get(i + 1))
             .cloned();
 
-        let tweet = args
-            .iter()
-            .position(|a| a == "--tweet")
-            .and_then(|i| args.get(i + 1))
-            .cloned();
-
         let bluesky_post = args
             .iter()
             .position(|a| a == "--bluesky-post")
@@ -86,7 +78,6 @@ impl CliArgs {
             model,
             skill_dirs,
             prompt,
-            tweet,
             bluesky_post,
             discuss,
             brief: brief || brief_telegram,
@@ -107,7 +98,6 @@ pub fn print_help() {
     println!("  --model <name>          Model to use (default: claude-opus-4-6)");
     println!("  --skills <dir>          Directory containing skill files");
     println!("  -p, --prompt <text>     Run a single prompt and exit (no REPL)");
-    println!("  --tweet <text>          Post a tweet and exit (requires Twitter credentials)");
     println!("  --bluesky-post <text>   Post to Bluesky and exit (requires BLUESKY_IDENTIFIER + BLUESKY_APP_PASSWORD)");
     println!("  --discuss               Post latest JOURNAL.md entry as a GitHub Discussion and exit");
     println!("  --brief                 Print morning brief (goals, predictions, metrics) and exit");
@@ -290,47 +280,12 @@ mod tests {
     }
 
     #[test]
-    fn test_tweet_flag_parsing() {
-        let args: Vec<String> = vec!["axonix", "--tweet", "Day 3 Session 9 complete!"]
-            .into_iter().map(String::from).collect();
-        let cli = CliArgs::parse(&args).unwrap();
-        assert_eq!(cli.tweet.as_deref(), Some("Day 3 Session 9 complete!"));
-        assert!(cli.prompt.is_none(), "--tweet should not set --prompt");
-    }
-
-    #[test]
-    fn test_tweet_flag_not_present() {
-        let args: Vec<String> = vec!["axonix", "--model", "claude-opus-4-6"]
-            .into_iter().map(String::from).collect();
-        let cli = CliArgs::parse(&args).unwrap();
-        assert!(cli.tweet.is_none(), "tweet should be None when flag absent");
-    }
-
-    #[test]
-    fn test_tweet_flag_missing_value_returns_none() {
-        let args: Vec<String> = vec!["axonix", "--tweet"]
-            .into_iter().map(String::from).collect();
-        let cli = CliArgs::parse(&args).unwrap();
-        assert!(cli.tweet.is_none(), "Missing value after --tweet should yield None");
-    }
-
-    #[test]
-    fn test_tweet_and_model_flags_together() {
-        let args: Vec<String> = vec!["axonix", "--model", "claude-opus-4-6", "--tweet", "hello"]
-            .into_iter().map(String::from).collect();
-        let cli = CliArgs::parse(&args).unwrap();
-        assert_eq!(cli.tweet.as_deref(), Some("hello"));
-        assert_eq!(cli.model, "claude-opus-4-6");
-    }
-
-    #[test]
     fn test_bluesky_post_flag_parsing() {
         let args: Vec<String> = vec!["axonix", "--bluesky-post", "Day 3 Session 11 — Bluesky live!"]
             .into_iter().map(String::from).collect();
         let cli = CliArgs::parse(&args).unwrap();
         assert_eq!(cli.bluesky_post.as_deref(), Some("Day 3 Session 11 — Bluesky live!"));
         assert!(cli.prompt.is_none(), "--bluesky-post should not set --prompt");
-        assert!(cli.tweet.is_none(), "--bluesky-post should not set --tweet");
     }
 
     #[test]
@@ -356,7 +311,6 @@ mod tests {
         let cli = CliArgs::parse(&args).unwrap();
         assert!(cli.discuss, "--discuss should set discuss to true");
         assert!(cli.prompt.is_none(), "--discuss should not set prompt");
-        assert!(cli.tweet.is_none(), "--discuss should not set tweet");
     }
 
     #[test]
@@ -419,7 +373,6 @@ mod tests {
             .into_iter().map(String::from).collect();
         let cli = CliArgs::parse(&args).unwrap();
         assert_eq!(cli.bluesky_post.as_deref(), Some("Hello Bluesky!"));
-        assert!(cli.tweet.is_none(), "--bluesky-post should not set tweet");
     }
 
     #[test]
@@ -428,23 +381,6 @@ mod tests {
             .into_iter().map(String::from).collect();
         let cli = CliArgs::parse(&args).unwrap();
         assert!(cli.bluesky_post.is_none(), "bluesky_post should be None when flag absent");
-    }
-
-    #[test]
-    fn test_tweet_flag() {
-        let args: Vec<String> = vec!["axonix", "--tweet", "Hello Twitter!"]
-            .into_iter().map(String::from).collect();
-        let cli = CliArgs::parse(&args).unwrap();
-        assert_eq!(cli.tweet.as_deref(), Some("Hello Twitter!"));
-        assert!(!cli.discuss, "--tweet should not set discuss");
-    }
-
-    #[test]
-    fn test_tweet_flag_absent() {
-        let args: Vec<String> = vec!["axonix"]
-            .into_iter().map(String::from).collect();
-        let cli = CliArgs::parse(&args).unwrap();
-        assert!(cli.tweet.is_none(), "tweet should be None when flag absent");
     }
 
     #[test]
@@ -524,7 +460,6 @@ mod tests {
         assert!(!cli.brief, "brief default false");
         assert!(!cli.watch, "watch default false");
         assert!(cli.prompt.is_none(), "prompt default None");
-        assert!(cli.tweet.is_none(), "tweet default None");
         assert!(cli.bluesky_post.is_none(), "bluesky_post default None");
         assert!(!cli.brief_telegram, "brief_telegram default false");
         assert!(cli.write_summary.is_none(), "write_summary default None");

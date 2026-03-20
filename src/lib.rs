@@ -14,8 +14,7 @@
 //! - `predictions` — prediction tracking and self-calibration (.axonix/predictions.json)
 //! - `ssh` — multi-device management via SSH
 //! - `telegram` — Telegram bot integration (notifications + inbound /ask commands)
-//! - `twitter` — Twitter API integration (session announcements via OAuth 1.0a)
-//! - `bluesky` — Bluesky AT Protocol integration (free-tier social posting)
+//! - `bluesky` — Bluesky AT Protocol integration (session announcements, free-tier)
 //! - `watch` — health watch: periodic threshold checks + Telegram alerts (G-025)
 
 pub mod brief;
@@ -33,5 +32,4 @@ pub mod render;
 pub mod repl;
 pub mod ssh;
 pub mod telegram;
-pub mod twitter;
 pub mod watch;

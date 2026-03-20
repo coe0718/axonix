@@ -45,7 +45,6 @@ use axonix::github::{GitHubClient, parse_latest_journal, format_discussion_body}
 use axonix::render::*;
 use axonix::repl::{handle_command, CommandResult, ReplState};
 use axonix::telegram::TelegramClient;
-use axonix::twitter::TwitterClient;
 
 const SYSTEM_PROMPT: &str = r#"You are a coding assistant working in the user's terminal.
 You have access to the filesystem and shell. Be direct and concise.
@@ -259,6 +258,26 @@ async fn main() {
         None => return, // --help or --version was printed
     };
 
+    // --write-summary needs no API key — handle it before the key check.
+    if let Some(ref label) = cli_args.write_summary {
+        let label = if label.is_empty() { "unknown session".to_string() } else { label.clone() };
+        eprintln!("{DIM}  writing cycle summary: {label}{RESET}");
+        let summary = axonix::cycle_summary::CycleSummary::from_real_data(&label);
+        match axonix::cycle_summary::CycleSummary::write_default(&summary) {
+            Ok(_) => {
+                eprintln!("{GREEN}  ✓ cycle summary written to .axonix/cycle_summary.json{RESET}");
+                eprintln!("  session: {}", summary.session);
+                eprintln!("  completed: {} items", summary.completed.len());
+                eprintln!("  pending: {} items", summary.pending.len());
+            }
+            Err(e) => {
+                eprintln!("{RED}  ✗ failed to write cycle summary: {e}{RESET}");
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
+
     let api_key = match std::env::var("ANTHROPIC_API_KEY").or_else(|_| std::env::var("API_KEY")) {
         Ok(key) if !key.is_empty() => key,
         _ => {
@@ -298,9 +317,6 @@ async fn main() {
     // operator's host git config after the container exits (Issue #20).
     let gh = GitHubClient::from_env();
 
-    // Initialize Twitter client if credentials are available
-    let tw = TwitterClient::from_env();
-
     // Initialize Bluesky client if credentials are available
     let bsky = BlueskyClient::from_env();
     if let Some(ref gh_client) = gh {
@@ -338,26 +354,6 @@ async fn main() {
         return;
     }
 
-    // --write-summary mode: write cycle_summary.json from real data and exit (G-035).
-    if let Some(label) = cli_args.write_summary {
-        let label = if label.is_empty() { "unknown session".to_string() } else { label };
-        eprintln!("{DIM}  writing cycle summary: {label}{RESET}");
-        let summary = axonix::cycle_summary::CycleSummary::from_real_data(&label);
-        match axonix::cycle_summary::CycleSummary::write_default(&summary) {
-            Ok(_) => {
-                eprintln!("{GREEN}  ✓ cycle summary written to .axonix/cycle_summary.json{RESET}");
-                eprintln!("  session: {}", summary.session);
-                eprintln!("  completed: {} items", summary.completed.len());
-                eprintln!("  pending: {} items", summary.pending.len());
-            }
-            Err(e) => {
-                eprintln!("{RED}  ✗ failed to write cycle summary: {e}{RESET}");
-                std::process::exit(1);
-            }
-        }
-        return;
-    }
-
     // --watch mode: run health watch loop, send Telegram alerts when thresholds exceeded (G-025)
     if cli_args.watch {
         match &tg {
@@ -373,35 +369,6 @@ async fn main() {
                 return;
             }
         }
-    }
-
-    // --tweet mode: post a tweet and exit (no agent session started)
-    if let Some(tweet_text) = cli_args.tweet {
-        let tweet_text = tweet_text.trim();
-        if tweet_text.is_empty() {
-            eprintln!("{RED}error:{RESET} --tweet requires a non-empty string.");
-            std::process::exit(1);
-        }
-        match &tw {
-            None => {
-                eprintln!("{RED}error:{RESET} Twitter not configured. Set TWITTER_API_KEY, TWITTER_API_SECRET, TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_SECRET.");
-                std::process::exit(1);
-            }
-            Some(tw_client) => {
-                eprintln!("{DIM}  posting tweet...{RESET}");
-                match tw_client.tweet(tweet_text).await {
-                    Ok(id) => {
-                        eprintln!("{GREEN}  ✓ tweet posted (id: {id}){RESET}");
-                        eprintln!("  text: {tweet_text}");
-                    }
-                    Err(e) => {
-                        eprintln!("{RED}  ✗ tweet failed: {e}{RESET}");
-                        std::process::exit(1);
-                    }
-                }
-            }
-        }
-        return;
     }
 
     // --bluesky-post mode: post to Bluesky and exit (no agent session started)
@@ -578,9 +545,6 @@ async fn main() {
     }
     if let Some(ref gh_client) = gh {
         println!("{DIM}  github:   {} — use /comment <n> <text> to post issue comments{RESET}", gh_client.identity.display_name());
-    }
-    if tw.is_some() {
-        println!("{DIM}  twitter:  connected — use /tweet <text> to post{RESET}");
     }
     if bsky.is_some() {
         println!("{DIM}  bluesky:  connected — use --bluesky-post <text> to post{RESET}");
@@ -769,7 +733,6 @@ async fn main() {
             CommandResult::Handled(ref output_lines) => {
                 // Render the output lines, interpreting special markers
                 let mut gh_comment_request: Option<(u64, String)> = None;
-                let mut tweet_request: Option<String> = None;
                 let mut review_request: Option<String> = None;
                 for line in output_lines {
                     if let Some(rest) = line.strip_prefix("__save:") {
@@ -781,9 +744,6 @@ async fn main() {
                     } else if let Some(rest) = line.strip_prefix("__review:") {
                         // Collect review task for async dispatch after sync loop
                         review_request = Some(rest.to_string());
-                    } else if let Some(rest) = line.strip_prefix("__tweet:") {
-                        // Collect tweet text for async dispatch after sync loop
-                        tweet_request = Some(rest.to_string());
                     } else if let Some(rest) = line.strip_prefix("__gh_comment:") {
                         // format: "__gh_comment:<issue>:<body>"
                         // Collect for async dispatch after the sync loop
@@ -861,20 +821,6 @@ async fn main() {
                             match gh_client.post_comment("coe0718/axonix", issue_n, &body).await {
                                 Ok(url) => println!("\n{GREEN}  ✓ comment posted: {url}{RESET}\n"),
                                 Err(e) => println!("\n{RED}  ✗ failed to post comment: {e}{RESET}\n"),
-                            }
-                        }
-                    }
-                }
-                // Handle async tweet posting
-                if let Some(tweet_text) = tweet_request {
-                    match &tw {
-                        None => println!("{YELLOW}  ⚠ Twitter not configured (set TWITTER_API_KEY, TWITTER_API_SECRET, TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_SECRET){RESET}\n"),
-                        Some(tw_client) => {
-                            print!("{YELLOW}  ▶ posting tweet...{RESET}");
-                            io::stdout().flush().ok();
-                            match tw_client.tweet(&tweet_text).await {
-                                Ok(id) => println!("\n{GREEN}  ✓ tweeted (id: {id}): {}{RESET}\n", truncate(&tweet_text, 60)),
-                                Err(e) => println!("\n{RED}  ✗ failed to tweet: {e}{RESET}\n"),
                             }
                         }
                     }

@@ -363,36 +363,11 @@ if [ -n "$SESSION_START_SHA" ]; then
     fi
 fi
 
-# ── Step 5a-ii: Write cycle_summary.json from session git data (Issue #38 / G-033) ──
-# Builds a compact summary of what happened this session so the next session
-# can load it into the system prompt without replaying full history.
-if [ -n "$SESSION_START_SHA" ]; then
-    mkdir -p .axonix
-    SESSION_COMMITS=$(git log --format="%s" "${SESSION_START_SHA}..HEAD" 2>/dev/null | head -10 || echo "")
-    CHANGED_FILES=$(git diff --name-only "${SESSION_START_SHA}..HEAD" 2>/dev/null | head -20 || echo "")
-    ACTIVE_GOALS=$(awk '/^## Active/{f=1} /^## Backlog/{f=0} f && /^\- \[ \]/{print substr($0,3)}' GOALS.md 2>/dev/null | head -5 || echo "")
-    python3 - <<PYEOF
-import json, os
-
-completed = [l for l in """${SESSION_COMMITS}""".strip().splitlines() if l.strip()]
-changed   = [l for l in """${CHANGED_FILES}""".strip().splitlines() if l.strip()]
-pending   = [l for l in """${ACTIVE_GOALS}""".strip().splitlines() if l.strip()]
-
-data = {
-    "session": "Day ${DAY}, Session ${SESSION}",
-    "date": "${DATE}",
-    "completed": completed[:10],
-    "changed_files": changed[:20],
-    "pending": pending[:5],
-    "learnings": []
-}
-
-os.makedirs(".axonix", exist_ok=True)
-with open(".axonix/cycle_summary.json", "w") as f:
-    json.dump(data, f, indent=2)
-print("  Cycle summary written to .axonix/cycle_summary.json")
-PYEOF
-fi
+# ── Step 5a-ii: Write cycle_summary.json via --write-summary CLI flag (G-033/G-035) ──
+# Uses real git log, GOALS.md state, and test counts — no fragile shell extraction.
+cargo run --bin axonix --quiet -- --write-summary "Day ${DAY}, Session ${SESSION}" 2>/dev/null \
+    && echo "  Cycle summary written to .axonix/cycle_summary.json" \
+    || echo "  Cycle summary write failed (non-fatal)"
 
 # ── Step 5b-ii: Trim completed goal detail lines to keep GOALS.md lean ──
 # Strip indented continuation lines under [x] goals; collapse double blank lines.
@@ -431,17 +406,16 @@ echo "→ Rebuilding website..."
 python3 scripts/build_site.py
 echo "  Site rebuilt."
 
-# ── Step 5c: Post session tweet ──
-if [ -n "${TWITTER_API_KEY:-}" ] && [ -n "${TWITTER_ACCESS_TOKEN:-}" ]; then
-    echo "→ Posting session tweet..."
+# ── Step 5c: Post session update to Bluesky ──
+if [ -n "${BLUESKY_IDENTIFIER:-}" ] && [ -n "${BLUESKY_APP_PASSWORD:-}" ]; then
+    echo "→ Posting session update to Bluesky..."
     JOURNAL_TITLE=$(grep "^## Day $DAY, Session $SESSION" JOURNAL.md | head -1 | sed 's/^## Day [0-9]*, Session [0-9]* — //')
     if [ -n "$JOURNAL_TITLE" ]; then
-        TWEET_TEXT="axonix Day $DAY, Session $SESSION: $JOURNAL_TITLE — axonix.live"
-        TWEET_TEXT=$(echo "$TWEET_TEXT" | cut -c1-280)
-        cargo run --bin axonix --quiet -- --tweet "$TWEET_TEXT" || echo "  Tweet failed (non-fatal)"
-        echo "  Tweet posted."
+        POST_TEXT="axonix Day $DAY, Session $SESSION: $JOURNAL_TITLE — axonix.live"
+        POST_TEXT=$(echo "$POST_TEXT" | cut -c1-300)
+        cargo run --bin axonix --quiet -- --bluesky-post "$POST_TEXT" && echo "  Bluesky post sent." || echo "  Bluesky post failed (non-fatal)"
     else
-        echo "  No journal title found — skipping tweet."
+        echo "  No journal title found — skipping Bluesky post."
     fi
 fi
 
