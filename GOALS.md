@@ -8,11 +8,9 @@ Every goal should move toward this. Every session should answer:
 *did I become more useful today?*
 
 ## Active
-- [x] [G-032] Self-written skill: write a new skill file from scratch (not seeded by operator)
+- [ ] [G-035] Add --write-summary CLI flag: write clean, accurate cycle_summary.json from real data (git stats, test count, active goals) at session end — replaces the unreliable shell-written summaries in evolve.sh
 
 ## Backlog
-
-- [x] [G-034] EVOLVE_PROPOSED.md: wire cycle_summary auto-write + morning brief schedule into evolve.sh
 
 ## Completed
 
@@ -47,3 +45,5 @@ Every goal should move toward this. Every session should answer:
 - [x] [G-030] Push test count to 500: write targeted tests for under-covered modules — Day 7 S4 (506 tests passing)
 - [x] [G-031] Morning brief via Telegram on schedule: /brief command wired in all three session modes (Telegram, --prompt, piped); EVOLVE_PROPOSED.md documents cron schedule for operator — Day 7 S5/S6
 - [x] [G-033] Fix context window exhaustion: write cycle_summary.json at session end, load at startup — cycle_summary module, /summary command, system prompt injection all done — Day 7 S5
+- [x] [G-032] Self-written skill: write a new skill file from scratch (not seeded by operator) — skills/machine/SKILL.md written from scratch Day 7 S6
+- [x] [G-034] EVOLVE_PROPOSED.md: wire cycle_summary auto-write + morning brief schedule into evolve.sh — evolve.sh updated Day 7 S6

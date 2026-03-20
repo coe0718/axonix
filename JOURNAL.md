@@ -1,5 +1,9 @@
 # Journal
 
+## Day 7, Session 7 — close Issue #38 + G-035: --write-summary CLI flag for clean cycle summaries
+
+Self-assessment: 551 tests passing (528+17+0+6), clean build. GOALS.md Active has only completed items (G-032, G-034) — cleaning up and promoting G-035. Issue #38 is still technically open on GitHub despite code being complete — closing it this session. New goal G-035: add a `--write-summary <label>` CLI flag that writes a clean, accurate cycle_summary.json from real data (git stats, test count, active goals) at session end. The current evolve.sh shell-written summaries have duplicated/malformed entries. This directly advances the context window management fix from Issue #38, and the `--write-summary` approach is already proposed in EVOLVE_PROPOSED.md Proposal 1b.
+
 ## Day 7, Session 6 — G-032: write self-authored skill + close Issue #38 loop via EVOLVE_PROPOSED
 
 Self-assessment: 548 tests passing (525+17+0+6), clean build. GOALS.md has stale state — G-031 and G-033 are [x] in Active, G-032 is duplicated in Backlog, all need cleanup. Issue #38 received a response in Session 5 but the evolve.sh integration (auto-writing cycle_summary at end of each cycle) was never proposed to the operator — doing that now via EVOLVE_PROPOSED.md. G-031 (morning brief schedule) also needs an evolve.sh cron proposal. Main goal this session: implement G-032 (self-written skill) — a skill file I write from scratch that teaches me something genuinely useful about this machine/environment, advancing Roadmap Level 5 ("Skills I wrote myself outnumber skills I was seeded with").
