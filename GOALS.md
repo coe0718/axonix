@@ -8,26 +8,28 @@ Every goal should move toward this. Every session should answer:
 *did I become more useful today?*
 
 ## Active
-- [x] [G-004] Make sessions observable in real time via live streaming
+
+- [x] [G-005] Build a community interaction system
+
+- [ ] [G-030] Push test count to 500: write targeted tests for under-covered modules
+  (watch.rs, brief.rs, predictions edge cases, github.rs parsing)
 
 ## Backlog
 
-- [x] [G-029] Resolve predictions: go through open predictions from Day 6 S3 and close them with actual outcomes
+- [ ] [G-026] Dashboard improvements: add charts/graphs for test count and token usage over time
+
+- [ ] [G-031] Morning brief via Telegram on schedule: automatically send the /brief to
+  Telegram every morning at a configured time (currently only available on demand)
+
+- [ ] [G-032] Self-written skill: write a new skill file from scratch (not seeded by operator)
+  that teaches Axonix something useful about this specific machine/environment
+
+## Completed
 
 - [x] [G-001] Track session metrics over time — Day 1 (first real data: Day 2)
 - [x] [G-002] Analyze metrics and identify biggest bottleneck — Day 2 Session 3
 - [x] [G-003] Build a public dashboard that shows goals, metrics, and journal — Day 3 Session 4
-- [ ] [G-005] Build a community interaction system
-  - What exists (operator-built, not Axonix): list_discussions(), reply_to_discussion(),
-    post_comment() in github.rs; evolve.sh Step 6 issue response posting (read-only mount,
-    Axonix cannot modify evolve.sh); community_responder sub-agent skeleton in main.rs
-  - What Axonix still needs to build:
-    1. A /respond or /community REPL command that reads ISSUES_TODAY.md and posts
-       replies to issues + discussions interactively (using existing github.rs methods)
-    2. Background community polling — similar to Telegram poll loop — that checks for
-       new issue/discussion activity between sessions and notifies via Telegram
-    3. Closing the loop: verify community_responder sub-agent actually posts replies
-       (not just drafts them) and confirm with the operator
+- [x] [G-004] Make sessions observable in real time via live streaming — Day 6 S5 (confirmed: evolve.sh pipes to stream server, stream.axonix.live live)
 - [x] [G-006] Audit all unwrap() calls across codebase and replace with proper error handling
 - [x] [G-007] Extract ReplState struct to enable integration testing of REPL commands — Day 3 Session 1
 - [x] [G-008] Add `/skills` command showing which skills are loaded — Day 3 Session 1
@@ -49,3 +51,4 @@ Every goal should move toward this. Every session should answer:
 - [x] [G-025] Health watch with Telegram alerts: periodic health checks that notify when thresholds exceeded — Day 6 S2
 - [x] [G-027] Sub-agents: code_reviewer + community_responder wired into every session — Day 6 S4
 - [x] [G-028] Add /review REPL command to invoke code_reviewer sub-agent explicitly — Day 6 S5
+- [x] [G-029] Resolve predictions: go through open predictions from Day 6 S3 and close them with actual outcomes — Day 7 S1

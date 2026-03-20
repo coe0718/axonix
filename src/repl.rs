@@ -141,6 +141,8 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                 "    /ssh list      List registered SSH hosts".to_string(),
                 "    /ssh <h> <cmd> Run command on a remote host".to_string(),
                 "    /comment <n> <text> Post comment on GitHub issue #n".to_string(),
+                "    /respond <n> <text>      Post response on GitHub issue #n".to_string(),
+                "    /respond <n> close <text> Post response and close issue".to_string(),
                 "    /tweet <text>       Post a tweet (≤280 chars)".to_string(),
                 "    /issues [N]         List open GitHub issues (default 10, sorted by reactions)".to_string(),
                 "    /memory list        Show persistent memory (facts across sessions)".to_string(),
@@ -430,6 +432,71 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                     // Return marker for caller to handle async POST
                     CommandResult::Handled(vec![
                         format!("__gh_comment:{n}:{body}"),
+                    ])
+                }
+            }
+        }
+
+        s if s == "/respond" || s.starts_with("/respond ") => {
+            // Usage: /respond <issue_number> <text>
+            //        /respond <issue_number> close <text>
+            //
+            // Like /comment but with an optional "close" subcommand that also
+            // closes the issue after posting the response (G-005).
+            //
+            // Returns __gh_respond:<issue>:<close>:<body> marker.
+            // close = 1 to close the issue after commenting, 0 otherwise.
+            let arg = if s == "/respond" {
+                ""
+            } else {
+                s.trim_start_matches("/respond ").trim()
+            };
+
+            if arg.is_empty() {
+                return CommandResult::Handled(vec![
+                    "  Usage: /respond <issue_number> <text>".to_string(),
+                    "         /respond <issue_number> close <text>".to_string(),
+                    "  Example: /respond 13 Fixed in this session. Tests added.".to_string(),
+                    "  Example: /respond 13 close Fixed and deployed.".to_string(),
+                    "  Difference from /comment: use 'close' to close the issue after responding.".to_string(),
+                    String::new(),
+                ]);
+            }
+
+            let mut parts = arg.splitn(2, ' ');
+            let issue_str = parts.next().unwrap_or("").trim();
+            let rest = parts.next().unwrap_or("").trim();
+
+            match issue_str.parse::<u64>() {
+                Err(_) | Ok(0) => CommandResult::Handled(vec![
+                    format!("  Error: issue number must be a positive integer, got '{issue_str}'"),
+                    "  Usage: /respond <issue_number> <text>".to_string(),
+                    String::new(),
+                ]),
+                Ok(n) => {
+                    let (close_flag, body) = if rest.starts_with("close ") {
+                        (1u8, rest.trim_start_matches("close ").trim())
+                    } else if rest == "close" {
+                        // just "close" with no body
+                        return CommandResult::Handled(vec![
+                            "  Error: 'close' must be followed by response text".to_string(),
+                            format!("  Usage: /respond {n} close <text>"),
+                            String::new(),
+                        ]);
+                    } else {
+                        (0u8, rest)
+                    };
+
+                    if body.is_empty() {
+                        return CommandResult::Handled(vec![
+                            "  Error: response body cannot be empty".to_string(),
+                            format!("  Usage: /respond {n} <text>"),
+                            String::new(),
+                        ]);
+                    }
+
+                    CommandResult::Handled(vec![
+                        format!("__gh_respond:{n}:{close_flag}:{body}"),
                     ])
                 }
             }

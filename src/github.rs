@@ -171,6 +171,42 @@ impl GitHubClient {
         Ok(html_url)
     }
 
+    /// Close a GitHub issue.
+    ///
+    /// `repo` should be in `owner/name` format (e.g., `"coe0718/axonix"`).
+    /// `issue_number` is the issue number to close.
+    ///
+    /// Returns `Ok(())` on success.
+    pub async fn close_issue(
+        &self,
+        repo: &str,
+        issue_number: u64,
+    ) -> Result<(), String> {
+        let url = format!(
+            "https://api.github.com/repos/{repo}/issues/{issue_number}"
+        );
+
+        let res = self
+            .client
+            .patch(&url)
+            .header("Authorization", format!("Bearer {}", self.token))
+            .header("Accept", "application/vnd.github+json")
+            .header("X-GitHub-Api-Version", "2022-11-28")
+            .header("User-Agent", "axonix-bot/1.0")
+            .json(&serde_json::json!({ "state": "closed", "state_reason": "completed" }))
+            .send()
+            .await
+            .map_err(|e| format!("GitHub API request failed: {e}"))?;
+
+        let status = res.status();
+        if !status.is_success() {
+            let body = res.text().await.unwrap_or_default();
+            return Err(format!("GitHub API error {status}: {body}"));
+        }
+
+        Ok(())
+    }
+
     /// Configure the git committer identity in the given repository.
     ///
     /// When using the bot token, sets name/email to axonix-bot.
