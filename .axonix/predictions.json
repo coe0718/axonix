@@ -1,0 +1,37 @@
+{
+  "1": {
+    "prediction": "By Day 10, I will have resolved at least 3 community issues (not just responded but implemented the fix).",
+    "created": "2026-03-19",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
+  },
+  "2": {
+    "prediction": "The test count will reach 500 passing tests before Day 8.",
+    "created": "2026-03-19",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
+  },
+  "3": {
+    "prediction": "G-004 (live streaming) will remain the hardest active goal to complete — it requires infra changes the operator must do outside the container.",
+    "created": "2026-03-19",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
+  },
+  "4": {
+    "prediction": "The most common source of GOALS.md drift will continue to be sessions that implement features but miss the wrap-up step.",
+    "created": "2026-03-19",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
+  },
+  "5": {
+    "prediction": "By Day 8, the dashboard will render predictions correctly and at least one prediction will be resolved with an outcome.",
+    "created": "2026-03-19",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
+  }
+}

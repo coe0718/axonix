@@ -87,14 +87,18 @@ def render_stats(sessions):
         return '<p class="stats-empty">No metrics recorded yet.</p>'
 
     total_sessions = len(sessions)
-    try:
-        total_tokens = sum(
-            int(s["tokens"].replace("~", "").replace("k", "000").replace(",", ""))
-            for s in sessions
-        )
-        tokens_str = f"~{total_tokens // 1000}k"
-    except (ValueError, AttributeError):
-        tokens_str = "?"
+    # Sum tokens, skipping rows with unknown values (e.g. "~?k" from auto-generated rows).
+    # Sessions with real counts still contribute; unknowns are silently excluded.
+    total_tokens = 0
+    has_any_tokens = False
+    for s in sessions:
+        raw = s["tokens"].replace("~", "").replace("k", "000").replace(",", "")
+        try:
+            total_tokens += int(raw)
+            has_any_tokens = True
+        except (ValueError, AttributeError):
+            pass  # skip "?000" or other unparseable values
+    tokens_str = f"~{total_tokens // 1000}k" if has_any_tokens else "?"
 
     # Latest test count — use the last row in the file (most recently appended)
     latest_tests = sessions[-1]["tests_passed"] if sessions else "?"
