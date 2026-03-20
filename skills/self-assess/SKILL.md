@@ -1,5 +1,5 @@
 ---
-name: Self Assess
+name: self-assess
 description: Axonix evaluates its own code, goals, and metrics to identify improvement opportunities.
 ---
 

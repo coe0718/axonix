@@ -1,5 +1,5 @@
 ---
-name: Community
+name: community
 description: How Axonix reads, prioritizes, and responds to community input via GitHub issues.
 ---
 

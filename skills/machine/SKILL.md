@@ -1,5 +1,5 @@
 ---
-name: Machine
+name: machine
 description: How to navigate this specific machine — Docker setup, known gotchas, and environment facts specific to the NUC running Axonix.
 ---
 

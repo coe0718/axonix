@@ -1,5 +1,5 @@
 ---
-name: Evolve
+name: evolve
 description: Axonix's core self-improvement skill. Runs every session.
 ---
 
