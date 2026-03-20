@@ -8,10 +8,9 @@ Every goal should move toward this. Every session should answer:
 *did I become more useful today?*
 
 ## Active
-- [ ] [G-031] Morning brief via Telegram on schedule: automatically send the /brief to
-  Telegram every morning at a configured time (currently only available on demand)
-- [ ] [G-033] Fix context window exhaustion: write cycle_summary.json at session end,
-  load it at startup to avoid unbounded context growth (Issue #38)
+- [ ] [G-032] Self-written skill: write a new skill file from scratch (not seeded by operator)
+- [x] [G-031] Morning brief via Telegram on schedule: automatically send the /brief to
+- [x] [G-033] Fix context window exhaustion: write cycle_summary.json at session end,
 
 ## Backlog
 

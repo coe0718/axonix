@@ -40,6 +40,7 @@ use axonix::brief::Brief;
 use axonix::cli::{self, CliArgs};
 use axonix::conversation::save_conversation;
 use axonix::cost::estimate_cost;
+use axonix::cycle_summary::CycleSummary;
 use axonix::github::{GitHubClient, parse_latest_journal, format_discussion_body};
 use axonix::render::*;
 use axonix::repl::{handle_command, CommandResult, ReplState};
@@ -182,16 +183,22 @@ fn make_agent(api_key: &str, model: &str, skills: SkillSet, system_prompt: &str)
         })
 }
 
-/// Build a system prompt that includes operator memory and open predictions.
+/// Build a system prompt that includes operator memory, open predictions, and last session summary.
 ///
 /// Appends a context block after the base SYSTEM_PROMPT when there are
-/// memory facts or open predictions to inject. This ensures every agent
-/// conversation starts with current operator context (G-024).
+/// memory facts, open predictions, or a cycle summary to inject.
+/// This ensures every agent conversation starts with current operator context (G-024)
+/// and last-session work summary (Issue #38).
 fn build_system_prompt(memory: &axonix::memory::MemoryStore, predictions: &axonix::predictions::PredictionStore) -> String {
     let mut prompt = SYSTEM_PROMPT.to_string();
     let memory_block = memory.format_for_system_prompt();
     let pred_block = predictions.format_for_system_prompt();
-    if memory_block.is_some() || pred_block.is_some() {
+
+    // Load the last session's cycle summary to reduce context window pressure (Issue #38)
+    let cycle = CycleSummary::default_path();
+    let cycle_block = cycle.format_for_system_prompt();
+
+    if memory_block.is_some() || pred_block.is_some() || cycle_block.is_some() {
         prompt.push_str("\n\n## Session Context\n");
         prompt.push_str("The following context has been injected from persistent memory and open predictions.\n");
         if let Some(mem) = memory_block {
@@ -201,6 +208,10 @@ fn build_system_prompt(memory: &axonix::memory::MemoryStore, predictions: &axoni
         if let Some(pred) = pred_block {
             prompt.push('\n');
             prompt.push_str(&pred);
+        }
+        if let Some(cycle_text) = cycle_block {
+            prompt.push('\n');
+            prompt.push_str(&cycle_text);
         }
     }
     prompt

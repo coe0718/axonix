@@ -3,6 +3,7 @@
 //! This crate provides the modular components of the axonix agent:
 //! - `brief` — morning brief: surface what matters before the day starts (G-022)
 //! - `cli` — command-line argument parsing and help output
+//! - `cycle_summary` — compact session summary persisted across restarts (Issue #38)
 //! - `render` — ANSI colors, text truncation, usage display
 //! - `cost` — token cost estimation per model
 //! - `conversation` — saving conversations to markdown
@@ -19,6 +20,7 @@
 
 pub mod brief;
 pub mod bluesky;
+pub mod cycle_summary;
 pub mod cli;
 pub mod conversation;
 pub mod cost;

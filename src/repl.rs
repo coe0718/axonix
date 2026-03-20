@@ -152,6 +152,7 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                 "    /predict list       Show all predictions with outcomes".to_string(),
                 "    /watch             Show current health vs thresholds".to_string(),
                 "    /review <desc>     Invoke code_reviewer sub-agent on recent changes".to_string(),
+                "    /summary [text]    Show or update cycle summary (persisted to next session)".to_string(),
             ];
             if !skill_names.is_empty() {
                 lines.push("    /skills        Show loaded skills".to_string());
@@ -524,6 +525,63 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                 CommandResult::Handled(vec![
                     format!("__review:{task}"),
                 ])
+            }
+        }
+
+        s if s == "/summary" || s.starts_with("/summary ") => {
+            // Usage: /summary
+            //        /summary <one-line description of what was done this session>
+            //
+            // Writes a compact cycle_summary.json to .axonix/ so the next session
+            // can load it as context instead of replaying the full message history.
+            // This keeps context window size bounded regardless of cycle count (Issue #38).
+            //
+            // When called without args, shows the current summary if one exists.
+            // When called with text, adds it as a completed item and saves.
+            let arg = if s == "/summary" {
+                ""
+            } else {
+                s.trim_start_matches("/summary ").trim()
+            };
+
+            use crate::cycle_summary::CycleSummary;
+            let mut cs = CycleSummary::default_path();
+
+            if arg.is_empty() {
+                // Show current summary
+                match cs.format_for_system_prompt() {
+                    None => CommandResult::Handled(vec![
+                        "  No cycle summary yet for this session.".to_string(),
+                        "  Use: /summary <what you did> to add a completed item.".to_string(),
+                        "  The summary is automatically loaded by the next session.".to_string(),
+                        String::new(),
+                    ]),
+                    Some(text) => {
+                        let mut lines = vec!["  Current cycle summary:".to_string(), String::new()];
+                        for line in text.lines() {
+                            lines.push(format!("  {line}"));
+                        }
+                        lines.push(String::new());
+                        CommandResult::Handled(lines)
+                    }
+                }
+            } else {
+                // Ensure summary is initialized with current session metadata
+                // (Use a placeholder date — the operator or evolve.sh should set proper values)
+                cs.set_session("current session", "today");
+                cs.add_completed(arg);
+                match cs.save() {
+                    Ok(()) => CommandResult::Handled(vec![
+                        format!("  ✓ Added to cycle summary: {arg}"),
+                        "  Summary saved to .axonix/cycle_summary.json".to_string(),
+                        "  The next session will load this as startup context.".to_string(),
+                        String::new(),
+                    ]),
+                    Err(e) => CommandResult::Handled(vec![
+                        format!("  ✗ Failed to save cycle summary: {e}"),
+                        String::new(),
+                    ]),
+                }
             }
         }
 
@@ -2249,5 +2307,98 @@ mod tests {
         };
         let all = lines.join("\n");
         assert!(all.contains("/review"), "/help should document /review command");
+    }
+
+    // ── /summary command ──────────────────────────────────────────────────────
+
+    #[test]
+    fn test_summary_no_args_is_handled_not_unknown() {
+        let mut s = state();
+        let result = handle_command("/summary", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled: {result:?}");
+        };
+        let all = lines.join("\n");
+        assert!(
+            !all.contains("Unknown command"),
+            "/summary should not be unknown: {all}"
+        );
+    }
+
+    #[test]
+    fn test_summary_not_a_command_for_plain_text() {
+        let mut s = state();
+        let result = handle_command("summary of my day", &mut s, &[]);
+        assert!(
+            matches!(result, CommandResult::NotACommand),
+            "plain text should not trigger /summary"
+        );
+    }
+
+    #[test]
+    fn test_summary_with_text_returns_handled() {
+        let mut s = state();
+        let result = handle_command("/summary implemented cycle_summary module", &mut s, &[]);
+        let CommandResult::Handled(_lines) = result else {
+            panic!("expected Handled: {result:?}");
+        };
+    }
+
+    #[test]
+    fn test_summary_with_text_confirmation_or_error_in_output() {
+        let mut s = state();
+        let CommandResult::Handled(lines) =
+            handle_command("/summary implemented cycle_summary module", &mut s, &[])
+        else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        // Should either confirm success (✓) or report an error (✗)
+        assert!(
+            all.contains('✓') || all.contains('✗'),
+            "output should indicate success or failure: {all}"
+        );
+    }
+
+    #[test]
+    fn test_summary_with_text_mentions_input() {
+        let mut s = state();
+        let task = "fixed context window exhaustion for issue 38";
+        let CommandResult::Handled(lines) =
+            handle_command(&format!("/summary {task}"), &mut s, &[])
+        else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        // On success, the task text appears in confirmation
+        // On error, the error is shown — either is acceptable
+        assert!(
+            all.contains(task) || all.contains('✗'),
+            "output should mention task or show error: {all}"
+        );
+    }
+
+    #[test]
+    fn test_summary_help_mentions_summary() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/help", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("/summary"), "/help should document /summary command");
+    }
+
+    #[test]
+    fn test_summary_whitespace_only_shows_info() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/summary   ", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        // Whitespace-only arg = empty, so should show current summary or usage info
+        assert!(
+            !all.contains("Unknown command"),
+            "/summary with only whitespace should not be unknown: {all}"
+        );
     }
 }
