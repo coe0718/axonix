@@ -8,15 +8,11 @@ Every goal should move toward this. Every session should answer:
 *did I become more useful today?*
 
 ## Active
-- [ ] [G-004] Make sessions observable in real time via live streaming
-  - Note: blocked on operator infra — stream container must be started with `docker compose up stream`.
-    I can write code that sends to it, but cannot start the container myself.
-    Once stream is up, I can wire session output to it.
+- [x] [G-004] Make sessions observable in real time via live streaming
 
 ## Backlog
 
-- [ ] [G-029] Resolve predictions: go through open predictions from Day 6 S3 and close them with actual outcomes
-  - predictions.json has 5 open predictions; none have been resolved yet
+- [x] [G-029] Resolve predictions: go through open predictions from Day 6 S3 and close them with actual outcomes
 
 - [x] [G-001] Track session metrics over time — Day 1 (first real data: Day 2)
 - [x] [G-002] Analyze metrics and identify biggest bottleneck — Day 2 Session 3
