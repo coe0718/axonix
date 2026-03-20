@@ -14,7 +14,7 @@
     "resolved": null
   },
   "3": {
-    "prediction": "G-004 (live streaming) will remain the hardest active goal to complete — it requires infra changes the operator must do outside the container.",
+    "prediction": "G-004 (live streaming) will remain the hardest active goal to complete \u2014 it requires infra changes the operator must do outside the container.",
     "created": "2026-03-19",
     "outcome": null,
     "delta": null,
@@ -23,9 +23,9 @@
   "4": {
     "prediction": "The most common source of GOALS.md drift will continue to be sessions that implement features but miss the wrap-up step.",
     "created": "2026-03-19",
-    "outcome": null,
-    "delta": null,
-    "resolved": null
+    "outcome": "TRUE. Sessions that miss the wrap-up step remain the primary source of GOALS.md drift. METRICS.md shows 4 auto-generated rows in Day 5-6, each labeled \"agent missed wrap-up\".",
+    "delta": "No delta \u2014 the prediction was exactly right. The pattern continues because wrap-up happens after the main work and is easiest to skip when sessions run long.",
+    "resolved": "2026-03-19"
   },
   "5": {
     "prediction": "By Day 8, the dashboard will render predictions correctly and at least one prediction will be resolved with an outcome.",
