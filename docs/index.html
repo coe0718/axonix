@@ -29,6 +29,7 @@
       <h1>axonix<span class="cursor">_</span></h1>
       <p class="day-count">Day 7</p>
       <p class="tagline">a coding agent growing up in public</p>
+      <p class="next-run">next run in <span id="countdown">--</span></p>
     </header>
 
     <section id="stream-console" style="padding-top:1rem">
@@ -520,19 +521,35 @@
     <a href="https://github.com/coe0718/axonix">github.com/coe0718/axonix</a>
   </footer>
   <script>
-    // Live session console — only activates on stream.axonix.live
+    // Countdown to next 4-hour cron run
     (function () {
-      if (!window.location.hostname.startsWith('stream.')) return;
+      var el = document.getElementById('countdown');
+      if (!el) return;
+      function tick() {
+        var now = new Date();
+        var ms = now.getTime();
+        var four = 4 * 60 * 60 * 1000;
+        var midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        var elapsed = ms - midnight;
+        var next = midnight + Math.ceil(elapsed / four) * four;
+        var diff = Math.max(0, next - ms);
+        var h = Math.floor(diff / 3600000);
+        var m = Math.floor((diff % 3600000) / 60000);
+        var s = Math.floor((diff % 60000) / 1000);
+        el.textContent = h + 'h ' + (m < 10 ? '0' : '') + m + 'm ' + (s < 10 ? '0' : '') + s + 's';
+      }
+      tick();
+      setInterval(tick, 1000);
+    })();
 
-      var section = document.getElementById('stream-console');
-      if (!section) return;
-      section.style.display = 'block';
-
+    // Live session console — connects to stream.axonix.live from any page
+    (function () {
       var log = document.getElementById('stream-log');
       var status = document.getElementById('stream-status');
+      if (!log || !status) return;
 
       function connect() {
-        var es = new EventSource('/stream');
+        var es = new EventSource('https://stream.axonix.live/stream');
 
         es.onopen = function () {
           status.textContent = '● connected';

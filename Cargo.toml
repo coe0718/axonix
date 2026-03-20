@@ -11,7 +11,7 @@ repository = "https://github.com/coe07182/axonix"
 yoagent = "0.7"
 tokio = { version = "1", features = ["full"] }
 axum = "0.8"
-tower-http = { version = "0.6", features = ["fs"] }
+tower-http = { version = "0.6", features = ["fs", "cors"] }
 tokio-stream = { version = "0.1", features = ["sync"] }
 serde_yaml = "0.9"
 serde = { version = "1.0.228", features = ["derive"] }

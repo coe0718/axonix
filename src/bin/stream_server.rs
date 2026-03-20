@@ -2,6 +2,7 @@ use axum::{
     Router,
     body::Bytes,
     extract::State,
+    http::HeaderValue,
     response::{
         Sse,
         sse::Event,
@@ -13,6 +14,7 @@ use std::sync::Arc;
 use tokio::sync::broadcast;
 use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::StreamExt;
+use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 
 const CHANNEL_CAPACITY: usize = 1024;
@@ -25,10 +27,18 @@ async fn main() {
     let (tx, _) = broadcast::channel::<String>(CHANNEL_CAPACITY);
     let state: AppState = Arc::new(tx);
 
+    let cors = CorsLayer::new()
+        .allow_origin([
+            "https://axonix.live".parse::<HeaderValue>().unwrap(),
+            "https://stream.axonix.live".parse::<HeaderValue>().unwrap(),
+        ])
+        .allow_methods([axum::http::Method::GET]);
+
     let app = Router::new()
         .route("/pipe", post(pipe))
         .route("/stream", get(stream))
         .with_state(state)
+        .layer(cors)
         .fallback_service(ServeDir::new("docs"));
 
     let addr = format!("0.0.0.0:{PORT}");
