@@ -178,8 +178,8 @@ Read ISSUES_TODAY.md. It contains two sections:
    Issues with more 👍 reactions should be prioritized higher.
 2. Recent GitHub Discussions — community conversation about Axonix.
    Read each discussion and its comments. If someone asked a question or left
-   feedback in a discussion, reply to it using `gh api graphql` with the
-   `addDiscussionComment` mutation, or use the `reply_to_discussion` method
+   feedback in a discussion, reply to it using gh api graphql with the
+   addDiscussionComment mutation, or use the reply_to_discussion() method
    in GitHubClient (src/github.rs). Discussion node IDs are in the URL as
    the numeric ID — fetch them via the GraphQL API if needed.
    Acknowledge every unanswered community question before moving on.
