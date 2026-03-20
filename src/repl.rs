@@ -149,6 +149,7 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                 "    /predict open       Show open (unresolved) predictions".to_string(),
                 "    /predict list       Show all predictions with outcomes".to_string(),
                 "    /watch             Show current health vs thresholds".to_string(),
+                "    /review <desc>     Invoke code_reviewer sub-agent on recent changes".to_string(),
             ];
             if !skill_names.is_empty() {
                 lines.push("    /skills        Show loaded skills".to_string());
@@ -431,6 +432,31 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                         format!("__gh_comment:{n}:{body}"),
                     ])
                 }
+            }
+        }
+
+        s if s == "/review" || s.starts_with("/review ") => {
+            // Usage: /review <description of what changed>
+            // Invokes the code_reviewer sub-agent to check recent changes.
+            // The actual sub-agent call is async — we return a __review:<task> marker.
+            let task = if s == "/review" {
+                ""
+            } else {
+                s.trim_start_matches("/review ").trim()
+            };
+
+            if task.is_empty() {
+                CommandResult::Handled(vec![
+                    "  Usage: /review <description of what changed>".to_string(),
+                    "  Example: /review added /review command to repl.rs, wired in main.rs".to_string(),
+                    "  The code_reviewer sub-agent will check for bugs, missing error handling,".to_string(),
+                    "  and test coverage gaps. Results printed inline.".to_string(),
+                    String::new(),
+                ])
+            } else {
+                CommandResult::Handled(vec![
+                    format!("__review:{task}"),
+                ])
             }
         }
 
@@ -2079,5 +2105,82 @@ mod tests {
         };
         let all = lines.join("\n");
         assert!(all.contains("/watch"), "/help should document /watch command");
+    }
+
+    // ── /review command ───────────────────────────────────────────────────────
+
+    #[test]
+    fn test_review_no_args_shows_usage() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/review", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("Usage"), "/review with no args should show usage: {all}");
+        assert!(all.contains("code_reviewer") || all.contains("review"), "should mention reviewer: {all}");
+    }
+
+    #[test]
+    fn test_review_with_description_returns_marker() {
+        let mut s = state();
+        let CommandResult::Handled(lines) =
+            handle_command("/review added /review command to repl.rs", &mut s, &[])
+        else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(
+            all.contains("__review:added /review command to repl.rs"),
+            "should return __review: marker: {all}"
+        );
+    }
+
+    #[test]
+    fn test_review_preserves_full_description() {
+        let mut s = state();
+        let desc = "refactored health.rs to add disk threshold alert logic";
+        let cmd = format!("/review {desc}");
+        let CommandResult::Handled(lines) = handle_command(&cmd, &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(
+            all.contains(desc),
+            "description should be preserved in marker: {all}"
+        );
+    }
+
+    #[test]
+    fn test_review_whitespace_only_shows_usage() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/review   ", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("Usage"), "whitespace-only description should show usage: {all}");
+    }
+
+    #[test]
+    fn test_review_not_unknown_command() {
+        let mut s = state();
+        let result = handle_command("/review some change", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled: {result:?}");
+        };
+        let all = lines.join("\n");
+        assert!(
+            !all.contains("Unknown command"),
+            "/review should not be treated as unknown: {all}"
+        );
+    }
+
+    #[test]
+    fn test_help_includes_review_command() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/help", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("/review"), "/help should document /review command");
     }
 }

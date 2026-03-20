@@ -689,6 +689,7 @@ async fn main() {
                 // Render the output lines, interpreting special markers
                 let mut gh_comment_request: Option<(u64, String)> = None;
                 let mut tweet_request: Option<String> = None;
+                let mut review_request: Option<String> = None;
                 for line in output_lines {
                     if let Some(rest) = line.strip_prefix("__save:") {
                         // Perform the actual save (needs agent messages)
@@ -696,6 +697,9 @@ async fn main() {
                             Ok(count) => println!("{DIM}  saved {count} messages to {rest}{RESET}\n"),
                             Err(e) => println!("{RED}  failed to save: {e}{RESET}\n"),
                         }
+                    } else if let Some(rest) = line.strip_prefix("__review:") {
+                        // Collect review task for async dispatch after sync loop
+                        review_request = Some(rest.to_string());
                     } else if let Some(rest) = line.strip_prefix("__tweet:") {
                         // Collect tweet text for async dispatch after sync loop
                         tweet_request = Some(rest.to_string());
@@ -793,6 +797,16 @@ async fn main() {
                             }
                         }
                     }
+                }
+                // Handle async /review — invoke code_reviewer sub-agent via agent prompt (G-028)
+                if let Some(review_task) = review_request {
+                    println!("{DIM}  🔍 invoking code_reviewer sub-agent...{RESET}");
+                    io::stdout().flush().ok();
+                    let review_prompt = format!(
+                        "Use the code_reviewer tool to review this change: {review_task}\n\
+                         Print the review findings directly. Be concise — 3-5 bullets max."
+                    );
+                    run_prompt(&mut agent, &review_prompt, &mut repl, tg.as_ref()).await;
                 }
                 continue;
             }
