@@ -67,6 +67,45 @@ if command -v gh &>/dev/null; then
 
     python3 scripts/format_issues.py /tmp/issues_raw.json > "$ISSUES_FILE" 2>/dev/null || echo "No issues found." > "$ISSUES_FILE"
     echo "  $(grep -c '^### Issue' "$ISSUES_FILE" 2>/dev/null || echo 0) issues loaded."
+
+    # Append recent discussions (last 5, with their comments) so Axonix can read and reply
+    echo "" >> "$ISSUES_FILE"
+    echo "## Recent Discussions" >> "$ISSUES_FILE"
+    gh api graphql -f query='
+    query($owner: String!, $name: String!, $limit: Int!) {
+      repository(owner: $owner, name: $name) {
+        discussions(first: $limit, orderBy: {field: UPDATED_AT, direction: DESC}) {
+          nodes {
+            number title body url author { login }
+            comments(first: 5) { nodes { body author { login } } }
+          }
+        }
+      }
+    }' -f owner="$(echo $REPO | cut -d/ -f1)" \
+       -f name="$(echo $REPO | cut -d/ -f2)" \
+       -F limit=5 2>/dev/null | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+nodes = data.get('data', {}).get('repository', {}).get('discussions', {}).get('nodes', [])
+if not nodes:
+    print('No recent discussions.')
+else:
+    for d in nodes:
+        print(f'### Discussion #{d[\"number\"]}: {d[\"title\"]}')
+        print(f'URL: {d[\"url\"]}')
+        print(f'Author: {d[\"author\"][\"login\"]}')
+        print()
+        print(d['body'][:500])
+        comments = d.get('comments', {}).get('nodes', [])
+        if comments:
+            print()
+            print('**Comments:**')
+            for c in comments:
+                print(f'- **{c[\"author\"][\"login\"]}**: {c[\"body\"][:200]}')
+        print()
+" >> "$ISSUES_FILE" 2>/dev/null || echo "No discussions fetched." >> "$ISSUES_FILE"
+    DISC_COUNT=$(grep -c '^### Discussion' "$ISSUES_FILE" 2>/dev/null || echo 0)
+    echo "  ${DISC_COUNT} discussions loaded."
 else
     echo "  gh CLI not available. Skipping issue fetch."
     echo "No issues available (gh CLI not installed)." > "$ISSUES_FILE"
@@ -107,7 +146,7 @@ Read these files in this order:
 8. src/ — your full source code (all .rs files — this is YOU)
 9. Your recent journal (last 3 entries, injected below)
 10. docs/ — your public dashboard (index.html and supporting files — you own this)
-11. ISSUES_TODAY.md — community requests
+11. ISSUES_TODAY.md — community requests and recent discussions (with comments)
 
 === RECENT JOURNAL ===
 $RECENT_JOURNAL
@@ -134,9 +173,16 @@ Report the exact test count from the summary line. Do not list individual passin
 
 === PHASE 2: Review Community Issues ===
 
-Read ISSUES_TODAY.md. These are real people asking you to improve.
-Issues with more 👍 reactions should be prioritized higher.
-Read any comments on issues — they may contain follow-up feedback.
+Read ISSUES_TODAY.md. It contains two sections:
+1. GitHub Issues labeled "agent-input" — real people asking you to improve.
+   Issues with more 👍 reactions should be prioritized higher.
+2. Recent GitHub Discussions — community conversation about Axonix.
+   Read each discussion and its comments. If someone asked a question or left
+   feedback in a discussion, reply to it using `gh api graphql` with the
+   `addDiscussionComment` mutation, or use the `reply_to_discussion` method
+   in GitHubClient (src/github.rs). Discussion node IDs are in the URL as
+   the numeric ID — fetch them via the GraphQL API if needed.
+   Acknowledge every unanswered community question before moving on.
 
 === PHASE 3: Decide ===
 

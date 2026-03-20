@@ -362,6 +362,166 @@ impl GitHubClient {
         entries.sort_by(|a, b| b.reactions.cmp(&a.reactions));
         Ok(entries)
     }
+
+    /// Fetch recent discussions from a repository.
+    ///
+    /// Returns up to `limit` discussions, each with their top-level comments.
+    /// Uses the GraphQL API. Requires a token with `read:discussion` scope.
+    pub async fn list_discussions(
+        &self,
+        owner: &str,
+        name: &str,
+        limit: u32,
+    ) -> Result<Vec<DiscussionEntry>, String> {
+        let query = r#"query($owner: String!, $name: String!, $limit: Int!) {
+            repository(owner: $owner, name: $name) {
+                discussions(first: $limit, orderBy: {field: UPDATED_AT, direction: DESC}) {
+                    nodes {
+                        id
+                        number
+                        title
+                        body
+                        url
+                        author { login }
+                        comments(first: 10) {
+                            nodes {
+                                body
+                                author { login }
+                            }
+                        }
+                    }
+                }
+            }
+        }"#;
+
+        let payload = serde_json::json!({
+            "query": query,
+            "variables": { "owner": owner, "name": name, "limit": limit },
+        });
+
+        let res = self
+            .client
+            .post("https://api.github.com/graphql")
+            .header("Authorization", format!("Bearer {}", self.token))
+            .header("User-Agent", "axonix-bot/1.0")
+            .json(&payload)
+            .send()
+            .await
+            .map_err(|e| format!("GitHub GraphQL request failed: {e}"))?;
+
+        let status = res.status();
+        if !status.is_success() {
+            let body = res.text().await.unwrap_or_default();
+            return Err(format!("GitHub GraphQL error {status}: {body}"));
+        }
+
+        let json: serde_json::Value = res
+            .json()
+            .await
+            .map_err(|e| format!("GitHub GraphQL response parse error: {e}"))?;
+
+        if let Some(errors) = json.get("errors") {
+            return Err(format!("GitHub GraphQL errors: {errors}"));
+        }
+
+        let nodes = json
+            .pointer("/data/repository/discussions/nodes")
+            .and_then(|v| v.as_array())
+            .ok_or_else(|| "Unexpected GraphQL response shape".to_string())?;
+
+        let discussions = nodes
+            .iter()
+            .filter_map(|d| {
+                let id = d.get("id")?.as_str()?.to_string();
+                let number = d.get("number")?.as_u64()? as u32;
+                let title = d.get("title")?.as_str()?.to_string();
+                let body = d.get("body")?.as_str().unwrap_or("").to_string();
+                let url = d.get("url")?.as_str()?.to_string();
+                let author = d
+                    .pointer("/author/login")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("unknown")
+                    .to_string();
+                let comments = d
+                    .pointer("/comments/nodes")
+                    .and_then(|v| v.as_array())
+                    .map(|arr| {
+                        arr.iter()
+                            .filter_map(|c| {
+                                let body = c.get("body")?.as_str().unwrap_or("").to_string();
+                                let login = c
+                                    .pointer("/author/login")
+                                    .and_then(|v| v.as_str())
+                                    .unwrap_or("unknown")
+                                    .to_string();
+                                Some(DiscussionComment { author: login, body })
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                Some(DiscussionEntry { id, number, title, body, url, author, comments })
+            })
+            .collect();
+
+        Ok(discussions)
+    }
+
+    /// Add a comment to an existing GitHub Discussion.
+    ///
+    /// `discussion_id` is the GraphQL node ID of the discussion (from `list_discussions`).
+    /// Returns the URL of the created comment on success.
+    pub async fn reply_to_discussion(
+        &self,
+        discussion_id: &str,
+        body: &str,
+    ) -> Result<String, String> {
+        let query = r#"mutation($discussionId: ID!, $body: String!) {
+            addDiscussionComment(input: { discussionId: $discussionId, body: $body }) {
+                comment {
+                    id
+                    url
+                }
+            }
+        }"#;
+
+        let payload = serde_json::json!({
+            "query": query,
+            "variables": { "discussionId": discussion_id, "body": body },
+        });
+
+        let res = self
+            .client
+            .post("https://api.github.com/graphql")
+            .header("Authorization", format!("Bearer {}", self.token))
+            .header("User-Agent", "axonix-bot/1.0")
+            .json(&payload)
+            .send()
+            .await
+            .map_err(|e| format!("GitHub GraphQL request failed: {e}"))?;
+
+        let status = res.status();
+        if !status.is_success() {
+            let body = res.text().await.unwrap_or_default();
+            return Err(format!("GitHub GraphQL error {status}: {body}"));
+        }
+
+        let json: serde_json::Value = res
+            .json()
+            .await
+            .map_err(|e| format!("GitHub GraphQL response parse error: {e}"))?;
+
+        if let Some(errors) = json.get("errors") {
+            return Err(format!("GitHub GraphQL errors: {errors}"));
+        }
+
+        let url = json
+            .pointer("/data/addDiscussionComment/comment/url")
+            .and_then(|v| v.as_str())
+            .unwrap_or("(url unavailable)")
+            .to_string();
+
+        Ok(url)
+    }
 }
 
 /// A GitHub issue entry with priority-relevant metadata.
@@ -375,6 +535,34 @@ pub struct IssueEntry {
     pub reactions: u32,
     /// Labels attached to the issue.
     pub labels: Vec<String>,
+}
+
+/// A GitHub Discussion entry with comments.
+#[derive(Debug, Clone, PartialEq)]
+pub struct DiscussionEntry {
+    /// GraphQL node ID — required for `reply_to_discussion`.
+    pub id: String,
+    /// Discussion number (shown in the URL).
+    pub number: u32,
+    /// Discussion title.
+    pub title: String,
+    /// Discussion body (opening post).
+    pub body: String,
+    /// URL of the discussion.
+    pub url: String,
+    /// Author login.
+    pub author: String,
+    /// Top-level comments on this discussion.
+    pub comments: Vec<DiscussionComment>,
+}
+
+/// A single comment on a GitHub Discussion.
+#[derive(Debug, Clone, PartialEq)]
+pub struct DiscussionComment {
+    /// Author login.
+    pub author: String,
+    /// Comment body.
+    pub body: String,
 }
 
 /// Format a journal entry for posting as a GitHub Discussion.
@@ -522,7 +710,55 @@ mod tests {
         assert_eq!(issues[2].number, 1);
     }
 
-    // ── Discussion ──────────────────────────────────────────────────────────
+    // ── DiscussionEntry / DiscussionComment ──────────────────────────────────
+
+    #[test]
+    fn test_discussion_entry_fields() {
+        let entry = DiscussionEntry {
+            id: "D_abc123".to_string(),
+            number: 5,
+            title: "Feature request".to_string(),
+            body: "Please add X".to_string(),
+            url: "https://github.com/coe0718/axonix/discussions/5".to_string(),
+            author: "someone".to_string(),
+            comments: vec![],
+        };
+        assert_eq!(entry.number, 5);
+        assert_eq!(entry.title, "Feature request");
+        assert!(entry.comments.is_empty());
+    }
+
+    #[test]
+    fn test_discussion_with_comments() {
+        let comment = DiscussionComment {
+            author: "user1".to_string(),
+            body: "Great idea!".to_string(),
+        };
+        let entry = DiscussionEntry {
+            id: "D_xyz".to_string(),
+            number: 10,
+            title: "Discussion".to_string(),
+            body: "Body".to_string(),
+            url: "https://github.com/coe0718/axonix/discussions/10".to_string(),
+            author: "axonix-bot".to_string(),
+            comments: vec![comment],
+        };
+        assert_eq!(entry.comments.len(), 1);
+        assert_eq!(entry.comments[0].author, "user1");
+        assert_eq!(entry.comments[0].body, "Great idea!");
+    }
+
+    #[test]
+    fn test_discussion_comment_fields() {
+        let c = DiscussionComment {
+            author: "alice".to_string(),
+            body: "Nice work".to_string(),
+        };
+        assert_eq!(c.author, "alice");
+        assert_eq!(c.body, "Nice work");
+    }
+
+    // ── Discussion post/format ───────────────────────────────────────────────
 
     #[test]
     fn test_format_discussion_body_adds_footer() {
