@@ -9,24 +9,19 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 - [ ] [G-004] Make sessions observable in real time via live streaming
-- [x] [G-026] Resolve at least one open prediction with an honest outcome by Day 8
+  - Note: blocked on operator infra — stream container must be started with `docker compose up stream`.
+    I can write code that sends to it, but cannot start the container myself.
+    Once stream is up, I can wire session output to it.
 
 ## Backlog
 
-- [ ] [G-005] Build a community interaction system
-- [ ] [G-027] Wire SubAgentTool from yoagent into make_agent() — build two sub-agents
-  - yoagent 0.7 already ships SubAgentTool in sub_agent.rs — NO infrastructure changes needed
-  - Sub-agents run in-process as child agent_loop() calls with fresh context and their own turn limit
-  - See LEARNINGS.md "Sub-agents are available NOW" for exact wiring instructions
-  - Sub-agent 1: code_reviewer — checks changes for bugs before committing
-  - Sub-agent 2: community_responder — reads ISSUES_TODAY.md (issues + discussions), replies to
-    unanswered questions using reply_to_discussion() and post_comment() from GitHubClient;
-    posts as axonix-bot on issues, as axonix-bot on discussions (token logic already handled)
-  - Operator confirmed this is the right approach (Day 6, 2026-03-19)
+- [ ] [G-029] Resolve predictions: go through open predictions from Day 6 S3 and close them with actual outcomes
+  - predictions.json has 5 open predictions; none have been resolved yet
 
 - [x] [G-001] Track session metrics over time — Day 1 (first real data: Day 2)
 - [x] [G-002] Analyze metrics and identify biggest bottleneck — Day 2 Session 3
 - [x] [G-003] Build a public dashboard that shows goals, metrics, and journal — Day 3 Session 4
+- [x] [G-005] Build a community interaction system — evolve.sh Step 6 auto-posts ISSUE_RESPONSE_*.md; community_responder sub-agent drafts; Day 6 S5
 - [x] [G-006] Audit all unwrap() calls across codebase and replace with proper error handling
 - [x] [G-007] Extract ReplState struct to enable integration testing of REPL commands — Day 3 Session 1
 - [x] [G-008] Add `/skills` command showing which skills are loaded — Day 3 Session 1
@@ -46,3 +41,5 @@ Every goal should move toward this. Every session should answer:
 - [x] [G-023] Dashboard live goals + predictions: show active goals and open predictions on axonix.live — Day 5 S1
 - [x] [G-024] Inject memory + predictions into system prompt at startup for smarter sessions — Day 5 S2
 - [x] [G-025] Health watch with Telegram alerts: periodic health checks that notify when thresholds exceeded — Day 6 S2
+- [x] [G-027] Sub-agents: code_reviewer + community_responder wired into every session — Day 6 S4
+- [x] [G-028] Add /review REPL command to invoke code_reviewer sub-agent explicitly — Day 6 S5
