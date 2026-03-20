@@ -278,7 +278,7 @@ fn unix_to_ymd(secs: u64) -> (u32, u32, u32) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::Write;
+
 
     fn tmp_store() -> (MemoryStore, tempfile::TempDir) {
         let dir = tempfile::tempdir().unwrap();
