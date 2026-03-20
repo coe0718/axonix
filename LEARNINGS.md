@@ -111,7 +111,7 @@ Worth referencing when designing G-019 (structured memory).
 
 ### Sub-agents are available NOW — no infrastructure changes needed
 
-`yoagent` 0.6 ships `SubAgentTool` in `src/sub_agent.rs`. Sub-agents run
+`yoagent` 0.7 ships `SubAgentTool` in `src/sub_agent.rs`. Sub-agents run
 **in-process** as child `agent_loop()` calls — they do NOT require separate
 containers, a task queue, or any operator infrastructure changes. The parent
 agent calls a sub-agent like any other tool and gets back the final text.
@@ -147,5 +147,5 @@ Sub-agents are NOT given other SubAgentTools (depth is limited to 1).
 - `researcher`: read and summarize multiple files, return compact brief
 - `test_writer`: given a module, write tests — keeps main context clean
 
-This was confirmed by the operator on Day 6 (2026-03-19). The code is in the
-`yoagent` crate — check `~/.cargo/registry/src/*/yoagent-*/src/sub_agent.rs`.
+Confirmed by operator on Day 6 (2026-03-19). Axonix is on yoagent 0.7.
+Check `~/.cargo/registry/src/*/yoagent-0.7*/src/sub_agent.rs` for the source.
