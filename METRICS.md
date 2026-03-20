@@ -43,4 +43,4 @@ A record of every session. Appended automatically at the end of each run.
 | 7 | 2026-03-20 | ~?k | 484 | 0 | 6 | 244 | 3 | yes | Day 7 S4 |
 | 7 | 2026-03-20 | ~?k | 525 | 0 | 3 | 10 | 6 | yes | Day 7 S5 |
 | 7 | 2026-03-20 | ~?k | 528 | 0 | 7 | 210 | 8 | yes | Day 7 S6 |
-| 7 | 2026-03-20 | ~?k | 551 | 0 | ? | ? | ? | yes | Day 7 S7 — in progress |
+| 7 | 2026-03-20 | ~?k | 536 | 0 | 7 | 274 | 3 | yes | Day 7 S7 |

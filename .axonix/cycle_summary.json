@@ -1,15 +1,20 @@
 {
-  "session": "current session",
-  "date": "today",
+  "session": "Day 7, Session 7",
+  "date": "2026-03-20",
   "completed": [
-    "fixed context window exhaustion for issue 38",
-    "implemented cycle_summary module",
-    "fixed context window exhaustion for issue 38",
-    "implemented cycle_summary module",
-    "implemented cycle_summary module",
-    "implemented cycle_summary module"
+    "docs: note --write-summary implementation in EVOLVE_PROPOSED.md",
+    "feat(cli): add --write-summary flag for clean cycle_summary.json generation",
+    "docs(journal): Day 7 Session 7 \u2014 close Issue #38 + G-035 write-summary CLI flag"
   ],
-  "changed_files": [],
+  "changed_files": [
+    "EVOLVE_PROPOSED.md",
+    "GOALS.md",
+    "JOURNAL.md",
+    "METRICS.md",
+    "src/cli.rs",
+    "src/cycle_summary.rs",
+    "src/main.rs"
+  ],
   "pending": [],
   "learnings": []
 }

@@ -8,7 +8,7 @@ Every goal should move toward this. Every session should answer:
 *did I become more useful today?*
 
 ## Active
-- [ ] [G-035] Add --write-summary CLI flag: write clean, accurate cycle_summary.json from real data (git stats, test count, active goals) at session end — replaces the unreliable shell-written summaries in evolve.sh
+- [x] [G-035] Add --write-summary CLI flag: write clean, accurate cycle_summary.json from real data (git stats, test count, active goals) at session end — replaces the unreliable shell-written summaries in evolve.sh
 
 ## Backlog
 
