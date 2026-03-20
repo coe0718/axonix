@@ -314,4 +314,90 @@ mod tests {
         let result = read_uptime();
         assert!(!result.is_empty(), "uptime must not be empty");
     }
+
+    // ── format_bytes edge cases ───────────────────────────────────────────────
+
+    #[test]
+    fn test_format_bytes_zero() {
+        // 0 bytes — less than MiB — should show in K
+        let result = format_bytes(0);
+        assert!(result.ends_with('K'), "0 bytes should be shown as 0K: {result}");
+    }
+
+    #[test]
+    fn test_format_bytes_exactly_one_gib() {
+        let result = format_bytes(1024 * 1024 * 1024);
+        assert_eq!(result, "1.0G", "exactly 1 GiB should be '1.0G': {result}");
+    }
+
+    #[test]
+    fn test_format_bytes_exactly_one_mib() {
+        let result = format_bytes(1024 * 1024);
+        assert_eq!(result, "1M", "exactly 1 MiB should be '1M': {result}");
+    }
+
+    #[test]
+    fn test_format_bytes_large_value() {
+        // 32 GiB — should still format cleanly
+        let result = format_bytes(32 * 1024 * 1024 * 1024);
+        assert!(result.contains('G'), "32 GiB should show G suffix: {result}");
+    }
+
+    // ── parse_kb edge cases ───────────────────────────────────────────────────
+
+    #[test]
+    fn test_parse_kb_large_value() {
+        // 16 GB RAM = 16 * 1024 * 1024 kB
+        let line = "MemTotal:       16777216 kB";
+        assert_eq!(parse_kb(line), 16_777_216);
+    }
+
+    #[test]
+    fn test_parse_kb_only_whitespace() {
+        assert_eq!(parse_kb("   "), 0);
+    }
+
+    #[test]
+    fn test_parse_kb_numeric_overflow_safe() {
+        // Very large number — must not panic, may or may not parse (u64 overflow)
+        let line = "MemTotal: 99999999999999999999999 kB";
+        let _result = parse_kb(line); // must not panic; value doesn't matter
+    }
+
+    // ── HealthSnapshot format invariants ─────────────────────────────────────
+
+    #[test]
+    fn test_health_snapshot_format_contains_values() {
+        let snap = HealthSnapshot {
+            load_avg: "1.23, 0.45, 0.67".to_string(),
+            memory: "4.0G / 16.0G (25% used)".to_string(),
+            disk: "20G / 100G (20%)".to_string(),
+            uptime: "5d 2h 30m".to_string(),
+        };
+        let formatted = snap.format();
+        assert!(formatted.contains("1.23"), "format should include load value");
+        assert!(formatted.contains("4.0G"), "format should include memory value");
+        assert!(formatted.contains("20G"), "format should include disk value");
+        assert!(formatted.contains("5d 2h"), "format should include uptime value");
+    }
+
+    #[test]
+    fn test_health_snapshot_compact_uses_1min_load() {
+        // format_compact should take the first comma-separated load value (1-min)
+        let snap = HealthSnapshot {
+            load_avg: "0.99, 0.50, 0.25".to_string(),
+            memory: "2G / 8G (25% used)".to_string(),
+            disk: "10G / 50G (20%)".to_string(),
+            uptime: "1d".to_string(),
+        };
+        let compact = snap.format_compact();
+        assert!(
+            compact.contains("0.99"),
+            "compact should show 1-min load (0.99): {compact}"
+        );
+        assert!(
+            !compact.contains("0.50"),
+            "compact should NOT show 5-min load: {compact}"
+        );
+    }
 }
