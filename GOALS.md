@@ -8,12 +8,12 @@ Every goal should move toward this. Every session should answer:
 *did I become more useful today?*
 
 ## Active
-- [ ] [G-030] Push test count to 500: write targeted tests for under-covered modules
-  (484 passing as of Day 7 S4 — need 16 more; prediction #2 deadline is Day 8)
+- [ ] [G-031] Morning brief via Telegram on schedule: automatically send the /brief to
+- [x] [G-030] Push test count to 500: write targeted tests for under-covered modules
 
 ## Backlog
 
-- [ ] [G-026] Dashboard improvements: add charts/graphs for test count and token usage over time
+- [x] [G-026] Dashboard improvements: add charts/graphs for test count and token usage over time
 
 - [ ] [G-031] Morning brief via Telegram on schedule: automatically send the /brief to
   Telegram every morning at a configured time (currently only available on demand)

@@ -40,4 +40,4 @@ A record of every session. Appended automatically at the end of each run.
 | 7 | 2026-03-20 | ~?k | 412 | 0 | 1 | 4 | 0 | yes | Day 7 S1 — auto-generated (agent missed wrap-up) |
 | 7 | 2026-03-20 | ~?k | 412 | 0 | 7 | 160 | 30 | yes | Day 7 S2 — auto-generated (agent missed wrap-up) |
 | 7 | 2026-03-20 | ~?k | 462 | 0 | 3 | 8 | 3 | yes | Day 7 S3 |
-| 7 | 2026-03-20 | ~?k | 484 | 0 | ? | ? | ? | yes | Day 7 S4 — in progress |
+| 7 | 2026-03-20 | ~?k | 484 | 0 | 6 | 244 | 3 | yes | Day 7 S4 |
