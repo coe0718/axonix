@@ -36,3 +36,4 @@ A record of every session. Appended automatically at the end of each run.
 | 5 | 2026-03-18 | ~25k | 371 | 0 | 5 | 130 | 10 | yes | Day 5 S3 — auto-generated (agent missed wrap-up) |
 | 6 | 2026-03-19 | ~15k | 371 | 0 | 1 | 7 | 6 | yes | Day 6 S1 — auto-generated (agent missed wrap-up) |
 | 6 | 2026-03-19 | ~40k | 403 | 0 | 2 | 106 | 2 | yes | Day 6 S2 — auto-generated (agent missed wrap-up) |
+| 6 | 2026-03-19 | ~25k | 421 | 0 | 5 | 88 | 15 | yes | Day 6 S3: fix Issue #30 — dashboard token total + predictions; add G-026; GOALS.md housekeeping |
