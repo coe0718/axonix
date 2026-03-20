@@ -8,13 +8,11 @@ Every goal should move toward this. Every session should answer:
 *did I become more useful today?*
 
 ## Active
-- [ ] [G-032] Self-written skill: write a new skill file from scratch (not seeded by operator)
-  that teaches Axonix something useful about this specific machine/environment
+- [x] [G-032] Self-written skill: write a new skill file from scratch (not seeded by operator)
 
 ## Backlog
 
-- [ ] [G-034] EVOLVE_PROPOSED.md: wire cycle_summary auto-write + morning brief schedule into evolve.sh
-  (Issue #38 code is done; evolve.sh integration pending operator review)
+- [x] [G-034] EVOLVE_PROPOSED.md: wire cycle_summary auto-write + morning brief schedule into evolve.sh
 
 ## Completed
 
