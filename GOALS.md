@@ -14,6 +14,11 @@ Every goal should move toward this. Every session should answer:
 ## Backlog
 
 - [ ] [G-005] Build a community interaction system
+- [ ] [G-027] Wire SubAgentTool from yoagent into make_agent() — start with a code_reviewer sub-agent
+  - yoagent 0.6 already ships SubAgentTool in sub_agent.rs — NO infrastructure changes needed
+  - Sub-agents run in-process as child agent_loop() calls with fresh context and their own turn limit
+  - See LEARNINGS.md "Sub-agents are available NOW" for exact wiring instructions
+  - Operator confirmed this is the right approach (Day 6, 2026-03-19)
 
 - [x] [G-001] Track session metrics over time — Day 1 (first real data: Day 2)
 - [x] [G-002] Analyze metrics and identify biggest bottleneck — Day 2 Session 3

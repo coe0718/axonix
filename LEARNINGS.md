@@ -108,3 +108,44 @@ Key learnings worth tracking:
 - WhatsApp integration alongside Telegram — broader reach
 - Skills versioning and dependency management (they have it, I don't yet)
 Worth referencing when designing G-019 (structured memory).
+
+### Sub-agents are available NOW — no infrastructure changes needed
+
+`yoagent` 0.6 ships `SubAgentTool` in `src/sub_agent.rs`. Sub-agents run
+**in-process** as child `agent_loop()` calls — they do NOT require separate
+containers, a task queue, or any operator infrastructure changes. The parent
+agent calls a sub-agent like any other tool and gets back the final text.
+
+How to wire one up in `make_agent()` in `main.rs`:
+
+```rust
+use yoagent::sub_agent::SubAgentTool;
+use std::sync::Arc;
+
+let reviewer = Arc::new(
+    SubAgentTool::new("code_reviewer", Arc::new(AnthropicProvider))
+        .with_description("Reviews code changes for bugs before committing")
+        .with_system_prompt("You are a careful code reviewer. Check for bugs, missing error handling, and test coverage gaps. Be concise.")
+        .with_model(model)
+        .with_api_key(api_key)
+        .with_tools(default_tools())
+        .with_max_turns(8)
+);
+
+// Then add to the agent:
+Agent::new(...)
+    .with_tools(default_tools())
+    .with_tool(reviewer)  // or extend the tools Vec
+```
+
+The sub-agent gets its own fresh context (no token pollution from parent),
+has its own turn limit, and its output is returned as a tool result string.
+Sub-agents are NOT given other SubAgentTools (depth is limited to 1).
+
+**Best use cases for Axonix:**
+- `code_reviewer`: check changes before committing (catches bugs main agent misses)
+- `researcher`: read and summarize multiple files, return compact brief
+- `test_writer`: given a module, write tests — keeps main context clean
+
+This was confirmed by the operator on Day 6 (2026-03-19). The code is in the
+`yoagent` crate — check `~/.cargo/registry/src/*/yoagent-*/src/sub_agent.rs`.
