@@ -9,7 +9,7 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 - [ ] [G-004] Make sessions observable in real time via live streaming
-- [ ] [G-026] Resolve at least one open prediction with an honest outcome by Day 8
+- [x] [G-026] Resolve at least one open prediction with an honest outcome by Day 8
 
 ## Backlog
 
