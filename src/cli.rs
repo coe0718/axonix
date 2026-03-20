@@ -397,4 +397,119 @@ mod tests {
         let cli = CliArgs::parse(&args).unwrap();
         assert!(!cli.watch, "watch should be false when flag absent");
     }
+
+    #[test]
+    fn test_bluesky_post_flag() {
+        let args: Vec<String> = vec!["axonix", "--bluesky-post", "Hello Bluesky!"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert_eq!(cli.bluesky_post.as_deref(), Some("Hello Bluesky!"));
+        assert!(cli.tweet.is_none(), "--bluesky-post should not set tweet");
+    }
+
+    #[test]
+    fn test_bluesky_post_flag_absent() {
+        let args: Vec<String> = vec!["axonix", "--prompt", "hello"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(cli.bluesky_post.is_none(), "bluesky_post should be None when flag absent");
+    }
+
+    #[test]
+    fn test_tweet_flag() {
+        let args: Vec<String> = vec!["axonix", "--tweet", "Hello Twitter!"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert_eq!(cli.tweet.as_deref(), Some("Hello Twitter!"));
+        assert!(!cli.discuss, "--tweet should not set discuss");
+    }
+
+    #[test]
+    fn test_tweet_flag_absent() {
+        let args: Vec<String> = vec!["axonix"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(cli.tweet.is_none(), "tweet should be None when flag absent");
+    }
+
+    #[test]
+    fn test_default_model_is_set() {
+        let args: Vec<String> = vec!["axonix"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        // Default model must be set (not empty)
+        assert!(!cli.model.is_empty(), "default model must be non-empty");
+        assert!(cli.model.contains("claude"), "default model should be a Claude model: {}", cli.model);
+    }
+
+    #[test]
+    fn test_model_override() {
+        let args: Vec<String> = vec!["axonix", "--model", "claude-haiku-4-20250514"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert_eq!(cli.model, "claude-haiku-4-20250514");
+    }
+
+    #[test]
+    fn test_multiple_skills_dirs() {
+        let args: Vec<String> = vec!["axonix", "--skills", "/dir1", "--skills", "/dir2"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert_eq!(cli.skill_dirs.len(), 2);
+        assert!(cli.skill_dirs.contains(&"/dir1".to_string()));
+        assert!(cli.skill_dirs.contains(&"/dir2".to_string()));
+    }
+
+    #[test]
+    fn test_no_skills_is_empty_vec() {
+        let args: Vec<String> = vec!["axonix"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(cli.skill_dirs.is_empty(), "no --skills should yield empty vec");
+    }
+
+    #[test]
+    fn test_short_prompt_flag() {
+        let args: Vec<String> = vec!["axonix", "-p", "quick question"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert_eq!(cli.prompt.as_deref(), Some("quick question"));
+    }
+
+    #[test]
+    fn test_help_returns_none() {
+        let args: Vec<String> = vec!["axonix", "--help"]
+            .into_iter().map(String::from).collect();
+        let result = CliArgs::parse(&args);
+        assert!(result.is_none(), "--help should return None");
+    }
+
+    #[test]
+    fn test_version_returns_none() {
+        let args: Vec<String> = vec!["axonix", "--version"]
+            .into_iter().map(String::from).collect();
+        let result = CliArgs::parse(&args);
+        assert!(result.is_none(), "--version should return None");
+    }
+
+    #[test]
+    fn test_short_version_flag_returns_none() {
+        let args: Vec<String> = vec!["axonix", "-V"]
+            .into_iter().map(String::from).collect();
+        let result = CliArgs::parse(&args);
+        assert!(result.is_none(), "-V should return None");
+    }
+
+    #[test]
+    fn test_all_false_flags_by_default() {
+        let args: Vec<String> = vec!["axonix"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(!cli.discuss, "discuss default false");
+        assert!(!cli.brief, "brief default false");
+        assert!(!cli.watch, "watch default false");
+        assert!(cli.prompt.is_none(), "prompt default None");
+        assert!(cli.tweet.is_none(), "tweet default None");
+        assert!(cli.bluesky_post.is_none(), "bluesky_post default None");
+    }
 }

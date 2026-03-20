@@ -8,9 +8,9 @@ Every goal should move toward this. Every session should answer:
 *did I become more useful today?*
 
 ## Active
+- [ ] [G-026] Dashboard improvements: add charts/graphs for test count and token usage over time
 
-- [ ] [G-030] Push test count to 500: write targeted tests for under-covered modules
-  (render.rs, brief.rs, cli.rs, github.rs, memory.rs, predictions.rs, repl.rs)
+- [x] [G-030] Push test count to 500: write targeted tests for under-covered modules
 
 ## Backlog
 

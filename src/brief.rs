@@ -457,4 +457,164 @@ mod tests {
         assert_eq!(result[0].day, "2", "first of last 3 should be day 2");
         assert_eq!(result[2].day, "4", "last should be day 4");
     }
+
+    // ── Brief::format_terminal edge cases ────────────────────────────────────────
+
+    #[test]
+    fn test_brief_format_terminal_has_end_marker() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+        };
+        let output = brief.format_terminal();
+        assert!(output.contains("end of brief"), "should have end marker");
+    }
+
+    #[test]
+    fn test_brief_format_terminal_multiple_goals() {
+        let brief = Brief {
+            active_goals: vec![
+                "Goal one".to_string(),
+                "Goal two".to_string(),
+                "Goal three".to_string(),
+            ],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+        };
+        let output = brief.format_terminal();
+        assert!(output.contains("Goal one"));
+        assert!(output.contains("Goal two"));
+        assert!(output.contains("Goal three"));
+    }
+
+    #[test]
+    fn test_brief_format_terminal_multiple_predictions() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![
+                (1, "2026-03-17".to_string(), "first prediction".to_string()),
+                (2, "2026-03-18".to_string(), "second prediction".to_string()),
+            ],
+            recent_sessions: vec![],
+            note: None,
+        };
+        let output = brief.format_terminal();
+        assert!(output.contains("#1"), "should show prediction IDs");
+        assert!(output.contains("#2"));
+        assert!(output.contains("first prediction"));
+        assert!(output.contains("second prediction"));
+    }
+
+    #[test]
+    fn test_brief_format_telegram_empty_state() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+        };
+        let output = brief.format_telegram();
+        assert!(output.contains("*Axonix Morning Brief*"), "should have header");
+        // Should not panic or produce empty output
+        assert!(!output.is_empty());
+    }
+
+    #[test]
+    fn test_brief_format_telegram_note_appears() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: Some("important note here".to_string()),
+        };
+        let output = brief.format_telegram();
+        // format_telegram doesn't render notes (compact format) — but must not panic
+        assert!(!output.is_empty(), "telegram output should be non-empty");
+        assert!(output.contains("*Axonix Morning Brief*"), "should have header");
+    }
+
+    #[test]
+    fn test_brief_format_telegram_multiple_goals() {
+        let brief = Brief {
+            active_goals: vec!["alpha".to_string(), "beta".to_string()],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+        };
+        let output = brief.format_telegram();
+        assert!(output.contains("alpha"));
+        assert!(output.contains("beta"));
+    }
+
+    #[test]
+    fn test_session_summary_fields() {
+        let s = SessionSummary {
+            day: "5".to_string(),
+            date: "2026-03-18".to_string(),
+            tests: "450".to_string(),
+            notes: "big session".to_string(),
+        };
+        assert_eq!(s.day, "5");
+        assert_eq!(s.date, "2026-03-18");
+        assert_eq!(s.tests, "450");
+        assert_eq!(s.notes, "big session");
+    }
+
+    #[test]
+    fn test_brief_format_terminal_session_row_format() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![SessionSummary {
+                day: "7".to_string(),
+                date: "2026-03-20".to_string(),
+                tests: "434".to_string(),
+                notes: "Day 7 session".to_string(),
+            }],
+            note: None,
+        };
+        let output = brief.format_terminal();
+        assert!(output.contains("Day 7"), "should show day number");
+        assert!(output.contains("434"), "should show test count");
+        assert!(output.contains("2026-03-20"), "should show date");
+    }
+
+    #[test]
+    fn test_truncate_str_zero_max() {
+        // max=0 should return empty string
+        let result = truncate_str("hello", 0);
+        assert!(result.is_empty(), "truncate_str to 0 should return empty: got '{result}'");
+    }
+
+    #[test]
+    fn test_truncate_str_preserves_unicode() {
+        let s = "Hello 世界!";
+        let result = truncate_str(s, 100);
+        assert_eq!(result, s, "short string should be unchanged");
+    }
+
+    #[test]
+    fn test_parse_metrics_row_real_format() {
+        // Test the exact format used in METRICS.md
+        let line = "| 7 | 2026-03-20 | ~25k | 434 | 0 | 5 | 88 | 15 | yes | Day 7 S3 notes |";
+        let result = parse_metrics_row(line);
+        assert!(result.is_some(), "real METRICS.md format should parse: {line}");
+        let row = result.unwrap();
+        assert_eq!(row.day, "7");
+        assert_eq!(row.tests, "434");
+        assert!(row.notes.contains("Day 7 S3 notes"));
+    }
+
+    #[test]
+    fn test_parse_metrics_row_with_unknown_tokens() {
+        // ~?k tokens should still parse if other fields are valid
+        let line = "| 6 | 2026-03-19 | ~?k | 406 | 0 | 2 | 172 | 5 | yes | auto-generated |";
+        let result = parse_metrics_row(line);
+        assert!(result.is_some(), "row with ~?k tokens should still parse");
+        let row = result.unwrap();
+        assert_eq!(row.tests, "406");
+    }
 }

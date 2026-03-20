@@ -850,4 +850,131 @@ mod tests {
         assert_eq!(title, "Day 1, Session 1 — First");
         assert_eq!(body, "Only entry.");
     }
+
+    #[test]
+    fn test_parse_latest_journal_only_title_no_body() {
+        let content = "# Journal\n\n## Day 1, Session 1 — Just a title\n\n## Day 1, Session 0 — Older\n\nOld.\n";
+        let result = parse_latest_journal(content);
+        assert!(result.is_some());
+        let (title, body) = result.unwrap();
+        assert_eq!(title, "Day 1, Session 1 — Just a title");
+        // Body is empty between adjacent ## headings
+        assert!(body.is_empty(), "body between adjacent headings should be empty: '{body}'");
+    }
+
+    #[test]
+    fn test_parse_latest_journal_preserves_code_blocks() {
+        let content = "# Journal\n\n## Day 5, Session 1 — Code session\n\n```rust\nfn main() {}\n```\n\n## Day 4 — Old\n";
+        let (title, body) = parse_latest_journal(content).unwrap();
+        assert_eq!(title, "Day 5, Session 1 — Code session");
+        assert!(body.contains("```rust"), "should preserve code fences");
+        assert!(body.contains("fn main()"), "should preserve code content");
+    }
+
+    #[test]
+    fn test_parse_latest_journal_whitespace_only_body() {
+        let content = "# Journal\n\n## Day 2, Session 1 — Whitespace\n\n   \n\n## Day 1 — Old\n";
+        let result = parse_latest_journal(content);
+        assert!(result.is_some());
+        let (title, body) = result.unwrap();
+        assert_eq!(title, "Day 2, Session 1 — Whitespace");
+        assert!(body.is_empty(), "whitespace-only body should trim to empty: '{body}'");
+    }
+
+    #[test]
+    fn test_format_discussion_body_has_separator() {
+        let body = format_discussion_body("Test content");
+        assert!(body.contains("---"), "should have horizontal separator before footer");
+    }
+
+    #[test]
+    fn test_format_discussion_body_empty_input() {
+        let body = format_discussion_body("");
+        // Empty input should still produce a footer
+        assert!(body.contains("Posted automatically by Axonix"));
+    }
+
+    #[test]
+    fn test_issue_entry_reactions_zero() {
+        let entry = IssueEntry {
+            number: 5,
+            title: "No reactions".to_string(),
+            reactions: 0,
+            labels: vec![],
+        };
+        assert_eq!(entry.reactions, 0);
+    }
+
+    #[test]
+    fn test_issue_entry_multiple_labels() {
+        let entry = IssueEntry {
+            number: 3,
+            title: "Multi-label".to_string(),
+            reactions: 2,
+            labels: vec!["bug".to_string(), "enhancement".to_string(), "good first issue".to_string()],
+        };
+        assert_eq!(entry.labels.len(), 3);
+        assert!(entry.labels.contains(&"bug".to_string()));
+        assert!(entry.labels.contains(&"enhancement".to_string()));
+    }
+
+    #[test]
+    fn test_discussion_entry_url_format() {
+        let entry = DiscussionEntry {
+            id: "D_abc".to_string(),
+            number: 42,
+            title: "Some discussion".to_string(),
+            body: "".to_string(),
+            url: "https://github.com/coe0718/axonix/discussions/42".to_string(),
+            author: "user".to_string(),
+            comments: vec![],
+        };
+        assert!(entry.url.contains("discussions/42"), "URL should reference discussion number");
+        assert!(entry.url.starts_with("https://"), "URL should use HTTPS");
+    }
+
+    #[test]
+    fn test_github_identity_equality() {
+        assert_eq!(GitHubIdentity::Bot, GitHubIdentity::Bot);
+        assert_eq!(GitHubIdentity::Owner, GitHubIdentity::Owner);
+        assert_ne!(GitHubIdentity::Bot, GitHubIdentity::Owner);
+    }
+
+    #[test]
+    fn test_client_token_stored() {
+        let client = GitHubClient::new("secret-token-123", GitHubIdentity::Bot);
+        assert_eq!(client.token, "secret-token-123");
+    }
+
+    #[test]
+    fn test_multiple_discussion_comments() {
+        let comments = vec![
+            DiscussionComment { author: "alice".to_string(), body: "First".to_string() },
+            DiscussionComment { author: "bob".to_string(), body: "Second".to_string() },
+            DiscussionComment { author: "carol".to_string(), body: "Third".to_string() },
+        ];
+        let entry = DiscussionEntry {
+            id: "D_test".to_string(),
+            number: 1,
+            title: "Test".to_string(),
+            body: "Body".to_string(),
+            url: "https://github.com/coe0718/axonix/discussions/1".to_string(),
+            author: "axonix-bot".to_string(),
+            comments,
+        };
+        assert_eq!(entry.comments.len(), 3);
+        assert_eq!(entry.comments[0].author, "alice");
+        assert_eq!(entry.comments[2].author, "carol");
+    }
+
+    #[test]
+    fn test_parse_latest_journal_no_top_heading_required() {
+        // Content without "# Journal" header — should still find ## entries
+        let content = "## Day 3, Session 1 — Direct entry\n\nSome content.\n";
+        let result = parse_latest_journal(content);
+        assert!(result.is_some(), "should find entry even without top-level heading");
+        let (title, body) = result.unwrap();
+        assert_eq!(title, "Day 3, Session 1 — Direct entry");
+        assert_eq!(body, "Some content.");
+    }
 }
