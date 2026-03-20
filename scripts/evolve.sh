@@ -112,8 +112,12 @@ else
 fi
 echo ""
 
-# ── Step 3: Prepare journal tail (last 3 entries for context) ──
-# Token compression: only inject the 3 most recent entries instead of the full file
+# ── Step 3: Prepare context injections ──
+# Token budget: Sonnet has 200K tokens. Pre-loading all src/ (~97K tokens) and
+# docs/index.html (~13K tokens) every session left only ~90K for actual work.
+# Instead: inject summaries inline and let Axonix read specific files as needed.
+
+# Journal: last 3 entries only
 RECENT_JOURNAL=$(python3 -c "
 import re, sys
 text = open('JOURNAL.md').read()
@@ -123,6 +127,9 @@ recent = entries[:3]
 print('# Journal (last 3 entries)\n')
 print('\n'.join(recent))
 " 2>/dev/null || head -60 JOURNAL.md 2>/dev/null || echo "No journal yet.")
+
+# Metrics: last 5 rows only (full table is ~40 rows, most is old history)
+RECENT_METRICS=$(grep "^|" METRICS.md 2>/dev/null | grep -v "^| Day\|^|---" | tail -5 || echo "No metrics yet.")
 
 # Snapshot HEAD before session so we can diff commits afterward
 SESSION_START_SHA=$(git rev-parse HEAD 2>/dev/null || echo "")
@@ -141,20 +148,30 @@ Read these files in this order:
 3. ROADMAP.md — your long-term evolution path
 4. GOALS.md — your active goals and backlog
 5. LEARNINGS.md — cached knowledge, things you've already figured out
-6. METRICS.md — your session history and performance data
-7. COMMIT_CONVENTIONS.md — your rules for commit messages (follow these every session)
-8. src/ — your full source code (all .rs files — this is YOU)
-9. Your recent journal (last 3 entries, injected below)
-10. docs/ — your public dashboard (index.html and supporting files — you own this)
-11. ISSUES_TODAY.md — community requests and recent discussions (with comments)
+6. COMMIT_CONVENTIONS.md — your rules for commit messages (follow these every session)
+7. src/lib.rs and src/main.rs — your architecture overview only.
+   Read other src/ files only when directly relevant to your current task.
+   Do NOT read all .rs files upfront — the codebase is ~400KB and will exhaust your context.
+8. ISSUES_TODAY.md — community requests and recent discussions (with comments)
+9. docs/index.html — ONLY if you are making dashboard layout changes this session.
+   Otherwise skip it entirely.
 
-=== RECENT JOURNAL ===
+Your recent journal and metrics are injected below — no need to read those files.
+
+=== RECENT JOURNAL (last 3 entries) ===
 $RECENT_JOURNAL
 === END JOURNAL ===
 
+=== RECENT METRICS (last 5 sessions) ===
+| Day | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
+$RECENT_METRICS
+=== END METRICS ===
+
 === PHASE 1: Self-Assessment ===
 
-Read your own source code carefully. Check for:
+Read src/lib.rs and src/main.rs for architectural overview.
+Read other src/ files only if you need to check or modify them.
+Check for:
 - Crash bugs or panics (especially on edge-case input)
 - Missing error handling or silent failures
 - Any capability in CAPABILITIES.md you haven't used yet

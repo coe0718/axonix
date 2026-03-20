@@ -30,6 +30,7 @@ use yoagent::agent::Agent;
 use yoagent::provider::AnthropicProvider;
 use yoagent::skills::SkillSet;
 use yoagent::tools::default_tools;
+use yoagent::context::ContextConfig;
 use yoagent::retry::RetryConfig;
 use yoagent::SubAgentTool;
 use yoagent::*;
@@ -160,6 +161,19 @@ fn make_agent(api_key: &str, model: &str, skills: SkillSet, system_prompt: &str)
         .with_api_key(api_key)
         .with_skills(skills)
         .with_tools(build_tools(api_key, model))
+        .with_context_config(ContextConfig {
+            // Sonnet 4.6 has a 200K token context window.
+            // Reserve 20K for the response; auto-compact when the rest fills up.
+            max_context_tokens: 180_000,
+            // System prompt + injected memory/predictions can reach ~8K tokens.
+            system_prompt_tokens: 8_000,
+            // Always keep the 15 most recent turns in full detail.
+            keep_recent: 15,
+            // Always keep the opening messages (session prompt).
+            keep_first: 2,
+            // Truncate long tool outputs (cargo test, file reads) to 80 lines.
+            tool_output_max_lines: 80,
+        })
         .with_retry_config(RetryConfig {
             max_retries: 3,
             initial_delay_ms: 1000,
