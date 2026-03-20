@@ -75,6 +75,7 @@ You are running on a home server and this session may be observed by the public.
 ///
 /// Sub-agent 1: code_reviewer — checks changes for bugs before committing.
 /// Sub-agent 2: community_responder — drafts responses to ISSUES_TODAY.md.
+/// Sub-agent 3: implementer — executes the session plan in a fresh context window.
 fn build_tools(api_key: &str, model: &str) -> Vec<Box<dyn yoagent::types::AgentTool>> {
     let provider: Arc<dyn yoagent::provider::StreamProvider> =
         Arc::new(AnthropicProvider);
@@ -146,12 +147,44 @@ fn build_tools(api_key: &str, model: &str) -> Vec<Box<dyn yoagent::types::AgentT
         )
         .with_model(model) // use full model for community — voice quality matters
         .with_api_key(api_key)
-        .with_tools(arc_tools) // needs read access for ISSUES_TODAY.md and context
+        .with_tools(arc_tools.clone()) // needs read access for ISSUES_TODAY.md and context
         .with_max_turns(10);
+
+    // Sub-agent 3: implementer
+    // The main agent plans and writes SESSION_PLAN.md, then hands off here.
+    // Fresh 170K context window for the actual coding work — no planning overhead.
+    // 25 turns is enough for 3-5 focused tasks with tests and commits.
+    let implementer = SubAgentTool::new("implementer", Arc::clone(&provider))
+        .with_description(
+            "Executes a session implementation plan in a fresh context window. \
+             Pass the full contents of SESSION_PLAN.md (or a detailed task description) \
+             and it will read the relevant source files, implement the changes, run tests, \
+             and commit. Use this for all coding work — it preserves the main agent's \
+             context budget for planning and wrap-up.",
+        )
+        .with_system_prompt(
+            "You are the implementation engine for Axonix, a self-evolving Rust coding agent.\n\
+             You receive a session plan and execute it. Your rules:\n\
+             \n\
+             1. Read ONLY the source files directly relevant to each task. Never read all of src/ upfront.\n\
+             2. For each task: read the relevant file(s), make the change, run `cargo test 2>&1 | grep -E '(^test result|FAILED)'`, commit.\n\
+             3. Commit after every successful change using COMMIT_CONVENTIONS.md format.\n\
+             4. If a change breaks tests, revert it with `git checkout -- <file>` and move on.\n\
+             5. Never leave uncommitted changes. Every file you touch must end in a commit or a revert.\n\
+             6. When done, output a compact summary: tasks completed, tasks skipped, test count, files changed.\n\
+             \n\
+             Read COMMIT_CONVENTIONS.md before your first commit.\n\
+             Do not read IDENTITY.md, ROADMAP.md, or other planning documents — focus only on the code.",
+        )
+        .with_model(model)
+        .with_api_key(api_key)
+        .with_tools(arc_tools.clone())
+        .with_max_turns(25);
 
     let mut tools = default_tools();
     tools.push(Box::new(code_reviewer));
     tools.push(Box::new(community_responder));
+    tools.push(Box::new(implementer));
     tools
 }
 
@@ -1111,6 +1144,10 @@ async fn run_prompt(agent: &mut Agent, input: &str, repl: &mut ReplState, tg: Op
                         let task = args.get("task").and_then(|v| v.as_str()).unwrap_or("...");
                         format!("💬 community: {}", truncate(task, 60))
                     }
+                    "implementer" => {
+                        let task = args.get("task").and_then(|v| v.as_str()).unwrap_or("...");
+                        format!("⚙️  implementing: {}", truncate(task, 60))
+                    }
                     _ => tool_name.clone(),
                 };
                 print!("{YELLOW}  ▶ {summary}{RESET}");
@@ -1369,15 +1406,15 @@ mod tests {
     /// Verifies that build_tools produces the expected number of tools (G-027).
     ///
     /// Default tools = 6 (bash, read_file, write_file, edit_file, list_files, search).
-    /// Sub-agents = 2 (code_reviewer, community_responder).
-    /// Total expected = 8.
+    /// Sub-agents = 3 (code_reviewer, community_responder, implementer).
+    /// Total expected = 9.
     #[test]
     fn test_build_tools_count() {
         let tools = super::build_tools("test-key", "claude-sonnet-4-20250514");
         assert_eq!(
             tools.len(),
-            8,
-            "Expected 6 default tools + 2 sub-agents = 8, got {}",
+            9,
+            "Expected 6 default tools + 3 sub-agents = 9, got {}",
             tools.len()
         );
     }
@@ -1395,6 +1432,11 @@ mod tests {
         assert!(
             names.contains(&"community_responder"),
             "Expected community_responder sub-agent in tools; got: {:?}",
+            names
+        );
+        assert!(
+            names.contains(&"implementer"),
+            "Expected implementer sub-agent in tools; got: {:?}",
             names
         );
     }

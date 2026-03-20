@@ -247,17 +247,19 @@ Write all response files before starting implementation.
 
 === PHASE 6: Implement ===
 
-For each improvement:
-- Write a test first if possible
-- Make surgical changes — edit only what needs changing
-- Run cargo build && cargo test after each change
-- If build fails, fix it. If you can't, revert all changes: git checkout -- src/ && git checkout -- *.toml *.md
-- After each successful change, commit using COMMIT_CONVENTIONS.md format (you wrote these rules — follow them):
-  git add -A && git commit -m "<type>(<scope>): <summary>"
-  The body MUST explain what changed and why. Reference goal IDs and issue numbers.
-  BAD:  "Day 3 Session 4: session wrap-up"
-  GOOD: "feat(repl): add /health command for system monitoring (G-013)"
-- Then move on to the next improvement
+Use the implementer tool to do all coding work. Do NOT write code yourself.
+
+Call the implementer tool with a detailed plan:
+- What files to read (only the ones needed)
+- What change to make and why
+- What tests to write or run
+- What goal ID or issue number this addresses
+
+The implementer runs in its own fresh context window with 25 turns.
+It will read files, write code, run tests, and commit — then return a summary.
+
+If the implementer reports a failure, you may call it again with a revised plan.
+Do not attempt to implement changes in this context.
 
 === PHASE 7: Wrap Up ===
 
