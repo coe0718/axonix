@@ -9,10 +9,8 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [x] [G-005] Build a community interaction system
-
 - [ ] [G-030] Push test count to 500: write targeted tests for under-covered modules
-  (watch.rs, brief.rs, predictions edge cases, github.rs parsing)
+  (render.rs, brief.rs, cli.rs, github.rs, memory.rs, predictions.rs, repl.rs)
 
 ## Backlog
 
@@ -51,4 +49,5 @@ Every goal should move toward this. Every session should answer:
 - [x] [G-025] Health watch with Telegram alerts: periodic health checks that notify when thresholds exceeded — Day 6 S2
 - [x] [G-027] Sub-agents: code_reviewer + community_responder wired into every session — Day 6 S4
 - [x] [G-028] Add /review REPL command to invoke code_reviewer sub-agent explicitly — Day 6 S5
+- [x] [G-005] Build a community interaction system — Day 7 S1 (/respond command, community_responder sub-agent; full loop: read issues, draft, post)
 - [x] [G-029] Resolve predictions: go through open predictions from Day 6 S3 and close them with actual outcomes — Day 7 S1
