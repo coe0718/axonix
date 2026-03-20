@@ -338,6 +338,26 @@ async fn main() {
         return;
     }
 
+    // --write-summary mode: write cycle_summary.json from real data and exit (G-035).
+    if let Some(label) = cli_args.write_summary {
+        let label = if label.is_empty() { "unknown session".to_string() } else { label };
+        eprintln!("{DIM}  writing cycle summary: {label}{RESET}");
+        let summary = axonix::cycle_summary::CycleSummary::from_real_data(&label);
+        match axonix::cycle_summary::CycleSummary::write_default(&summary) {
+            Ok(_) => {
+                eprintln!("{GREEN}  ✓ cycle summary written to .axonix/cycle_summary.json{RESET}");
+                eprintln!("  session: {}", summary.session);
+                eprintln!("  completed: {} items", summary.completed.len());
+                eprintln!("  pending: {} items", summary.pending.len());
+            }
+            Err(e) => {
+                eprintln!("{RED}  ✗ failed to write cycle summary: {e}{RESET}");
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
+
     // --watch mode: run health watch loop, send Telegram alerts when thresholds exceeded (G-025)
     if cli_args.watch {
         match &tg {

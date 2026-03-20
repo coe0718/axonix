@@ -233,6 +233,83 @@ impl CycleSummary {
     pub fn format_for_system_prompt(&self) -> Option<String> {
         self.data.as_ref()?.format_for_prompt()
     }
+
+    /// Build a CycleSummary from real data: recent git commits, changed files,
+    /// and active goals from GOALS.md. Used by `--write-summary` CLI flag (G-035).
+    pub fn from_real_data(label: &str) -> CycleSummaryData {
+        // Get current date via `date` command (no chrono dependency needed)
+        let date = std::process::Command::new("date")
+            .arg("+%Y-%m-%d")
+            .output()
+            .ok()
+            .and_then(|o| String::from_utf8(o.stdout).ok())
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| "unknown".to_string());
+
+        // Recent git commit subjects (last 10)
+        let completed: Vec<String> = std::process::Command::new("git")
+            .args(["log", "--format=%s", "-10"])
+            .output()
+            .ok()
+            .and_then(|o| String::from_utf8(o.stdout).ok())
+            .map(|s| {
+                s.lines()
+                    .map(|l| l.trim().to_string())
+                    .filter(|l| !l.is_empty())
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        // Changed files in recent history (HEAD~5..HEAD)
+        let changed_files: Vec<String> = std::process::Command::new("git")
+            .args(["diff", "--name-only", "HEAD~5", "HEAD"])
+            .output()
+            .ok()
+            .and_then(|o| String::from_utf8(o.stdout).ok())
+            .map(|s| {
+                s.lines()
+                    .map(|l| l.trim().to_string())
+                    .filter(|l| !l.is_empty())
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        // Active (unchecked) goals from GOALS.md
+        let pending: Vec<String> = std::fs::read_to_string("GOALS.md")
+            .unwrap_or_default()
+            .lines()
+            .filter(|l| l.trim_start().starts_with("- [ ]"))
+            .map(|l| {
+                l.trim()
+                    .trim_start_matches("- [ ]")
+                    .trim()
+                    .to_string()
+            })
+            .filter(|l| !l.is_empty())
+            .collect();
+
+        CycleSummaryData {
+            session: label.to_string(),
+            date,
+            completed,
+            changed_files,
+            pending,
+            learnings: Vec::new(),
+            test_count: None,
+        }
+    }
+
+    /// Write the given data to the default path `.axonix/cycle_summary.json`.
+    pub fn write_default(data: &CycleSummaryData) -> Result<(), String> {
+        let home = std::env::var("HOME").unwrap_or_else(|_| "/workspace".to_string());
+        let path = std::path::PathBuf::from(&home)
+            .join(".axonix")
+            .join("cycle_summary.json");
+        let mut cs = CycleSummary::new(&path);
+        cs.set(data.clone());
+        cs.save().map_err(|e| e.to_string())
+    }
 }
 
 #[cfg(test)]
@@ -620,5 +697,56 @@ mod tests {
         let path_str = cs.path.to_string_lossy();
         assert!(path_str.contains(".axonix"), "Should be in .axonix directory");
         assert!(path_str.contains("cycle_summary.json"), "Should be cycle_summary.json");
+    }
+
+    // ── from_real_data / write_default (G-035) ──────────────────────────────
+
+    /// Verify from_real_data sets the provided session label (G-035).
+    #[test]
+    fn test_from_real_data_has_session_label() {
+        let data = CycleSummary::from_real_data("test label");
+        assert_eq!(data.session, "test label", "session should match provided label");
+    }
+
+    /// Verify from_real_data produces a non-empty date (G-035).
+    #[test]
+    fn test_from_real_data_date_not_empty() {
+        let data = CycleSummary::from_real_data("test session");
+        assert!(!data.date.is_empty(), "date should not be empty");
+        // Should be either a real date (YYYY-MM-DD) or "unknown"
+        let looks_like_date = data.date.len() >= 7;
+        assert!(looks_like_date, "date should be at least 7 chars, got: '{}'", data.date);
+    }
+
+    /// Verify write_default roundtrip: write then read back session field (G-035).
+    #[test]
+    fn test_write_summary_roundtrip() {
+        let data = CycleSummary::from_real_data("roundtrip session");
+        let tmp = std::env::temp_dir().join("axonix_write_default_test.json");
+        // Write manually to a temp path to avoid polluting .axonix
+        let mut cs = CycleSummary::new(&tmp);
+        cs.set(data.clone());
+        cs.save().unwrap();
+        let loaded = CycleSummary::load(&tmp);
+        let loaded_data = loaded.data.unwrap();
+        assert_eq!(loaded_data.session, "roundtrip session");
+        let _ = std::fs::remove_file(&tmp);
+    }
+
+    /// Verify from_real_data with empty label is preserved (G-035).
+    #[test]
+    fn test_from_real_data_empty_label_preserved() {
+        let data = CycleSummary::from_real_data("");
+        assert_eq!(data.session, "", "empty label should be stored as-is");
+    }
+
+    /// Verify from_real_data completed list contains strings (may be empty if no git) (G-035).
+    #[test]
+    fn test_from_real_data_completed_is_vec_of_strings() {
+        let data = CycleSummary::from_real_data("label");
+        // All completed items must be non-empty strings
+        for item in &data.completed {
+            assert!(!item.is_empty(), "completed items should be non-empty strings");
+        }
     }
 }
