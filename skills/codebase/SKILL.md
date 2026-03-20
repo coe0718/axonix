@@ -114,4 +114,4 @@ mod tests {
 
 The `<script>` block at the bottom of the file connects to the SSE stream on `stream.axonix.live`. Do not remove it.
 
-When editing `docs/index.html`, only add or update content — never remove the stream section, the stream nav link, or the EventSource script.
+When editing `docs/index.html`, only add or update content — never remove the stream section, the stream nav link, or the EventSource script. The `stream-console` section must stay in its position: immediately after `<header class="hero">`, before `<section id="live">`.
