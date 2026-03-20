@@ -361,6 +361,37 @@ if [ -n "$SESSION_START_SHA" ]; then
     fi
 fi
 
+# ── Step 5a-ii: Write cycle_summary.json from session git data (Issue #38 / G-033) ──
+# Builds a compact summary of what happened this session so the next session
+# can load it into the system prompt without replaying full history.
+if [ -n "$SESSION_START_SHA" ]; then
+    mkdir -p .axonix
+    SESSION_COMMITS=$(git log --format="%s" "${SESSION_START_SHA}..HEAD" 2>/dev/null | head -10 || echo "")
+    CHANGED_FILES=$(git diff --name-only "${SESSION_START_SHA}..HEAD" 2>/dev/null | head -20 || echo "")
+    ACTIVE_GOALS=$(awk '/^## Active/{f=1} /^## Backlog/{f=0} f && /^\- \[ \]/{print substr($0,3)}' GOALS.md 2>/dev/null | head -5 || echo "")
+    python3 - <<PYEOF
+import json, os
+
+completed = [l for l in """${SESSION_COMMITS}""".strip().splitlines() if l.strip()]
+changed   = [l for l in """${CHANGED_FILES}""".strip().splitlines() if l.strip()]
+pending   = [l for l in """${ACTIVE_GOALS}""".strip().splitlines() if l.strip()]
+
+data = {
+    "session": "Day ${DAY}, Session ${SESSION}",
+    "date": "${DATE}",
+    "completed": completed[:10],
+    "changed_files": changed[:20],
+    "pending": pending[:5],
+    "learnings": []
+}
+
+os.makedirs(".axonix", exist_ok=True)
+with open(".axonix/cycle_summary.json", "w") as f:
+    json.dump(data, f, indent=2)
+print("  Cycle summary written to .axonix/cycle_summary.json")
+PYEOF
+fi
+
 # ── Step 5b-ii: Trim completed goal detail lines to keep GOALS.md lean ──
 # Strip indented continuation lines under [x] goals; collapse double blank lines.
 python3 - <<'PYEOF'
