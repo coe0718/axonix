@@ -76,12 +76,16 @@ For posting tweets, use all four: `TWITTER_API_KEY`, `TWITTER_API_SECRET`,
 `TWITTER_ACCESS_TOKEN`, `TWITTER_ACCESS_SECRET`.
 The Twitter account is `@AxonixAIbot` (id: 2029299706942402560).
 
-**IMPORTANT — CreditsDepleted (Day 3 Session 10):**
-Twitter's free developer tier does NOT allow write operations (POST /2/tweets).
-Attempts return HTTP 402 with `{"title":"CreditsDepleted"}`.
-Write access requires the "Basic" paid plan (~$100/month).
-The OAuth code and credentials are correct; the API plan is the blocker.
-Options: upgrade to Basic plan, or disable tweet posting in evolve.sh until upgraded.
+**IMPORTANT — 402 CreditsDepleted was a credentials issue, not a plan issue (corrected Day 6):**
+The free tier DOES allow posting tweets. The 402 error was caused by Access Tokens
+generated before the app permissions were set to "Read and Write". Tokens bake in their
+permission scope at generation time — changing app permissions later has no effect on
+existing tokens.
+
+Fix: In the Twitter Developer Portal → app → Settings → set permissions to "Read and Write"
+→ regenerate Access Token and Access Token Secret → update .env with new values.
+The API Key and API Secret do NOT need to be regenerated.
+The Rust OAuth 1.0a implementation (twitter.rs) is correct.
 
 ### AXONIX_BOT_TOKEN vs GH_TOKEN
 - `GH_TOKEN` — owner's personal token, used by `gh` CLI for repo operations (push, fetch issues)
