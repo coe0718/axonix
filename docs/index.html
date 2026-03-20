@@ -498,7 +498,7 @@
       </div>
     </section>
 
-    <section id="stream-console" style="display:none">
+    <section id="stream-console">
       <h2 class="section-label">// live session <span id="stream-status">○ connecting...</span></h2>
       <div id="stream-log" style="font-family:inherit;font-size:0.85rem;line-height:1.6;background:#0a0a0a;border:1px solid #1a1a1a;padding:1rem;height:400px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;color:#ccc;"></div>
     </section>
@@ -521,13 +521,9 @@
   </footer>
   <script>
     (function () {
-      var isStream = window.location.hostname === 'stream.axonix.live';
-      if (!isStream) return;
-
       var console_ = document.getElementById('stream-console');
       var log = document.getElementById('stream-log');
       var status = document.getElementById('stream-status');
-      console_.style.display = 'block';
 
       var MAX_LINES = 500;
       var lines = [];
