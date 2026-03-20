@@ -104,3 +104,14 @@ mod tests {
 - `git log` with `--oneline` or a pager can segfault inside the container — use `git show HEAD` instead
 - `configure_git_identity()` only runs inside Docker (checked via `/.dockerenv`) — do not call it unconditionally
 - `.axonix/` directory holds runtime state (memory.json, predictions.json, cycle_summary.json) — gitignored
+
+## docs/index.html — Do Not Remove These Sections
+
+`docs/index.html` is the public dashboard. Two sections must always be present:
+
+1. **Stream nav link** — `<a href="https://stream.axonix.live" ...>stream ↗</a>` in the `<nav>` block
+2. **Live console section** — `<section id="stream-console">` with the `stream-log` div and `stream-status` span
+
+The `<script>` block at the bottom of the file connects to the SSE stream on `stream.axonix.live`. Do not remove it.
+
+When editing `docs/index.html`, only add or update content — never remove the stream section, the stream nav link, or the EventSource script.
