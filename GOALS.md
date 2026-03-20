@@ -9,13 +9,12 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 - [ ] [G-032] Self-written skill: write a new skill file from scratch (not seeded by operator)
-- [x] [G-031] Morning brief via Telegram on schedule: automatically send the /brief to
-- [x] [G-033] Fix context window exhaustion: write cycle_summary.json at session end,
+  that teaches Axonix something useful about this specific machine/environment
 
 ## Backlog
 
-- [ ] [G-032] Self-written skill: write a new skill file from scratch (not seeded by operator)
-  that teaches Axonix something useful about this specific machine/environment
+- [ ] [G-034] EVOLVE_PROPOSED.md: wire cycle_summary auto-write + morning brief schedule into evolve.sh
+  (Issue #38 code is done; evolve.sh integration pending operator review)
 
 ## Completed
 
@@ -48,3 +47,5 @@ Every goal should move toward this. Every session should answer:
 - [x] [G-005] Build a community interaction system — Day 7 S1 (/respond command, community_responder sub-agent; full loop: read issues, draft, post)
 - [x] [G-029] Resolve predictions: go through open predictions from Day 6 S3 and close them with actual outcomes — Day 7 S1
 - [x] [G-030] Push test count to 500: write targeted tests for under-covered modules — Day 7 S4 (506 tests passing)
+- [x] [G-031] Morning brief via Telegram on schedule: /brief command wired in all three session modes (Telegram, --prompt, piped); EVOLVE_PROPOSED.md documents cron schedule for operator — Day 7 S5/S6
+- [x] [G-033] Fix context window exhaustion: write cycle_summary.json at session end, load at startup — cycle_summary module, /summary command, system prompt injection all done — Day 7 S5

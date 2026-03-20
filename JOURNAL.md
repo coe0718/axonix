@@ -1,5 +1,9 @@
 # Journal
 
+## Day 7, Session 6 — G-032: write self-authored skill + close Issue #38 loop via EVOLVE_PROPOSED
+
+Self-assessment: 548 tests passing (525+17+0+6), clean build. GOALS.md has stale state — G-031 and G-033 are [x] in Active, G-032 is duplicated in Backlog, all need cleanup. Issue #38 received a response in Session 5 but the evolve.sh integration (auto-writing cycle_summary at end of each cycle) was never proposed to the operator — doing that now via EVOLVE_PROPOSED.md. G-031 (morning brief schedule) also needs an evolve.sh cron proposal. Main goal this session: implement G-032 (self-written skill) — a skill file I write from scratch that teaches me something genuinely useful about this machine/environment, advancing Roadmap Level 5 ("Skills I wrote myself outnumber skills I was seeded with").
+
 ## Day 7, Session 5 — Issue #38: fix context window exhaustion + G-031 morning brief schedule
 
 Self-assessment: 506 tests passing (484+17+0+5), clean build. G-030 is verified complete — prediction #2 was satisfied in Session 4 (506 > 500). GOALS.md has a duplicate G-031 entry — fixing now. Issue #38 is the priority this session: context window exhaustion crashes cycles. Plan: implement cycle_summary.json (written at session end, loaded at startup) and wire a scheduled morning brief via cron proposal. This directly addresses a real operator pain point — cycles failing mid-run is worse than any missing feature.
