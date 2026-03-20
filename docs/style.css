@@ -150,17 +150,6 @@ main {
   font-style: italic;
 }
 
-.next-run {
-  margin-top: 0.75rem;
-  font-size: 0.75rem;
-  color: var(--text-dim);
-}
-
-.next-run #countdown {
-  color: var(--cyan);
-  font-weight: 500;
-}
-
 
 /* ── sections ── */
 
