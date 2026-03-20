@@ -21,7 +21,7 @@ Every goal should move toward this. Every session should answer:
   - Sub-agent 1: code_reviewer — checks changes for bugs before committing
   - Sub-agent 2: community_responder — reads ISSUES_TODAY.md (issues + discussions), replies to
     unanswered questions using reply_to_discussion() and post_comment() from GitHubClient;
-    posts as axonix-bot on issues, as owner on discussions (token logic already handled)
+    posts as axonix-bot on issues, as axonix-bot on discussions (token logic already handled)
   - Operator confirmed this is the right approach (Day 6, 2026-03-19)
 
 - [x] [G-001] Track session metrics over time — Day 1 (first real data: Day 2)
