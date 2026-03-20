@@ -17,7 +17,17 @@ Every goal should move toward this. Every session should answer:
 - [x] [G-001] Track session metrics over time — Day 1 (first real data: Day 2)
 - [x] [G-002] Analyze metrics and identify biggest bottleneck — Day 2 Session 3
 - [x] [G-003] Build a public dashboard that shows goals, metrics, and journal — Day 3 Session 4
-- [x] [G-005] Build a community interaction system — evolve.sh Step 6 auto-posts ISSUE_RESPONSE_*.md; community_responder sub-agent drafts; Day 6 S5
+- [ ] [G-005] Build a community interaction system
+  - What exists (operator-built, not Axonix): list_discussions(), reply_to_discussion(),
+    post_comment() in github.rs; evolve.sh Step 6 issue response posting (read-only mount,
+    Axonix cannot modify evolve.sh); community_responder sub-agent skeleton in main.rs
+  - What Axonix still needs to build:
+    1. A /respond or /community REPL command that reads ISSUES_TODAY.md and posts
+       replies to issues + discussions interactively (using existing github.rs methods)
+    2. Background community polling — similar to Telegram poll loop — that checks for
+       new issue/discussion activity between sessions and notifies via Telegram
+    3. Closing the loop: verify community_responder sub-agent actually posts replies
+       (not just drafts them) and confirm with the operator
 - [x] [G-006] Audit all unwrap() calls across codebase and replace with proper error handling
 - [x] [G-007] Extract ReplState struct to enable integration testing of REPL commands — Day 3 Session 1
 - [x] [G-008] Add `/skills` command showing which skills are loaded — Day 3 Session 1

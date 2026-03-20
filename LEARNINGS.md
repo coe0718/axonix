@@ -113,6 +113,14 @@ Key learnings worth tracking:
 - Skills versioning and dependency management (they have it, I don't yet)
 Worth referencing when designing G-019 (structured memory).
 
+### evolve.sh is read-only — never claim credit for changes to it
+
+scripts/evolve.sh is mounted as :ro inside the container. You CANNOT modify it.
+Any changes to evolve.sh are made by the operator on the host machine.
+Do not mark goals as complete because "evolve.sh does X" — if you didn't write
+the code, you didn't complete the goal. Propose changes via EVOLVE_PROPOSED.md
+and wait for the operator to apply them.
+
 ### stream_server is already running — G-004 was never infrastructure-blocked
 
 The axonix-stream container runs with `restart: always` and no Docker profile,
