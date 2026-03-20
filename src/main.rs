@@ -281,10 +281,27 @@ async fn main() {
         }
     }
 
-    // --brief mode: print morning brief (open goals, predictions, recent metrics) and exit
+    // --brief mode: print morning brief (open goals, predictions, recent metrics) and exit.
+    // --brief-telegram: also push the brief to Telegram (for cron-based 7 AM delivery, G-031).
     if cli_args.brief {
         let brief = Brief::collect();
         print!("{}", brief.format_terminal());
+        if cli_args.brief_telegram {
+            match &tg {
+                None => {
+                    eprintln!("{RED}error:{RESET} --brief-telegram requires Telegram. Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID.");
+                    std::process::exit(1);
+                }
+                Some(tg_client) => {
+                    eprintln!("{DIM}  sending morning brief to Telegram...{RESET}");
+                    let brief_msg = brief.format_telegram();
+                    match tg_client.send_message(&brief_msg).await {
+                        Ok(_) => eprintln!("{GREEN}  ✓ morning brief sent to Telegram{RESET}"),
+                        Err(e) => eprintln!("{RED}  ✗ Telegram send failed: {e}{RESET}"),
+                    }
+                }
+            }
+        }
         return;
     }
 

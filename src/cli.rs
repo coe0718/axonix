@@ -19,6 +19,8 @@ pub struct CliArgs {
     pub discuss: bool,
     /// If set, print the morning brief (open goals, predictions, recent metrics) and exit.
     pub brief: bool,
+    /// If set alongside `brief`, also send the brief to Telegram (enables cron-based push).
+    pub brief_telegram: bool,
     /// If set, run health watch loop: check thresholds every N seconds and send Telegram alerts.
     pub watch: bool,
 }
@@ -69,6 +71,7 @@ impl CliArgs {
 
         let discuss = args.iter().any(|a| a == "--discuss");
         let brief = args.iter().any(|a| a == "--brief");
+        let brief_telegram = args.iter().any(|a| a == "--brief-telegram");
         let watch = args.iter().any(|a| a == "--watch");
 
         Some(Self {
@@ -78,7 +81,8 @@ impl CliArgs {
             tweet,
             bluesky_post,
             discuss,
-            brief,
+            brief: brief || brief_telegram,
+            brief_telegram,
             watch,
         })
     }
@@ -98,6 +102,7 @@ pub fn print_help() {
     println!("  --bluesky-post <text>   Post to Bluesky and exit (requires BLUESKY_IDENTIFIER + BLUESKY_APP_PASSWORD)");
     println!("  --discuss               Post latest JOURNAL.md entry as a GitHub Discussion and exit");
     println!("  --brief                 Print morning brief (goals, predictions, metrics) and exit");
+    println!("  --brief-telegram        Send morning brief to Telegram and exit (for cron push at 7 AM)");
     println!("  --watch                 Start health watch loop: alert via Telegram when thresholds exceeded");
     println!("  --help, -h              Show this help message");
     println!("  --version, -V           Show version");
@@ -511,5 +516,41 @@ mod tests {
         assert!(cli.prompt.is_none(), "prompt default None");
         assert!(cli.tweet.is_none(), "tweet default None");
         assert!(cli.bluesky_post.is_none(), "bluesky_post default None");
+        assert!(!cli.brief_telegram, "brief_telegram default false");
+    }
+
+    /// Verifies --brief-telegram sets both brief and brief_telegram flags (G-031).
+    ///
+    /// --brief-telegram implies --brief (so format_terminal() still runs)
+    /// and also sets brief_telegram for Telegram delivery.
+    #[test]
+    fn test_brief_telegram_flag() {
+        let args: Vec<String> = vec!["axonix", "--brief-telegram"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(cli.brief, "--brief-telegram must imply brief=true");
+        assert!(cli.brief_telegram, "brief_telegram must be true with --brief-telegram");
+    }
+
+    /// Verifies --brief alone does NOT set brief_telegram (G-031).
+    ///
+    /// --brief is stdout-only; --brief-telegram is the Telegram push mode.
+    #[test]
+    fn test_brief_flag_does_not_set_telegram() {
+        let args: Vec<String> = vec!["axonix", "--brief"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(cli.brief, "--brief must set brief=true");
+        assert!(!cli.brief_telegram, "--brief alone must NOT set brief_telegram");
+    }
+
+    /// Verifies --brief-telegram and --brief combined both parse correctly (G-031).
+    #[test]
+    fn test_brief_and_brief_telegram_combined() {
+        let args: Vec<String> = vec!["axonix", "--brief", "--brief-telegram"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(cli.brief);
+        assert!(cli.brief_telegram);
     }
 }
