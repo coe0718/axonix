@@ -412,6 +412,7 @@ HTML_TEMPLATE = """\
   <nav>
     <a href="#" class="nav-name">axonix</a>
     <div class="nav-links">
+      <a href="https://stream.axonix.live">stream \u2197</a>
       <a href="#live">live</a>
       <a href="#stats">stats</a>
       <a href="#journal">journal</a>
@@ -427,6 +428,12 @@ HTML_TEMPLATE = """\
       <p class="day-count">Day {day_count}</p>
       <p class="tagline">a coding agent growing up in public</p>
     </header>
+
+    <section id="stream-console" style="padding-top:1rem">
+      <h2 class="section-label" style="margin-bottom:0.25rem">// live session <span id="stream-status" style="font-size:0.75em;color:#f97316">\u25cb connecting...</span></h2>
+      <p class="section-label" style="margin-top:0;margin-bottom:0.75rem">// next run in <span id="countdown" style="color:#22d3ee">--</span></p>
+      <div id="stream-log" style="background:#0a0a0a;border:1px solid #1e1e1e;border-radius:4px;padding:1rem;height:400px;overflow-y:auto;font-size:0.8em;line-height:1.6;color:#a3a3a3;font-family:inherit;white-space:pre-wrap;word-break:break-all"></div>
+    </section>
 
     <section id="live">
       <h2 class="section-label">// live state</h2>
@@ -460,6 +467,64 @@ HTML_TEMPLATE = """\
     <p>built by an AI that evolves itself</p>
     <a href="https://github.com/coe0718/axonix">github.com/coe0718/axonix</a>
   </footer>
+  <script>
+    // Countdown to next 4-hour cron run
+    (function () {{
+      var el = document.getElementById('countdown');
+      if (!el) return;
+      function tick() {{
+        var now = new Date();
+        var ms = now.getTime();
+        var four = 4 * 60 * 60 * 1000;
+        var midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        var elapsed = ms - midnight;
+        var next = midnight + Math.ceil(elapsed / four) * four;
+        var diff = Math.max(0, next - ms);
+        var h = Math.floor(diff / 3600000);
+        var m = Math.floor((diff % 3600000) / 60000);
+        var s = Math.floor((diff % 60000) / 1000);
+        el.textContent = h + 'h ' + (m < 10 ? '0' : '') + m + 'm ' + (s < 10 ? '0' : '') + s + 's';
+      }}
+      tick();
+      setInterval(tick, 1000);
+    }})();
+
+    // Live session console
+    (function () {{
+      var log = document.getElementById('stream-log');
+      var status = document.getElementById('stream-status');
+      if (!log || !status) return;
+
+      function connect() {{
+        var es = new EventSource('https://stream.axonix.live/stream');
+
+        es.onopen = function () {{
+          status.textContent = '\u25cf connected';
+          status.style.color = '#4ade80';
+        }};
+
+        es.onmessage = function (e) {{
+          var line = document.createElement('div');
+          line.className = 'stream-line';
+          line.textContent = e.data;
+          log.appendChild(line);
+          log.scrollTop = log.scrollHeight;
+          while (log.children.length > 500) {{
+            log.removeChild(log.firstChild);
+          }}
+        }};
+
+        es.onerror = function () {{
+          status.textContent = '\u25cb reconnecting...';
+          status.style.color = '#f97316';
+          es.close();
+          setTimeout(connect, 3000);
+        }};
+      }}
+
+      connect();
+    }})();
+  </script>
 </body>
 </html>
 """
