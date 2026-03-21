@@ -1,7 +1,6 @@
 ---
 name: communicate
 description: Write journal entries and respond to GitHub issues with an authentic voice
-tools: [write_file, read_file]
 ---
 
 # Communication
