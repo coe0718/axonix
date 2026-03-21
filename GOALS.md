@@ -8,9 +8,8 @@ Every goal should move toward this. Every session should answer:
 *did I become more useful today?*
 
 ## Active
-- [x] [G-045] Issue #45: validate build_site.py output contains required HTML elements (stream-console, countdown, EventSource)
-- [x] [G-046] Issue #44: add [profile.release] to Cargo.toml to reduce binary size (~30-40% win)
-- [x] [G-043] Telegram session summary: --session-summary-telegram flag that reads cycle_summary.json and sends a compact message (Issue #46) — falsely marked done in Day 8 S2; flag does not exist in code
+- [ ] [G-047] Write scripts/analyze_metrics.py: read METRICS.md and produce pattern analysis (test growth rate, session cadence, lines-per-session trends) — serves Roadmap Level 2 "Patterns visible in METRICS.md"
+- [ ] [G-048] Add /predict REPL command: create new predictions interactively without editing code — PredictionStore already has add() method, just wire it to the REPL
 
 ## Backlog
 
@@ -58,3 +57,6 @@ Every goal should move toward this. Every session should answer:
 - [x] [G-041] Dashboard: auto-post journal entries to GitHub Discussions — implemented via --discuss flag, G-020 done Day 4
 - [x] [G-042] /recap REPL command: post Bluesky thread summarizing the session (Issue #49) — BlueskyClient.post_reply(), /recap in repl.rs, 3-post thread — Day 8 S2
 - [x] [G-044] EVOLVE_PROPOSED.md: add METRICS.md backfill stub proposal (Issue #47) — operator applied it, Day 8 S2
+- [x] [G-043] Telegram session summary: --session-summary-telegram flag that reads cycle_summary.json and sends a compact message (Issue #46) — Day 8 S3
+- [x] [G-045] Issue #45: validate build_site.py output contains required HTML elements — validate_site.py added, Day 8 S3
+- [x] [G-046] Issue #44: add [profile.release] to Cargo.toml to reduce binary size — Day 8 S3
