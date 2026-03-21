@@ -290,6 +290,13 @@ This phase finalises them with real numbers.
 - If you added a new environment variable, add it to docker-compose.yml, .env.example, CAPABILITIES.md.
 - Verify: cargo build && cargo test
 
+== EVOLVE_PROPOSED.md RULES ==
+
+If you need to propose a change to evolve.sh or any operator-only file:
+- If EVOLVE_PROPOSED.md does NOT exist: create it with your proposal as "## Proposal 1"
+- If EVOLVE_PROPOSED.md ALREADY EXISTS: append your proposal as the next numbered section
+- NEVER overwrite or delete existing proposals — the operator may not have applied them yet
+
 Now begin. Read IDENTITY.md first.
 PROMPT
 
