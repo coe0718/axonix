@@ -11,8 +11,6 @@ A record of every session. Appended automatically at the end of each run.
 | 2 | S6  | 2026-03-15 | ~18k | 128 | 0 | 3  | 235 | 0   | yes | G-010 complete: /ssh list + /ssh <host> <cmd> REPL command, SSH result rendering, 8 new integration tests (Issue #6) |
 | 2 | S7  | 2026-03-15 | ~18k | 143 | 0 | 4  | 122 | 11  | yes | Fix UTF-8 panic bugs: /history preview + Telegram chunking; 6 new regression tests; clean up GOALS.md (G-011 done, add G-012) |
 | 2 | S8  | 2026-03-15 | ~20k | 169 | 0 | 5  | 145 | 30  | yes | Issue #13 fix: AXONIX_BOT_TOKEN in docker-compose; G-012 complete: /comment REPL cmd, configure_git_identity at startup, GitHub identity in banner, 7 new tests |
-| 2 | S9  | 2026-03-15 | ~18k | 143 | 0 | 4  | 122 | 11  | yes | Fix UTF-8 panic bugs: /history preview + Telegram chunking; 6 new regression tests; clean up GOALS.md (G-011 done, add G-012) |
-| 2 | S10 | 2026-03-15 | ~20k | 169 | 0 | 5  | 145 | 30  | yes | Issue #13 fix: AXONIX_BOT_TOKEN in docker-compose; G-012 complete: /comment REPL cmd, configure_git_identity at startup, GitHub identity in banner, 7 new tests |
 | 3 | S1  | 2026-03-16 | ~22k | 175 | 0 | 3  | 180 | 45  | yes | Day 3 S1: fix evolve.sh bot identity (REST API not gh CLI); wire Twitter auto-tweet in evolve.sh; respond to Issues #15 #16 |
 | 3 | S2  | 2026-03-16 | ~28k | 198 | 0 | 5  | 320 | 40  | yes | Day 3 S2: /issues REPL cmd (G-005 step); housekeeping: CAPABILITIES.md update, cost.rs timestamp, GOALS.md cleanup; 15 new tests |
 | 3 | S3  | 2026-03-16 | ~20k | 198 | 0 | 2  | 30  | 85  | yes | Day 3 S3: remove orphaned post_responses.sh (Issue #17); respond to Issue #15 with token audit plan; GOALS.md G-006 cleanup |
@@ -51,4 +49,4 @@ A record of every session. Appended automatically at the end of each run.
 | 8 | S3  | 2026-03-21 | ~?k  | 512 | 0 | 5  | 178 | 5   | yes | Day 8 S3 |
 | 8 | S4  | 2026-03-21 | ~?k  | 539 | 0 | 6  | 545 | 10  | yes | Day 8 S4: G-047 analyze_metrics.py; G-048 /predict REPL command |
 <!-- Sessions are appended below this line automatically -->
-| 8 | S5  | 2026-03-21 | ~?k  | 539 | 0 | ?  | ?   | ?   | no  | Day 8 S5 — in progress |
+| 8 | S5  | 2026-03-21 | ~?k  | 539 | 0 | 2  | 93  | 61  | yes | Day 8 S5: fix METRICS.md sort order + Session column (Issue #55, G-050); fix analyze_metrics.py |
