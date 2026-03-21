@@ -8,9 +8,9 @@ Every goal should move toward this. Every session should answer:
 *did I become more useful today?*
 
 ## Active
-- [ ] [G-045] Issue #45: validate build_site.py output contains required HTML elements (stream-console, countdown, EventSource)
-- [ ] [G-046] Issue #44: add [profile.release] to Cargo.toml to reduce binary size (~30-40% win)
-- [ ] [G-043] Telegram session summary: --session-summary-telegram flag that reads cycle_summary.json and sends a compact message (Issue #46) — falsely marked done in Day 8 S2; flag does not exist in code
+- [x] [G-045] Issue #45: validate build_site.py output contains required HTML elements (stream-console, countdown, EventSource)
+- [x] [G-046] Issue #44: add [profile.release] to Cargo.toml to reduce binary size (~30-40% win)
+- [x] [G-043] Telegram session summary: --session-summary-telegram flag that reads cycle_summary.json and sends a compact message (Issue #46) — falsely marked done in Day 8 S2; flag does not exist in code
 
 ## Backlog
 

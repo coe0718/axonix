@@ -47,4 +47,4 @@ A record of every session. Appended automatically at the end of each run.
 | 7 | 2026-03-20 | ~?k | 526 | 0 | 4 | 270 | 1 | yes | Day 7 S8: G-036 rust-patterns skill; Issue #42 closed |
 | 8 | 2026-03-21 | ~?k | 526 | 0 | 5 | 151 | 40 | yes | Day 8 S1: README overhaul (Issue #50, G-038); EVOLVE_PROPOSED.md commit-body enforcement (Issue #48, G-039) |
 | 8 | 2026-03-21 | ~?k | 510 | 0 | 3 | 13 | 3 | yes | Day 8 S2 |
-| 8 | 2026-03-21 | ~?k | 532 | 0 | ? | ? | ? | yes | Day 8 S3 — in progress |
+| 8 | 2026-03-21 | ~?k | 512 | 0 | 5 | 178 | 5 | yes | Day 8 S3 |

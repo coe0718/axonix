@@ -371,6 +371,28 @@ async fn main() {
         }
     }
 
+    // --session-summary-telegram: read .axonix/cycle_summary.json and send to Telegram (Closes #46)
+    if cli_args.session_summary_telegram {
+        let summary = axonix::cycle_summary::CycleSummary::default_path();
+        let msg = format_session_summary_telegram(&summary);
+        match &tg {
+            None => {
+                eprintln!("error: --session-summary-telegram requires Telegram. Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID.");
+                std::process::exit(1);
+            }
+            Some(tg_client) => {
+                match tg_client.send_message(&msg).await {
+                    Ok(_) => eprintln!("session summary sent to Telegram"),
+                    Err(e) => {
+                        eprintln!("Telegram send failed: {e}");
+                        std::process::exit(1);
+                    }
+                }
+            }
+        }
+        return;
+    }
+
     // --bluesky-post mode: post to Bluesky and exit (no agent session started)
     if let Some(post_text) = cli_args.bluesky_post {
         let post_text = post_text.trim();
@@ -1316,6 +1338,38 @@ fn get_recent_commits(n: usize) -> Vec<String> {
     }
 }
 
+/// Format a CycleSummary as a compact Telegram message for --session-summary-telegram (Closes #46).
+fn format_session_summary_telegram(summary: &axonix::cycle_summary::CycleSummary) -> String {
+    match &summary.data {
+        None => "📊 Axonix Session Summary\n(no summary data found — run --write-summary first)".to_string(),
+        Some(data) => {
+            let mut msg = format!("📊 Axonix Session Summary: {}\n", data.session);
+            msg.push_str(&format!("✅ Completed ({}):\n", data.completed.len()));
+            if data.completed.is_empty() {
+                msg.push_str("  (none)\n");
+            } else {
+                for item in data.completed.iter().take(10) {
+                    msg.push_str(&format!("  • {item}\n"));
+                }
+            }
+            msg.push_str(&format!("⏳ Pending ({}):\n", data.pending.len()));
+            if data.pending.is_empty() {
+                msg.push_str("  (none)\n");
+            } else {
+                for item in data.pending.iter().take(10) {
+                    msg.push_str(&format!("  • {item}\n"));
+                }
+            }
+            let files = data.changed_files.len();
+            let test_str = data.test_count
+                .map(|n| n.to_string())
+                .unwrap_or_else(|| "?".to_string());
+            msg.push_str(&format!("🧪 Tests: {test_str} | Files: {files}"));
+            msg
+        }
+    }
+}
+
 /// Get the current test count by running cargo test --quiet.
 /// Returns None if the test run fails or output is unparseable.
 fn get_test_count() -> Option<u32> {
@@ -1551,5 +1605,40 @@ mod tests {
                 desc
             );
         }
+    }
+
+    /// Verifies format_session_summary_telegram includes session label and Completed (Closes #46).
+    #[test]
+    fn test_format_session_summary_telegram_basic() {
+        let mut cs = axonix::cycle_summary::CycleSummary::new("/tmp/test_tg_basic.json");
+        cs.set_session("Day 8, Session 3", "2026-04-01");
+        cs.add_completed("Implemented --session-summary-telegram");
+        cs.add_completed("Added 3 tests");
+        let msg = super::format_session_summary_telegram(&cs);
+        assert!(msg.contains("Day 8, Session 3"), "Should contain session label");
+        assert!(msg.contains("Completed"), "Should contain Completed section");
+        assert!(msg.contains("Implemented --session-summary-telegram"), "Should contain completed item");
+    }
+
+    /// Verifies format_session_summary_telegram handles empty completed/pending gracefully (Closes #46).
+    #[test]
+    fn test_format_session_summary_telegram_empty() {
+        let cs = axonix::cycle_summary::CycleSummary::new("/tmp/test_tg_empty.json");
+        // data is None — should return a helpful message, not panic
+        let msg = super::format_session_summary_telegram(&cs);
+        assert!(!msg.is_empty(), "Should return a non-empty message");
+        assert!(msg.contains("no summary data"), "Should indicate no data");
+    }
+
+    /// Verifies format_session_summary_telegram shows test count when Some (Closes #46).
+    #[test]
+    fn test_format_session_summary_telegram_with_tests() {
+        let mut cs = axonix::cycle_summary::CycleSummary::new("/tmp/test_tg_tests.json");
+        cs.set_session("Day 8, Session 3", "2026-04-01");
+        cs.add_completed("wrote tests");
+        cs.set_test_count(535);
+        let msg = super::format_session_summary_telegram(&cs);
+        assert!(msg.contains("535"), "Should contain test count");
+        assert!(msg.contains("Tests"), "Should contain Tests label");
     }
 }

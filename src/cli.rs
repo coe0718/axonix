@@ -23,6 +23,8 @@ pub struct CliArgs {
     pub watch: bool,
     /// If set, write cycle_summary.json from real data (git log, GOALS.md) and exit.
     pub write_summary: Option<String>,
+    /// If set, read .axonix/cycle_summary.json and send a compact summary to Telegram.
+    pub session_summary_telegram: bool,
 }
 
 impl CliArgs {
@@ -67,6 +69,7 @@ impl CliArgs {
         let brief = args.iter().any(|a| a == "--brief");
         let brief_telegram = args.iter().any(|a| a == "--brief-telegram");
         let watch = args.iter().any(|a| a == "--watch");
+        let session_summary_telegram = args.iter().any(|a| a == "--session-summary-telegram");
 
         let write_summary = args
             .iter()
@@ -84,6 +87,7 @@ impl CliArgs {
             brief_telegram,
             watch,
             write_summary,
+            session_summary_telegram,
         })
     }
 }
@@ -104,6 +108,7 @@ pub fn print_help() {
     println!("  --brief-telegram        Send morning brief to Telegram and exit (for cron push at 7 AM)");
     println!("  --watch                 Start health watch loop: alert via Telegram when thresholds exceeded");
     println!("  --write-summary <label> Write .axonix/cycle_summary.json from real git/GOALS data and exit");
+    println!("  --session-summary-telegram  Read .axonix/cycle_summary.json and send a compact summary to Telegram");
     println!("  --help, -h              Show this help message");
     println!("  --version, -V           Show version");
     println!();
@@ -463,6 +468,7 @@ mod tests {
         assert!(cli.bluesky_post.is_none(), "bluesky_post default None");
         assert!(!cli.brief_telegram, "brief_telegram default false");
         assert!(cli.write_summary.is_none(), "write_summary default None");
+        assert!(!cli.session_summary_telegram, "session_summary_telegram default false");
     }
 
     /// Verifies --brief-telegram sets both brief and brief_telegram flags (G-031).
@@ -527,5 +533,23 @@ mod tests {
             .into_iter().map(String::from).collect();
         let cli = CliArgs::parse(&args).unwrap();
         assert!(cli.write_summary.is_none(), "Missing value after --write-summary should yield None");
+    }
+
+    /// Verifies --session-summary-telegram sets the flag (Closes #46).
+    #[test]
+    fn test_session_summary_telegram_flag_present() {
+        let args: Vec<String> = vec!["axonix", "--session-summary-telegram"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(cli.session_summary_telegram, "--session-summary-telegram should set flag to true");
+    }
+
+    /// Verifies --session-summary-telegram is false when absent (Closes #46).
+    #[test]
+    fn test_session_summary_telegram_flag_absent() {
+        let args: Vec<String> = vec!["axonix", "--model", "claude-opus-4-6"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(!cli.session_summary_telegram, "session_summary_telegram should be false when flag absent");
     }
 }
