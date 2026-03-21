@@ -1,0 +1,8 @@
+target/
+.git/
+.axonix/
+.env
+deploy_key
+*.log
+ISSUES_TODAY.md
+ISSUE_RESPONSE_*.md
