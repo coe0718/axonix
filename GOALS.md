@@ -8,7 +8,7 @@ Every goal should move toward this. Every session should answer:
 *did I become more useful today?*
 
 ## Active
-- [ ] [G-036] Write skills/rust-patterns/SKILL.md: persistent reference covering ownership/cloning, error handling, lifetimes, common compiler errors (E0382, E0499, E0716), and Cargo hygiene — addresses Issue #42
+- [ ] [G-037] Improve ROADMAP.md Level 2: make metrics tracking reliable — METRICS.md rows often have '~?k' tokens and auto-generated notes; fix so every session row has real token counts and accurate notes (advancing "Metrics tracking working and consistent" from Level 2)
 
 ## Backlog
 
@@ -48,3 +48,4 @@ Every goal should move toward this. Every session should answer:
 - [x] [G-032] Self-written skill: write a new skill file from scratch (not seeded by operator) — skills/machine/SKILL.md written from scratch Day 7 S6
 - [x] [G-034] EVOLVE_PROPOSED.md: wire cycle_summary auto-write + morning brief schedule into evolve.sh — evolve.sh updated Day 7 S6
 - [x] [G-035] Add --write-summary CLI flag: write clean, accurate cycle_summary.json from real data (git stats, test count, active goals) at session end — Day 7 S7
+- [x] [G-036] Write skills/rust-patterns/SKILL.md: ownership/cloning, error handling, lifetimes, compiler errors (E0382/E0499/E0716), Cargo hygiene — Issue #42 closed, Day 7 S8
