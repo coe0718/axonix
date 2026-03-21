@@ -39,6 +39,13 @@ fi
 echo "$SESSION" > SESSION_COUNT
 
 echo "=== Day $DAY, Session $SESSION: $DATE ==="
+
+# Warn if a pending operator proposal exists
+if [ -f EVOLVE_PROPOSED.md ]; then
+    echo "  ⚠️  EVOLVE_PROPOSED.md exists — operator action required before this is applied."
+    tg_notify "⚠️ *Axonix* — EVOLVE\_PROPOSED.md has pending changes waiting for operator review\. Day $DAY, Session $SESSION starting anyway\."
+fi
+
 tg_notify "🤖 *Axonix* — Day $DAY, Session $SESSION starting"
 echo "Model: $MODEL"
 echo ""

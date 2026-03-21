@@ -12,5 +12,4 @@ deploy_key.pub
 .ssh/
 .cache/
 CLAUDE_SETUP.md
-EVOLVE_PROPOSED.md
 .axonix/discussed_*
