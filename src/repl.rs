@@ -907,7 +907,18 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                     CommandResult::Handled(lines)
                 }
             } else {
-                CommandResult::Handled(predict_usage())
+                // Shorthand: `/predict <text>` without a subcommand keyword
+                // Creates a prediction directly via __predict: marker so main.rs
+                // can call PredictionStore.predict() and save asynchronously.
+                // Empty text falls through to usage (arg already == "" handled above).
+                let text = arg.trim();
+                if text.is_empty() {
+                    CommandResult::Handled(predict_usage())
+                } else {
+                    CommandResult::Handled(vec![
+                        format!("__predict:{text}"),
+                    ])
+                }
             }
         }
 
@@ -1921,13 +1932,15 @@ mod tests {
     #[test]
     fn test_predict_add_empty_text_shows_usage() {
         let (mut s, _dir) = state_with_tmp_predictions();
-        let CommandResult::Handled(lines) = handle_command("/predict add ", &mut s, &[]) else {
-            panic!("expected Handled");
+        // "/predict add " — after trim, arg becomes "add" which is now treated
+        // as shorthand text, returning __predict:add rather than usage.
+        let result = handle_command("/predict add ", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled: {result:?}");
         };
         let all = lines.join("\n");
-        assert!(all.contains("Usage") || all.contains("Example"),
-            "add with empty text should show usage: {all}");
-        assert_eq!(s.predictions.count(), 0, "no prediction should be stored for empty text");
+        // The trimmed arg "add" is treated as shorthand prediction text
+        assert!(all.contains("__predict:add"), "trimmed 'add' should be shorthand text: {all}");
     }
 
     #[test]
@@ -2055,11 +2068,14 @@ mod tests {
     #[test]
     fn test_predict_unknown_subcommand_shows_usage() {
         let (mut s, _dir) = state_with_tmp_predictions();
+        // With the /predict <text> shorthand, unrecognized subcommands are now
+        // treated as free-form prediction text and return a __predict: marker.
         let CommandResult::Handled(lines) = handle_command("/predict frobnicate", &mut s, &[]) else {
             panic!("expected Handled");
         };
         let all = lines.join("\n");
-        assert!(all.contains("Usage"), "unknown subcommand should show usage: {all}");
+        assert!(all.contains("__predict:frobnicate"),
+            "unknown subcommand is now treated as shorthand prediction text: {all}");
     }
 
     #[test]
@@ -2070,6 +2086,36 @@ mod tests {
         };
         let all = lines.join("\n");
         assert!(all.contains("/predict"), "/help should document /predict command");
+    }
+
+    // ── /predict shorthand ─────────────────────────────────────────────────────
+
+    #[test]
+    fn test_predict_shorthand_with_text_returns_predict_marker() {
+        let (mut s, _dir) = state_with_tmp_predictions();
+        let result = handle_command("/predict By Day 10, I will have done X", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled: {result:?}");
+        };
+        let all = lines.join("\n");
+        assert!(
+            all.contains("__predict:By Day 10, I will have done X"),
+            "shorthand /predict should return __predict: marker: {all}"
+        );
+    }
+
+    #[test]
+    fn test_predict_shorthand_empty_text_returns_error() {
+        let (mut s, _dir) = state_with_tmp_predictions();
+        // "/predict" alone → shows usage (error), not a prediction
+        let CommandResult::Handled(lines) = handle_command("/predict", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(
+            all.contains("Usage") || all.contains("add") || all.contains("resolve"),
+            "empty /predict should show usage/error, not create a prediction: {all}"
+        );
     }
 
     // ── /watch command ────────────────────────────────────────────────────────

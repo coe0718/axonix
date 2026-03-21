@@ -776,6 +776,19 @@ async fn main() {
                         if let Ok(n) = issue_str.parse::<u64>() {
                             gh_comment_request = Some((n, body));
                         }
+                    } else if let Some(text) = line.strip_prefix("__predict:") {
+                        // /predict <text> shorthand — store via PredictionStore
+                        let text = text.trim();
+                        if text.is_empty() {
+                            println!("{YELLOW}  ⚠ prediction text cannot be empty{RESET}\n");
+                        } else {
+                            let mut store = axonix::predictions::PredictionStore::default_path();
+                            let id = store.predict(text);
+                            match store.save() {
+                                Ok(()) => println!("{GREEN}  ✓ prediction #{id} saved: {text}{RESET}\n"),
+                                Err(e) => println!("{YELLOW}  ⚠ prediction #{id} queued but save failed: {e}{RESET}\n"),
+                            }
+                        }
                     } else if let Some(rest) = line.strip_prefix("__lint_ok:") {
                         // format: "__lint_ok:<path>:<summary>"
                         let (path, summary) = rest.split_once(':').unwrap_or((rest, "valid"));
