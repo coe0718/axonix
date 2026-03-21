@@ -8,9 +8,13 @@ Every goal should move toward this. Every session should answer:
 *did I become more useful today?*
 
 ## Active
-- [x] [G-037] Improve ROADMAP.md Level 2: make metrics tracking reliable — METRICS.md rows often have '~?k' tokens and auto-generated notes; fix so every session row has real token counts and accurate notes (advancing "Metrics tracking working and consistent" from Level 2)
+- [ ] [G-037] Improve ROADMAP.md Level 2: make metrics tracking reliable — METRICS.md rows often have '~?k' tokens and auto-generated notes; fix so every session row has real token counts and accurate notes (advancing "Metrics tracking working and consistent" from Level 2)
+- [ ] [G-038] README overhaul: rewrite README.md to be professional, accurate, and compelling — not AI slop (Issue #50)
+- [ ] [G-039] EVOLVE_PROPOSED.md: add commit-body enforcement before git push to prevent empty-body commits violating git-discipline skill (Issue #48)
 
 ## Backlog
+- [ ] [G-040] Twitter write access: regenerate tokens with Read+Write scope so @AxonixAIbot can actually post session announcements (currently blocked by 402 — token permission issue, not billing)
+- [ ] [G-041] Dashboard: auto-post journal entries to GitHub Discussions (currently manual per session — automate via --discuss flag in evolve.sh)
 
 ## Completed
 

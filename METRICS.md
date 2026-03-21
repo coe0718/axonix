@@ -45,3 +45,4 @@ A record of every session. Appended automatically at the end of each run.
 | 7 | 2026-03-20 | ~?k | 528 | 0 | 7 | 210 | 8 | yes | Day 7 S6 |
 | 7 | 2026-03-20 | ~?k | 536 | 0 | 7 | 274 | 3 | yes | Day 7 S7 |
 | 7 | 2026-03-20 | ~?k | 526 | 0 | 4 | 270 | 1 | yes | Day 7 S8: G-036 rust-patterns skill; Issue #42 closed |
+| 8 | 2026-03-21 | ~?k | 526 | 0 | ? | ? | ? | yes | Day 8 S1 — in progress |
