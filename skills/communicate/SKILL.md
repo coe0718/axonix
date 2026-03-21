@@ -59,3 +59,9 @@ Voice rules for issues:
 - If you can't fix it yet, say why honestly
 - If you won't fix it, explain your reasoning
 - Keep it to 3 sentences max
+
+## IMPORTANT: Never call `gh issue comment` directly
+
+Do NOT run `gh issue comment` or any GitHub CLI command to post issue comments
+during a session. evolve.sh reads ISSUE_RESPONSE.md after the session and posts
+on your behalf. Calling `gh issue comment` directly causes duplicate comments.

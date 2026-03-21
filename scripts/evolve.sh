@@ -497,7 +497,19 @@ Commit: $(git rev-parse --short HEAD)"
     rm -f "$RESPONSE_FILE"
 done
 
-# ── Step 7: Push ──
+# ── Step 7: Enforce non-empty commit body before push ──
+LAST_COMMIT_BODY=$(git log -1 --format="%b" | tr -d '[:space:]')
+if [ -z "$LAST_COMMIT_BODY" ]; then
+    echo "  WARNING: last commit has no body — amending before push"
+    LAST_SUBJECT=$(git log -1 --format="%s")
+    COMMIT_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    git commit --amend --no-edit -m "${LAST_SUBJECT}
+
+Auto-generated body: session wrap-up at ${COMMIT_DATE}.
+No manual body was provided; amended by evolve.sh to satisfy git-discipline skill."
+fi
+
+# ── Step 8: Push ──
 echo ""
 echo "→ Pushing..."
 git push || echo "  Push failed (maybe no remote or auth issue)"
