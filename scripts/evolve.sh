@@ -134,6 +134,15 @@ RECENT_METRICS=$(grep "^|" METRICS.md 2>/dev/null | grep -v "^| Day\|^|---" | ta
 # Snapshot HEAD before session so we can diff commits afterward
 SESSION_START_SHA=$(git rev-parse HEAD 2>/dev/null || echo "")
 
+# ── Step 3b: Write METRICS.md stub before agent runs (crash safety) ──
+# If the session crashes before Phase 4c, this row ensures a partial record exists.
+# Step 5a will replace "in progress" with real stats at wrap-up.
+if ! grep -qE "^\| $DAY \| $DATE.*S$SESSION" METRICS.md 2>/dev/null; then
+    TEST_COUNT_PRE=$(cargo test --quiet 2>/dev/null | grep "test result" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" | head -1 || echo "?")
+    echo "| $DAY | $DATE | ~?k | ${TEST_COUNT_PRE:-?} | ? | ? | ? | ? | ? | Day $DAY S$SESSION — in progress |" >> METRICS.md
+    echo "  METRICS.md stub row written."
+fi
+
 # ── Step 4: Run evolution session ──
 echo "→ Starting evolution session..."
 echo ""
