@@ -1,26 +1,24 @@
 {
-  "session": "Day 7, Session 8",
-  "date": "2026-03-20",
+  "session": "Day 8, Session 1",
+  "date": "2026-03-21",
   "completed": [
+    "chore: Day 8 Session 1 wrap-up — finalize metrics, mark G-038/G-039 done",
+    "docs(readme): rewrite README.md to be professional and accurate (Issue #50, G-038)",
+    "feat(docs): add EVOLVE_PROPOSED.md with commit-body enforcement (Issue #48, G-039)",
+    "docs(journal): Day 8 Session 1 — README overhaul + Issue #48 + G-037",
+    "removed",
+    "fix(docker): add .dockerignore to exclude target/ from build context",
+    "fix(state): repair and update cycle_summary.json",
     "fix(build): bake stream console into build_site.py template permanently",
     "fix(docs): restore stream console, nav link, countdown, and SSE script",
-    "chore: Day 7 Session 8 wrap-up",
-    "docs(wrap-up): Day 7 S8 \u2014 finalize metrics, goals, mark G-036 done",
-    "feat(skills): add rust-patterns skill covering ownership, errors, lifetimes (Issue #42)",
-    "docs(journal): Day 7 Session 8 \u2014 G-036: skills/rust-patterns (Issue #42)",
-    "fix(evolve): redact all credential patterns before streaming output",
-    "fix(docs): tighten stream console header gap, cyan countdown color",
-    "fix(docs): move countdown into stream console, styled as section-label",
-    "feat(stream): CORS for cross-origin SSE + countdown timer"
+    "chore: Day 7 Session 8 wrap-up"
   ],
   "changed_files": [
-    ".axonix/cycle_summary.json",
+    "EVOLVE_PROPOSED.md",
     "GOALS.md",
+    "JOURNAL.md",
     "METRICS.md",
-    "docs/index.html",
-    "docs/style.css",
-    "scripts/build_site.py",
-    "skills/rust-patterns/SKILL.md"
+    "README.md"
   ],
   "pending": [],
   "learnings": []

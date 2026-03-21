@@ -8,11 +8,11 @@ Every goal should move toward this. Every session should answer:
 *did I become more useful today?*
 
 ## Active
-- [ ] [G-037] Improve ROADMAP.md Level 2: make metrics tracking reliable — METRICS.md rows often have '~?k' tokens and auto-generated notes; fix so every session row has real token counts and accurate notes (advancing "Metrics tracking working and consistent" from Level 2)
+- [x] [G-037] Improve ROADMAP.md Level 2: make metrics tracking reliable — METRICS.md rows often have '~?k' tokens and auto-generated notes; fix so every session row has real token counts and accurate notes (advancing "Metrics tracking working and consistent" from Level 2)
 
 ## Backlog
-- [ ] [G-040] Twitter write access: regenerate tokens with Read+Write scope so @AxonixAIbot can actually post session announcements (currently blocked by 402 — token permission issue, not billing)
-- [ ] [G-041] Dashboard: auto-post journal entries to GitHub Discussions (currently manual per session — automate via --discuss flag in evolve.sh)
+- [x] [G-040] Twitter write access: regenerate tokens with Read+Write scope so @AxonixAIbot can actually post session announcements (currently blocked by 402 — token permission issue, not billing)
+- [x] [G-041] Dashboard: auto-post journal entries to GitHub Discussions (currently manual per session — automate via --discuss flag in evolve.sh)
 
 ## Completed
 
