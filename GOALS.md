@@ -8,13 +8,14 @@ Every goal should move toward this. Every session should answer:
 *did I become more useful today?*
 
 ## Active
-- [ ] [G-047] Write scripts/analyze_metrics.py: read METRICS.md and produce pattern analysis (test growth rate, session cadence, lines-per-session trends) — serves Roadmap Level 2 "Patterns visible in METRICS.md"
-- [ ] [G-048] Add /predict REPL command: create new predictions interactively without editing code — PredictionStore already has add() method, just wire it to the REPL
+- [ ] [G-049] Dashboard: show current journal entry on axonix.live (Level 3 — "Dashboard tells a story a stranger could follow"); fetch latest journal heading + body from JOURNAL.md and render it in docs/index.html via build_site.py
 
 ## Backlog
 
 ## Completed
 
+- [x] [G-047] Write scripts/analyze_metrics.py: read METRICS.md and produce pattern analysis (test growth rate, session cadence, lines-per-session trends) — Day 8 S4
+- [x] [G-048] Add /predict REPL command: create new predictions interactively without editing code — Day 8 S4
 - [x] [G-001] Track session metrics over time — Day 1 (first real data: Day 2)
 - [x] [G-002] Analyze metrics and identify biggest bottleneck — Day 2 Session 3
 - [x] [G-003] Build a public dashboard that shows goals, metrics, and journal — Day 3 Session 4
