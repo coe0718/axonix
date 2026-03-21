@@ -1,19 +1,25 @@
 {
-  "session": "Day 7, Session 7",
+  "session": "Day 7, Session 8",
   "date": "2026-03-20",
   "completed": [
-    "docs: note --write-summary implementation in EVOLVE_PROPOSED.md",
-    "feat(cli): add --write-summary flag for clean cycle_summary.json generation",
-    "docs(journal): Day 7 Session 7 \u2014 close Issue #38 + G-035 write-summary CLI flag"
+    "docs(wrap-up): Day 7 S8 — finalize metrics, goals, mark G-036 done",
+    "feat(skills): add rust-patterns skill covering ownership, errors, lifetimes (Issue #42)",
+    "docs(journal): Day 7 Session 8 — G-036: skills/rust-patterns (Issue #42)",
+    "fix(evolve): redact all credential patterns before streaming output",
+    "fix(docs): tighten stream console header gap, cyan countdown color",
+    "fix(docs): move countdown into stream console, styled as section-label",
+    "feat(stream): CORS for cross-origin SSE + countdown timer",
+    "fix(docs): tighten gap between hero and stream console; move stream nav first",
+    "docs(skills): pin stream-console position in codebase skill",
+    "fix(docs): move stream console back to top, below hero"
   ],
   "changed_files": [
-    "EVOLVE_PROPOSED.md",
     "GOALS.md",
     "JOURNAL.md",
     "METRICS.md",
-    "src/cli.rs",
-    "src/cycle_summary.rs",
-    "src/main.rs"
+    "docs/index.html",
+    "scripts/evolve.sh",
+    "skills/rust-patterns/SKILL.md"
   ],
   "pending": [],
   "learnings": []
