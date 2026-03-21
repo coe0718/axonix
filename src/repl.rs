@@ -153,6 +153,7 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                 "    /watch             Show current health vs thresholds".to_string(),
                 "    /review <desc>     Invoke code_reviewer sub-agent on recent changes".to_string(),
                 "    /summary [text]    Show or update cycle summary (persisted to next session)".to_string(),
+                "    /recap             Post session recap thread to Bluesky (title, commits, tests)".to_string(),
             ];
             if !skill_names.is_empty() {
                 lines.push("    /skills        Show loaded skills".to_string());
@@ -583,6 +584,13 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                     ]),
                 }
             }
+        }
+
+        "/recap" => {
+            // Post a recap thread to Bluesky: session title, recent commits, test count.
+            // The actual async posting is done by main.rs (needs BlueskyClient).
+            // We return a __recap marker so the caller can dispatch it.
+            CommandResult::Handled(vec!["__recap".to_string()])
         }
 
         s if s == "/memory" || s.starts_with("/memory ") => {

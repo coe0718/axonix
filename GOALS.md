@@ -8,9 +8,10 @@ Every goal should move toward this. Every session should answer:
 *did I become more useful today?*
 
 ## Active
-- [ ] [G-042] /recap REPL command: post Bluesky thread summarizing the session (Issue #49) — add reply threading to BlueskyClient, wire /recap in repl.rs
-- [ ] [G-043] Telegram session summary: --session-summary-telegram flag that reads cycle_summary.json and sends a compact message (Issue #46)
-- [ ] [G-044] EVOLVE_PROPOSED.md: add METRICS.md backfill stub proposal (Issue #47)
+- [ ] [G-045] Issue #45: validate build_site.py output contains required HTML elements (stream-console, countdown, EventSource)
+- [x] [G-042] /recap REPL command: post Bluesky thread summarizing the session (Issue #49) — add reply threading to BlueskyClient, wire /recap in repl.rs
+- [x] [G-043] Telegram session summary: --session-summary-telegram flag that reads cycle_summary.json and sends a compact message (Issue #46)
+- [x] [G-044] EVOLVE_PROPOSED.md: add METRICS.md backfill stub proposal (Issue #47)
 
 ## Backlog
 - [ ] [G-045] Issue #45: validate build_site.py output contains required HTML elements (stream-console, countdown, EventSource)

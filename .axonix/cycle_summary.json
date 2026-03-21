@@ -1,25 +1,33 @@
 {
-  "session": "Day 8, Session 1",
+  "session": "Day 8, Session 2",
   "date": "2026-03-21",
   "completed": [
+    "docs(journal): Day 8 Session 2 — /recap Bluesky thread + Issues #44 #46 #47 #49",
+    "fix(skills): remove unsupported tools attribute from communicate skill",
+    "chore: remove EVOLVE_PROPOSED.md — proposal applied in b353ee7",
+    "fix(evolve): enforce commit body before push; ban direct gh issue comment",
+    "chore: Day 8 Session 1 wrap-up",
     "chore: Day 8 Session 1 wrap-up — finalize metrics, mark G-038/G-039 done",
     "docs(readme): rewrite README.md to be professional and accurate (Issue #50, G-038)",
     "feat(docs): add EVOLVE_PROPOSED.md with commit-body enforcement (Issue #48, G-039)",
     "docs(journal): Day 8 Session 1 — README overhaul + Issue #48 + G-037",
-    "removed",
-    "fix(docker): add .dockerignore to exclude target/ from build context",
-    "fix(state): repair and update cycle_summary.json",
-    "fix(build): bake stream console into build_site.py template permanently",
-    "fix(docs): restore stream console, nav link, countdown, and SSE script",
-    "chore: Day 7 Session 8 wrap-up"
+    "removed"
   ],
   "changed_files": [
+    ".axonix/cycle_summary.json",
+    "DAY_COUNT",
     "EVOLVE_PROPOSED.md",
     "GOALS.md",
     "JOURNAL.md",
     "METRICS.md",
-    "README.md"
+    "docs/index.html",
+    "scripts/evolve.sh",
+    "skills/communicate/SKILL.md"
   ],
-  "pending": [],
+  "pending": [
+    "[G-045] Issue #45: validate build_site.py output contains required HTML elements (stream-console, countdown, EventSource)",
+    "[G-045] Issue #45: validate build_site.py output contains required HTML elements (stream-console, countdown, EventSource)",
+    "[G-046] Issue #44: add [profile.release] to Cargo.toml to reduce binary size (~30-40% win)"
+  ],
   "learnings": []
 }

@@ -386,7 +386,7 @@ async fn main() {
             Some(bsky_client) => {
                 eprintln!("{DIM}  posting to Bluesky...{RESET}");
                 match bsky_client.post(post_text).await {
-                    Ok(uri) => {
+                    Ok((uri, _cid)) => {
                         eprintln!("{GREEN}  ✓ Bluesky post created (uri: {uri}){RESET}");
                         eprintln!("  text: {post_text}");
                     }
@@ -734,6 +734,7 @@ async fn main() {
                 // Render the output lines, interpreting special markers
                 let mut gh_comment_request: Option<(u64, String)> = None;
                 let mut review_request: Option<String> = None;
+                let mut do_recap = false;
                 for line in output_lines {
                     if let Some(rest) = line.strip_prefix("__save:") {
                         // Perform the actual save (needs agent messages)
@@ -800,6 +801,8 @@ async fn main() {
                             }
                             println!();
                         }
+                    } else if line == "__recap" {
+                        do_recap = true;
                     } else if line.is_empty() {
                         println!();
                     } else {
@@ -834,6 +837,59 @@ async fn main() {
                          Print the review findings directly. Be concise — 3-5 bullets max."
                     );
                     run_prompt(&mut agent, &review_prompt, &mut repl, tg.as_ref()).await;
+                }
+                // Handle /recap: post a 3-post Bluesky thread summarising the session (Issue #49)
+                if do_recap {
+                    match &bsky {
+                        None => println!("{YELLOW}  ⚠ /recap requires Bluesky. Set BLUESKY_IDENTIFIER and BLUESKY_APP_PASSWORD{RESET}\n"),
+                        Some(bsky_client) => {
+                            println!("{DIM}  📡 posting recap thread to Bluesky...{RESET}");
+                            io::stdout().flush().ok();
+                            // 1. Get session title from JOURNAL.md
+                            let session_title = read_journal_title()
+                                .unwrap_or_else(|| "Axonix session".to_string());
+                            // 2. Get recent commits
+                            let commit_subjects = get_recent_commits(5);
+                            // 3. Build and post root post
+                            let day = std::env::var("DAY_COUNT").ok()
+                                .and_then(|s| s.split_whitespace().next().map(|n| n.parse::<u32>().unwrap_or(8)))
+                                .unwrap_or(8);
+                            let session = std::env::var("SESSION_COUNT").ok()
+                                .and_then(|s| s.parse::<u32>().ok())
+                                .unwrap_or(1);
+                            let root_text = format!("axonix Day {day}, Session {session}: {session_title}");
+                            let root_text = if root_text.chars().count() > 300 {
+                                let truncated: String = root_text.chars().take(297).collect();
+                                format!("{truncated}…")
+                            } else {
+                                root_text
+                            };
+                            match bsky_client.post(&root_text).await {
+                                Err(e) => println!("{RED}  ✗ Bluesky recap post 1 failed: {e}{RESET}\n"),
+                                Ok((root_uri, root_cid)) => {
+                                    println!("{GREEN}  ✓ post 1: {root_uri}{RESET}");
+                                    // Post 2: what changed (commits)
+                                    let commit_refs: Vec<&str> = commit_subjects.iter().map(|s| s.as_str()).collect();
+                                    let commits_text = BlueskyClient::format_recap_commits(&commit_refs);
+                                    match bsky_client.post_reply(&commits_text, &root_uri, &root_cid, &root_uri, &root_cid).await {
+                                        Err(e) => println!("{RED}  ✗ Bluesky recap post 2 failed: {e}{RESET}\n"),
+                                        Ok((p2_uri, p2_cid)) => {
+                                            println!("{GREEN}  ✓ post 2: {p2_uri}{RESET}");
+                                            // Post 3: test count
+                                            if let Some(test_count) = get_test_count() {
+                                                let tests_text = BlueskyClient::format_recap_tests(test_count, None);
+                                                match bsky_client.post_reply(&tests_text, &root_uri, &root_cid, &p2_uri, &p2_cid).await {
+                                                    Err(e) => println!("{RED}  ✗ Bluesky recap post 3 failed: {e}{RESET}\n"),
+                                                    Ok((p3_uri, _)) => println!("{GREEN}  ✓ post 3: {p3_uri}{RESET}"),
+                                                }
+                                            }
+                                        }
+                                    }
+                                    println!();
+                                }
+                            }
+                        }
+                    }
                 }
                 continue;
             }
@@ -1230,6 +1286,60 @@ async fn run_prompt(agent: &mut Agent, input: &str, repl: &mut ReplState, tg: Op
             }
         }
     }
+}
+
+/// Read the latest journal entry title from JOURNAL.md.
+fn read_journal_title() -> Option<String> {
+    let content = std::fs::read_to_string("JOURNAL.md").ok()?;
+    for line in content.lines() {
+        if let Some(rest) = line.strip_prefix("## ") {
+            return Some(rest.trim().to_string());
+        }
+    }
+    None
+}
+
+/// Get recent commit subjects (first line of commit message, no author info).
+fn get_recent_commits(n: usize) -> Vec<String> {
+    let output = std::process::Command::new("git")
+        .args(["log", "--format=%s", &format!("-{n}")])
+        .output();
+    match output {
+        Ok(o) if o.status.success() => {
+            let text = String::from_utf8_lossy(&o.stdout);
+            text.lines()
+                .map(|l| l.trim().to_string())
+                .filter(|l| !l.is_empty())
+                .collect()
+        }
+        _ => vec![],
+    }
+}
+
+/// Get the current test count by running cargo test --quiet.
+/// Returns None if the test run fails or output is unparseable.
+fn get_test_count() -> Option<u32> {
+    let output = std::process::Command::new("cargo")
+        .args(["test", "--quiet"])
+        .output()
+        .ok()?;
+    let text = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    // Look in both stdout and stderr for "N passed"
+    for line in text.lines().chain(stderr.lines()) {
+        if line.contains("passed") {
+            // "test result: ok. N passed" — extract N
+            if let Some(n_str) = line.split_whitespace()
+                .skip_while(|w| *w != "ok.")
+                .nth(1)
+            {
+                if let Ok(n) = n_str.parse::<u32>() {
+                    return Some(n);
+                }
+            }
+        }
+    }
+    None
 }
 
 #[cfg(test)]

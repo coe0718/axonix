@@ -105,11 +105,11 @@ impl BlueskyClient {
         Ok((access_jwt, did))
     }
 
-    /// Post text to the Bluesky feed. Returns the post URI on success.
+    /// Post text to the Bluesky feed. Returns `(uri, cid)` on success.
     ///
     /// Text must be ≤ 300 grapheme clusters (Bluesky's limit).
     /// This function does NOT truncate — use `format_post` for safe formatting.
-    pub async fn post(&self, text: &str) -> Result<String, String> {
+    pub async fn post(&self, text: &str) -> Result<(String, String), String> {
         let (access_jwt, did) = self.create_session().await?;
 
         let url = format!("{BLUESKY_API}/com.atproto.repo.createRecord");
@@ -150,7 +150,124 @@ impl BlueskyClient {
             .unwrap_or("(unknown)")
             .to_string();
 
-        Ok(uri)
+        let cid = json
+            .get("cid")
+            .and_then(|v| v.as_str())
+            .unwrap_or("(unknown)")
+            .to_string();
+
+        Ok((uri, cid))
+    }
+
+    /// Post a reply in a Bluesky thread. Returns `(uri, cid)` on success.
+    ///
+    /// `root_uri` and `root_cid` are the root post of the thread.
+    /// `parent_uri` and `parent_cid` are the immediate parent (same as root for first reply).
+    pub async fn post_reply(
+        &self,
+        text: &str,
+        root_uri: &str,
+        root_cid: &str,
+        parent_uri: &str,
+        parent_cid: &str,
+    ) -> Result<(String, String), String> {
+        let (access_jwt, did) = self.create_session().await?;
+
+        let url = format!("{BLUESKY_API}/com.atproto.repo.createRecord");
+        let created_at = current_iso8601();
+
+        let res = self
+            .client
+            .post(&url)
+            .header("Authorization", format!("Bearer {access_jwt}"))
+            .json(&serde_json::json!({
+                "repo": did,
+                "collection": "app.bsky.feed.post",
+                "record": {
+                    "$type": "app.bsky.feed.post",
+                    "text": text,
+                    "createdAt": created_at,
+                    "reply": {
+                        "root": { "uri": root_uri, "cid": root_cid },
+                        "parent": { "uri": parent_uri, "cid": parent_cid }
+                    }
+                },
+            }))
+            .send()
+            .await
+            .map_err(|e| format!("Bluesky reply request failed: {e}"))?;
+
+        let status = res.status();
+        let body = res.text().await.unwrap_or_default();
+
+        if !status.is_success() {
+            return Err(format!("Bluesky reply error {status}: {body}"));
+        }
+
+        let json: serde_json::Value = serde_json::from_str(&body)
+            .map_err(|e| format!("Bluesky reply parse error: {e}"))?;
+
+        let uri = json
+            .get("uri")
+            .and_then(|v| v.as_str())
+            .unwrap_or("(unknown)")
+            .to_string();
+
+        let cid = json
+            .get("cid")
+            .and_then(|v| v.as_str())
+            .unwrap_or("(unknown)")
+            .to_string();
+
+        Ok((uri, cid))
+    }
+
+    /// Format the "what changed" post body from a list of commit subjects.
+    ///
+    /// Returns a ≤300 char post. Includes "what changed:\n" prefix.
+    /// Shows up to 5 commits as bullet points.
+    pub fn format_recap_commits(commits: &[&str]) -> String {
+        let prefix = "what changed:\n";
+        let mut lines: Vec<String> = commits
+            .iter()
+            .take(5)
+            .map(|s| format!("• {s}"))
+            .collect();
+
+        // Truncate to fit within 300 chars total
+        let mut result = format!("{prefix}{}", lines.join("\n"));
+        while result.chars().count() > 300 && !lines.is_empty() {
+            lines.pop();
+            result = format!("{prefix}{}", lines.join("\n"));
+        }
+        // If still over (edge case with very long single commit), truncate last item
+        if result.chars().count() > 300 {
+            let allowed: String = result.chars().take(297).collect();
+            format!("{allowed}…")
+        } else {
+            result
+        }
+    }
+
+    /// Format the "tests" post body from test count and optional delta.
+    ///
+    /// Returns a ≤300 char post.
+    /// Format: "tests: N passing (+M this session)\naxonix.live"
+    /// If delta is None or 0: "tests: N passing\naxonix.live"
+    pub fn format_recap_tests(test_count: u32, delta: Option<i32>) -> String {
+        let count_str = match delta {
+            Some(d) if d != 0 => {
+                let sign = if d > 0 { "+" } else { "" };
+                format!("tests: {test_count} passing ({sign}{d} this session)\naxonix.live")
+            }
+            _ => format!("tests: {test_count} passing\naxonix.live"),
+        };
+        if count_str.chars().count() > 300 {
+            let truncated: String = count_str.chars().take(297).collect();
+            format!("{truncated}…")
+        } else {
+            count_str
+        }
     }
 
     /// Format a session announcement post for Bluesky.
@@ -350,5 +467,58 @@ mod tests {
         let c2 = c.clone();
         assert_eq!(c.identifier, c2.identifier);
         assert_eq!(c.app_password, c2.app_password);
+    }
+
+    // ── format_recap_commits ─────────────────────────────────────────────────
+
+    #[test]
+    fn test_format_recap_commits_empty() {
+        let result = BlueskyClient::format_recap_commits(&[]);
+        assert!(result.contains("what changed"), "should have header");
+        assert!(result.chars().count() <= 300);
+    }
+
+    #[test]
+    fn test_format_recap_commits_five() {
+        let commits = ["feat: add /recap", "fix: bluesky reply", "docs: update README", "test: add coverage", "chore: bump version"];
+        let result = BlueskyClient::format_recap_commits(&commits);
+        assert!(result.contains("feat: add /recap"));
+        assert!(result.chars().count() <= 300);
+    }
+
+    #[test]
+    fn test_format_recap_commits_truncates_at_five() {
+        let commits: Vec<&str> = (0..10).map(|_| "feat: some commit").collect();
+        let result = BlueskyClient::format_recap_commits(&commits);
+        // Should only show up to 5
+        let bullet_count = result.matches('•').count();
+        assert!(bullet_count <= 5, "should show at most 5 commits, got {bullet_count}");
+        assert!(result.chars().count() <= 300);
+    }
+
+    // ── format_recap_tests ───────────────────────────────────────────────────
+
+    #[test]
+    fn test_format_recap_tests_with_delta() {
+        let result = BlueskyClient::format_recap_tests(536, Some(8));
+        assert!(result.contains("536"), "should contain test count");
+        assert!(result.contains("+8"), "should contain delta");
+        assert!(result.contains("axonix.live"));
+        assert!(result.chars().count() <= 300);
+    }
+
+    #[test]
+    fn test_format_recap_tests_no_delta() {
+        let result = BlueskyClient::format_recap_tests(536, None);
+        assert!(result.contains("536"));
+        assert!(result.contains("axonix.live"));
+        assert!(!result.contains('+'), "no delta should mean no + sign");
+        assert!(result.chars().count() <= 300);
+    }
+
+    #[test]
+    fn test_format_recap_tests_zero_delta_no_sign() {
+        let result = BlueskyClient::format_recap_tests(536, Some(0));
+        assert!(!result.contains('+'), "zero delta should not show + sign");
     }
 }
