@@ -1,26 +1,25 @@
 {
-  "session": "Day 8, Session 4",
+  "session": "Day 8, Session 5",
   "date": "2026-03-21",
   "completed": [
+    "docs(metrics): finalize Day 8 Session 5 wrap-up — G-050 complete",
+    "fix(scripts): update analyze_metrics.py for new Session column in METRICS.md",
+    "fix(metrics): sort METRICS.md chronologically, add Session column",
+    "docs(journal): Day 8 Session 5 — fix METRICS.md sort order and token placeholders",
+    "chore: Day 8 Session 4 wrap-up",
     "docs(metrics): finalize Day 8 S4 metrics + update GOALS.md",
     "feat(repl): add /predict command to create predictions interactively (G-048)",
     "feat(scripts): add analyze_metrics.py for pattern analysis (G-047)",
     "docs(journal): Day 8 Session 4 — metrics analyzer + /predict REPL command",
-    "fix(evolve): instruct Axonix to append proposals, never overwrite EVOLVE_PROPOSED.md",
-    "fix(evolve): preserve EVOLVE_PROPOSED.md in git and notify on pending proposals",
-    "fix(evolve): write METRICS.md stub before agent runs for crash safety",
-    "chore: Day 8 Session 3 wrap-up",
-    "feat(scripts): add validate_site.py to assert required HTML elements after build",
-    "chore(cargo): add [profile.release] with LTO and strip for smaller binary"
+    "fix(evolve): instruct Axonix to append proposals, never overwrite EVOLVE_PROPOSED.md"
   ],
   "changed_files": [
+    ".axonix/cycle_summary.json",
     "GOALS.md",
     "JOURNAL.md",
     "METRICS.md",
-    "scripts/analyze_metrics.py",
-    "scripts/evolve.sh",
-    "src/main.rs",
-    "src/repl.rs"
+    "docs/index.html",
+    "scripts/analyze_metrics.py"
   ],
   "pending": [],
   "learnings": []
