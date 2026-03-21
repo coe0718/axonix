@@ -70,9 +70,14 @@ def _parse_int(val: str) -> Optional[int]:
 def parse_metrics_table(text: str) -> list:
     """Parse METRICS.md content and return list of SessionRow objects.
 
+    Supports both the old 10-column format (no Session column) and the new
+    11-column format (with Session as the second column).  The header row is
+    inspected to set a col_offset that shifts all subsequent index accesses.
+
     Skips the header row, separator row, and any malformed rows silently.
     """
     rows = []
+    col_offset = 0  # 0 for old format, 1 for new format with Session column
     for line in text.splitlines():
         line = line.strip()
         # Must be a table row
@@ -80,30 +85,33 @@ def parse_metrics_table(text: str) -> list:
             continue
         # Remove surrounding pipes and split
         parts = [p.strip() for p in line.strip('|').split('|')]
-        # Header row: starts with 'Day' (case-insensitive)
+        # Header row: starts with 'Day' (case-insensitive) — detect format here
         if parts and parts[0].lower() == 'day':
+            if len(parts) >= 2 and parts[1].lower() in ('session', 'sess', 's'):
+                col_offset = 1
             continue
         # Separator row: all dashes
         if parts and re.match(r'^[-:]+$', parts[0]):
             continue
-        # Need at least 9 columns: Day Date Tokens Tests_Passed Tests_Failed Files Lines_Added Lines_Removed Committed
-        if len(parts) < 9:
+        # Need at least 9 columns (adjusted for offset):
+        # Day [Session] Date Tokens Tests_Passed Tests_Failed Files Lines_Added Lines_Removed Committed
+        if len(parts) < 9 + col_offset:
             continue
         try:
             day = int(parts[0])
         except (ValueError, IndexError):
             continue  # skip malformed
 
-        date = parts[1].strip()
-        tokens_raw = parts[2].strip()
+        date = parts[1 + col_offset].strip()
+        tokens_raw = parts[2 + col_offset].strip()
         tokens_known = not _is_sentinel(tokens_raw)
-        tests_passed = _parse_int(parts[3])
-        tests_failed = _parse_int(parts[4])
-        files_changed = _parse_int(parts[5])
-        lines_added = _parse_int(parts[6])
-        lines_removed = _parse_int(parts[7])
-        committed = parts[8].strip()
-        notes = parts[9].strip() if len(parts) > 9 else ''
+        tests_passed = _parse_int(parts[3 + col_offset])
+        tests_failed = _parse_int(parts[4 + col_offset])
+        files_changed = _parse_int(parts[5 + col_offset])
+        lines_added = _parse_int(parts[6 + col_offset])
+        lines_removed = _parse_int(parts[7 + col_offset])
+        committed = parts[8 + col_offset].strip()
+        notes = parts[9 + col_offset].strip() if len(parts) > 9 + col_offset else ''
 
         row = SessionRow(
             day=day,
@@ -333,6 +341,28 @@ def run_tests():
     check("row 2 tokens_known", rows[2].tokens_known, False)
     check("row 3 tests_passed (sentinel)", rows[3].tests_passed, None)
     check("row 3 files_changed (sentinel)", rows[3].files_changed, None)
+    print()
+
+    # ── parse_metrics_table with new Session column ────────────────────────────
+    print("test parse_metrics_table (new Session-column format):")
+    sample_new = """\
+| Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
+|-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
+| 1 | S1 | 2026-03-14 | ~30k | 40 | 0 | 4 | 206 | 26 | yes | First boot |
+| 2 | S2 | 2026-03-15 | ~20k | 169 | 0 | 5 | 145 | 30 | yes | Day 2 |
+| 3 | S3 | 2026-03-16 | ~?k | 200 | 0 | 3 | 100 | 10 | yes | Day 3 |
+| 4 | S4 | 2026-03-17 | ~?k | ? | 0 | ? | ? | ? | yes | Day 4 unknown tests |
+"""
+    rows_new = parse_metrics_table(sample_new)
+    check("new-fmt row count", len(rows_new), 4)
+    check("new-fmt row 0 day", rows_new[0].day, 1)
+    check("new-fmt row 0 date", rows_new[0].date, "2026-03-14")
+    check("new-fmt row 0 tests_passed", rows_new[0].tests_passed, 40)
+    check("new-fmt row 0 lines_added", rows_new[0].lines_added, 206)
+    check("new-fmt row 1 tests_passed", rows_new[1].tests_passed, 169)
+    check("new-fmt row 2 tokens_known", rows_new[2].tokens_known, False)
+    check("new-fmt row 3 tests_passed (sentinel)", rows_new[3].tests_passed, None)
+    check("new-fmt row 3 files_changed (sentinel)", rows_new[3].files_changed, None)
     print()
 
     # Malformed rows skipped silently
