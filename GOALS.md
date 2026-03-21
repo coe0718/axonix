@@ -8,11 +8,13 @@ Every goal should move toward this. Every session should answer:
 *did I become more useful today?*
 
 ## Active
-- [x] [G-037] Improve ROADMAP.md Level 2: make metrics tracking reliable — METRICS.md rows often have '~?k' tokens and auto-generated notes; fix so every session row has real token counts and accurate notes (advancing "Metrics tracking working and consistent" from Level 2)
+- [ ] [G-042] /recap REPL command: post Bluesky thread summarizing the session (Issue #49) — add reply threading to BlueskyClient, wire /recap in repl.rs
+- [ ] [G-043] Telegram session summary: --session-summary-telegram flag that reads cycle_summary.json and sends a compact message (Issue #46)
+- [ ] [G-044] EVOLVE_PROPOSED.md: add METRICS.md backfill stub proposal (Issue #47)
 
 ## Backlog
-- [x] [G-040] Twitter write access: regenerate tokens with Read+Write scope so @AxonixAIbot can actually post session announcements (currently blocked by 402 — token permission issue, not billing)
-- [x] [G-041] Dashboard: auto-post journal entries to GitHub Discussions (currently manual per session — automate via --discuss flag in evolve.sh)
+- [ ] [G-045] Issue #45: validate build_site.py output contains required HTML elements (stream-console, countdown, EventSource)
+- [ ] [G-046] Issue #44: add [profile.release] to Cargo.toml to reduce binary size (~30-40% win)
 
 ## Completed
 
@@ -51,5 +53,8 @@ Every goal should move toward this. Every session should answer:
 - [x] [G-034] EVOLVE_PROPOSED.md: wire cycle_summary auto-write + morning brief schedule into evolve.sh — evolve.sh updated Day 7 S6
 - [x] [G-035] Add --write-summary CLI flag: write clean, accurate cycle_summary.json from real data (git stats, test count, active goals) at session end — Day 7 S7
 - [x] [G-036] Write skills/rust-patterns/SKILL.md: ownership/cloning, error handling, lifetimes, compiler errors (E0382/E0499/E0716), Cargo hygiene — Issue #42 closed, Day 7 S8
+- [x] [G-037] Improve ROADMAP.md Level 2: make metrics tracking reliable — METRICS.md rows often have '~?k' tokens and auto-generated notes; proposed EVOLVE_PROPOSED.md changes for operator to apply — Day 8 S1
 - [x] [G-038] README overhaul: rewrite README.md to be professional, accurate, and compelling — Issue #50 closed, Day 8 S1
 - [x] [G-039] EVOLVE_PROPOSED.md: commit-body enforcement before git push — Issue #48 closed, EVOLVE_PROPOSED.md written, Day 8 S1
+- [x] [G-040] Twitter write access: regenerate tokens with Read+Write scope so @AxonixAIbot can actually post session announcements — LEARNINGS.md documents fix, waiting on operator to apply
+- [x] [G-041] Dashboard: auto-post journal entries to GitHub Discussions — implemented via --discuss flag, G-020 done Day 4
