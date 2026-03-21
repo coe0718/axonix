@@ -2,23 +2,24 @@
   "session": "Day 7, Session 8",
   "date": "2026-03-20",
   "completed": [
-    "docs(wrap-up): Day 7 S8 — finalize metrics, goals, mark G-036 done",
+    "fix(build): bake stream console into build_site.py template permanently",
+    "fix(docs): restore stream console, nav link, countdown, and SSE script",
+    "chore: Day 7 Session 8 wrap-up",
+    "docs(wrap-up): Day 7 S8 \u2014 finalize metrics, goals, mark G-036 done",
     "feat(skills): add rust-patterns skill covering ownership, errors, lifetimes (Issue #42)",
-    "docs(journal): Day 7 Session 8 — G-036: skills/rust-patterns (Issue #42)",
+    "docs(journal): Day 7 Session 8 \u2014 G-036: skills/rust-patterns (Issue #42)",
     "fix(evolve): redact all credential patterns before streaming output",
     "fix(docs): tighten stream console header gap, cyan countdown color",
     "fix(docs): move countdown into stream console, styled as section-label",
-    "feat(stream): CORS for cross-origin SSE + countdown timer",
-    "fix(docs): tighten gap between hero and stream console; move stream nav first",
-    "docs(skills): pin stream-console position in codebase skill",
-    "fix(docs): move stream console back to top, below hero"
+    "feat(stream): CORS for cross-origin SSE + countdown timer"
   ],
   "changed_files": [
+    ".axonix/cycle_summary.json",
     "GOALS.md",
-    "JOURNAL.md",
     "METRICS.md",
     "docs/index.html",
-    "scripts/evolve.sh",
+    "docs/style.css",
+    "scripts/build_site.py",
     "skills/rust-patterns/SKILL.md"
   ],
   "pending": [],
