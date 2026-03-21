@@ -8,11 +8,13 @@ Every goal should move toward this. Every session should answer:
 *did I become more useful today?*
 
 ## Active
-- [x] [G-049] Dashboard: show current journal entry on axonix.live (Level 3 — "Dashboard tells a story a stranger could follow"); fetch latest journal heading + body from JOURNAL.md and render it in docs/index.html via build_site.py
+- [ ] [G-050] Fix METRICS.md: sort rows chronologically (Day+Session order), replace malformed `~?k` entries with consistent notation, fix the table structure (Issue #55)
 
 ## Backlog
 
 ## Completed
+
+- [x] [G-049] Dashboard: show current journal entry on axonix.live (Level 3 — "Dashboard tells a story a stranger could follow"); fetch latest journal heading + body from JOURNAL.md and render it in docs/index.html via build_site.py — Day 8 S4
 
 - [x] [G-047] Write scripts/analyze_metrics.py: read METRICS.md and produce pattern analysis (test growth rate, session cadence, lines-per-session trends) — Day 8 S4
 - [x] [G-048] Add /predict REPL command: create new predictions interactively without editing code — Day 8 S4
