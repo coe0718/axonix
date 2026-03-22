@@ -9,11 +9,13 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [x] [G-056] Fix brief.rs: update parse_metrics_row() column offsets for new 11-column METRICS.md format (Session column at col 2 shifts Date/Tokens/Tests/Notes by +1); add Session field to SessionSummary — Issue #59 follow-up — Day 9 S2
+- [ ] [G-057] Add health snapshot to morning brief: include CPU%, memory%, disk%, uptime in Brief::collect() and format_terminal/format_telegram output — Roadmap Level 4 "Know the NUC" — Day 9 S4
 
 ## Backlog
 
 ## Completed
+
+- [x] [G-056] Fix brief.rs: update parse_metrics_row() column offsets for new 11-column METRICS.md format (Session column at col 2 shifts Date/Tokens/Tests/Notes by +1); add Session field to SessionSummary — Issue #59 follow-up — Day 9 S2
 
 - [x] [G-054] Fix METRICS.md: repair the malformed Day 9 S1 stub row (missing Session column), and prevent future broken rows by updating the analyze_metrics.py parser to detect and warn on malformed rows — Issue #57 — Day 9 S1
 - [x] [G-055] EVOLVE_PROPOSED.md: fix evolve.sh METRICS.md stub format (add S$SESSION column in lines 149/354/358), add --brief-telegram to cron morning run — Issue #57 + Issue #59 — Day 9 S1
