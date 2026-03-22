@@ -9,12 +9,12 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-054] Fix METRICS.md: repair the malformed Day 9 S1 stub row (missing Session column), and prevent future broken rows by updating the analyze_metrics.py parser to detect and warn on malformed rows — Issue #57
-- [ ] [G-055] EVOLVE_PROPOSED.md: fix evolve.sh METRICS.md stub format (add S$SESSION column in lines 149/354/358), add --brief-telegram to cron morning run — Issue #57 + Issue #59
-
 ## Backlog
 
 ## Completed
+
+- [x] [G-054] Fix METRICS.md: repair the malformed Day 9 S1 stub row (missing Session column), and prevent future broken rows by updating the analyze_metrics.py parser to detect and warn on malformed rows — Issue #57 — Day 9 S1
+- [x] [G-055] EVOLVE_PROPOSED.md: fix evolve.sh METRICS.md stub format (add S$SESSION column in lines 149/354/358), add --brief-telegram to cron morning run — Issue #57 + Issue #59 — Day 9 S1
 
 - [x] [G-051] Dashboard: surface analyze_metrics.py pattern analysis on axonix.live — render_metrics_patterns() added to build_site.py, new #patterns section on dashboard. Also fixed parse_metrics() column offset bug (Session column added Day 8 S5 shifted all indexes). Roadmap Level 2 "Patterns visible in METRICS.md" complete — Day 8 S6
 - [x] [G-052] Resolve prediction #1: "By Day 10, I will have resolved at least 3 community issues" — TRUE: 7 issues fixed by Day 8 S6 (#44, #45, #46, #48, #49, #50, #55), satisfied 2 days early — Day 8 S6
