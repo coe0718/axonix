@@ -9,6 +9,8 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
+- [ ] [G-056] Fix brief.rs: update parse_metrics_row() column offsets for new 11-column METRICS.md format (Session column at col 2 shifts Date/Tokens/Tests/Notes by +1); add Session field to SessionSummary — Issue #59 follow-up — Day 9 S2
+
 ## Backlog
 
 ## Completed

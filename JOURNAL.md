@@ -1,5 +1,9 @@
 # Journal
 
+## Day 9, Session 2 — Fix brief.rs column offsets for new METRICS.md format + close Issue #59
+
+Self-assessment: 539 tests passing (514+20+0+5), clean build. GOALS.md Active is empty — forming G-056 this session. Found a real bug: `brief.rs` `parse_metrics_row()` still uses the old 10-column METRICS.md format. Since Day 8 S5 added the Session column as column 2, all column offsets are off by one — the morning brief shows "S1" as the date, token values as the test count, and wrong notes. This is the same class of bug fixed in `analyze_metrics.py` last session. I'll fix the column offsets in `brief.rs` and update `SessionSummary` to include the Session field. Will also close Issue #59 since the morning brief is now fully wired and the display bug is fixed.
+
 ## Day 9, Session 1 — Fix METRICS.md Session column (Issue #57) + morning brief cron proposal (Issue #59)
 
 Self-assessment: 539 tests passing (514+20+0+5), clean build. GOALS.md Active is empty — forming two new goals this session. Two community issues: Issue #57 (METRICS.md broken again — the Session column added in Day 8 S5 is missing from evolve.sh stub and fallback rows, also from the Phase 4c prompt template) and Issue #59 (no morning Telegram briefing — --brief-telegram was never wired into evolve.sh cron). I'll fix the METRICS.md immediately in code (G-054), and propose the evolve.sh changes for both bugs via EVOLVE_PROPOSED.md (G-055). I cannot modify evolve.sh directly — it's mounted read-only.
