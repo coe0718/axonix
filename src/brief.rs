@@ -5,11 +5,24 @@
 //! - Open predictions (what I'm still waiting to resolve)
 //! - Recent METRICS.md trend (last 3 sessions)
 //! - Open GitHub issues count (if GitHub client available)
+//! - System health snapshot (CPU, memory, disk, uptime)
 //!
 //! Invoked via `--brief` CLI flag. Designed to be readable in a terminal
 //! and also forwardable via Telegram `/brief` command.
 
 use crate::predictions::PredictionStore;
+
+/// A health summary extracted from a HealthSnapshot.
+pub struct HealthSummary {
+    /// CPU load (1-min load average) as a proxy for CPU usage.
+    pub cpu_pct: f32,
+    /// Memory usage percentage (0–100).
+    pub mem_pct: f32,
+    /// Disk usage percentage (0–100).
+    pub disk_pct: f32,
+    /// System uptime in hours.
+    pub uptime_hours: u64,
+}
 
 /// A morning brief summary.
 pub struct Brief {
@@ -17,6 +30,7 @@ pub struct Brief {
     pub open_predictions: Vec<(u32, String, String)>, // (id, date, text)
     pub recent_sessions: Vec<SessionSummary>,
     pub note: Option<String>,
+    pub health: Option<HealthSummary>,
 }
 
 /// One session row from METRICS.md.
@@ -34,12 +48,14 @@ impl Brief {
         let active_goals = parse_active_goals();
         let open_predictions = collect_open_predictions();
         let recent_sessions = parse_recent_metrics(3);
+        let health = collect_health_summary();
 
         Brief {
             active_goals,
             open_predictions,
             recent_sessions,
             note: None,
+            health,
         }
     }
 
@@ -69,6 +85,21 @@ impl Brief {
         } else {
             for (id, date, text) in &self.open_predictions {
                 out.push_str(&format!("   #{id} [{date}] {text}\n"));
+            }
+        }
+        out.push('\n');
+
+        // System health
+        out.push_str("🖥 SYSTEM HEALTH\n");
+        match &self.health {
+            Some(h) => {
+                out.push_str(&format!("   CPU:    {:.1}%\n", h.cpu_pct));
+                out.push_str(&format!("   Memory: {:.1}%\n", h.mem_pct));
+                out.push_str(&format!("   Disk:   {:.1}%\n", h.disk_pct));
+                out.push_str(&format!("   Uptime: {}h\n", h.uptime_hours));
+            }
+            None => {
+                out.push_str("   (health data unavailable)\n");
             }
         }
         out.push('\n');
@@ -126,6 +157,20 @@ impl Brief {
         }
         out.push('\n');
 
+        // Health (compact)
+        match &self.health {
+            Some(h) => {
+                out.push_str(&format!(
+                    "🖥 Health: CPU {:.0}% | Mem {:.0}% | Disk {:.0}% | Up {}h\n",
+                    h.cpu_pct, h.mem_pct, h.disk_pct, h.uptime_hours
+                ));
+            }
+            None => {
+                out.push_str("🖥 Health: (unavailable)\n");
+            }
+        }
+        out.push('\n');
+
         // Last session
         out.push_str("📊 *Last Session*\n");
         if let Some(last) = self.recent_sessions.last() {
@@ -142,7 +187,57 @@ impl Brief {
     }
 }
 
-/// Parse active goals from GOALS.md.
+/// Collect a HealthSummary from the system, returning None on any failure.
+fn collect_health_summary() -> Option<HealthSummary> {
+    let snap = crate::health::HealthSnapshot::collect();
+    // Parse CPU: use 1-min load average as a proxy percentage (clamped 0–100)
+    let cpu_pct = snap
+        .load_avg
+        .split(',')
+        .next()
+        .and_then(|s| s.trim().parse::<f32>().ok())
+        .map(|v| (v * 100.0).min(100.0))
+        .unwrap_or(0.0);
+    // Parse memory %: look for "(N% used)" or "(N%)" in the memory string
+    let mem_pct = parse_pct_from_str(&snap.memory);
+    // Parse disk %: look for "(N%)" in the disk string
+    let disk_pct = parse_pct_from_str(&snap.disk);
+    // Parse uptime hours from the uptime string (e.g. "3d 4h 22m" or "4h 22m")
+    let uptime_hours = parse_uptime_hours(&snap.uptime);
+    Some(HealthSummary { cpu_pct, mem_pct, disk_pct, uptime_hours })
+}
+
+/// Extract a percentage value from strings like "12G / 50G (24%)" or "used 15% used".
+fn parse_pct_from_str(s: &str) -> f32 {
+    // Find the last '(' followed by a number and '%'
+    if let Some(paren) = s.rfind('(') {
+        let after = &s[paren + 1..];
+        let pct_str: String = after.chars().take_while(|c| c.is_ascii_digit() || *c == '.').collect();
+        if let Ok(v) = pct_str.parse::<f32>() {
+            return v;
+        }
+    }
+    0.0
+}
+
+/// Parse uptime hours from strings like "3d 4h 22m", "4h 22m", "30m".
+fn parse_uptime_hours(s: &str) -> u64 {
+    let mut hours: u64 = 0;
+    for part in s.split_whitespace() {
+        if let Some(d) = part.strip_suffix('d') {
+            if let Ok(n) = d.parse::<u64>() {
+                hours += n * 24;
+            }
+        } else if let Some(h) = part.strip_suffix('h') {
+            if let Ok(n) = h.parse::<u64>() {
+                hours += n;
+            }
+        }
+    }
+    hours
+}
+
+
 fn parse_active_goals() -> Vec<String> {
     let content = match std::fs::read_to_string("GOALS.md") {
         Ok(c) => c,
@@ -394,6 +489,7 @@ mod tests {
                 notes: "Day 4 S6 test".to_string(),
             }],
             note: None,
+            health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("MORNING BRIEF"), "should contain header");
@@ -412,6 +508,7 @@ mod tests {
             open_predictions: vec![],
             recent_sessions: vec![],
             note: None,
+            health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("no active goals"), "should note empty goals");
@@ -432,6 +529,7 @@ mod tests {
                 notes: "test".to_string(),
             }],
             note: None,
+            health: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Axonix Morning Brief*"), "should have bold header");
@@ -445,6 +543,7 @@ mod tests {
             open_predictions: vec![],
             recent_sessions: vec![],
             note: Some("deploy needed".to_string()),
+            health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("deploy needed"), "note should appear in output");
@@ -478,6 +577,7 @@ mod tests {
             open_predictions: vec![],
             recent_sessions: vec![],
             note: None,
+            health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("end of brief"), "should have end marker");
@@ -494,6 +594,7 @@ mod tests {
             open_predictions: vec![],
             recent_sessions: vec![],
             note: None,
+            health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("Goal one"));
@@ -511,6 +612,7 @@ mod tests {
             ],
             recent_sessions: vec![],
             note: None,
+            health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("#1"), "should show prediction IDs");
@@ -526,6 +628,7 @@ mod tests {
             open_predictions: vec![],
             recent_sessions: vec![],
             note: None,
+            health: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Axonix Morning Brief*"), "should have header");
@@ -540,6 +643,7 @@ mod tests {
             open_predictions: vec![],
             recent_sessions: vec![],
             note: Some("important note here".to_string()),
+            health: None,
         };
         let output = brief.format_telegram();
         // format_telegram doesn't render notes (compact format) — but must not panic
@@ -554,6 +658,7 @@ mod tests {
             open_predictions: vec![],
             recent_sessions: vec![],
             note: None,
+            health: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("alpha"));
@@ -589,6 +694,7 @@ mod tests {
                 notes: "Day 7 session".to_string(),
             }],
             note: None,
+            health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("Day 7"), "should show day number");
@@ -632,5 +738,96 @@ mod tests {
         assert!(result.is_some(), "row with ~?k tokens should still parse");
         let row = result.unwrap();
         assert_eq!(row.tests, "406");
+    }
+
+    // ── HealthSummary in Brief ────────────────────────────────────────────────────
+
+    #[test]
+    fn test_brief_health_some_shows_in_terminal() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: Some(HealthSummary {
+                cpu_pct: 42.3,
+                mem_pct: 67.1,
+                disk_pct: 55.0,
+                uptime_hours: 142,
+            }),
+        };
+        let output = brief.format_terminal();
+        assert!(output.contains("SYSTEM HEALTH"), "should contain SYSTEM HEALTH section");
+        assert!(output.contains("42.3"), "should show CPU percentage");
+        assert!(output.contains("67.1"), "should show memory percentage");
+        assert!(output.contains("55.0"), "should show disk percentage");
+        assert!(output.contains("142h"), "should show uptime hours");
+    }
+
+    #[test]
+    fn test_brief_health_none_shows_unavailable() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+        };
+        let output = brief.format_terminal();
+        assert!(output.contains("SYSTEM HEALTH"), "should still contain section header");
+        assert!(output.contains("unavailable"), "should show unavailable message");
+    }
+
+    #[test]
+    fn test_brief_health_telegram_compact_format() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: Some(HealthSummary {
+                cpu_pct: 30.0,
+                mem_pct: 50.0,
+                disk_pct: 20.0,
+                uptime_hours: 72,
+            }),
+        };
+        let output = brief.format_telegram();
+        assert!(output.contains("Health:"), "telegram brief should contain Health: line");
+        assert!(output.contains("72h"), "should show uptime in telegram format");
+    }
+
+    // ── parse_pct_from_str ────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_parse_pct_from_str_disk_format() {
+        assert_eq!(parse_pct_from_str("12G / 50G (24%)"), 24.0);
+    }
+
+    #[test]
+    fn test_parse_pct_from_str_memory_format() {
+        assert_eq!(parse_pct_from_str("1.2G / 8.0G (15% used)"), 15.0);
+    }
+
+    #[test]
+    fn test_parse_pct_from_str_no_paren_returns_zero() {
+        assert_eq!(parse_pct_from_str("(unavailable)"), 0.0);
+    }
+
+    // ── parse_uptime_hours ────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_parse_uptime_hours_days_and_hours() {
+        assert_eq!(parse_uptime_hours("3d 4h 22m"), 3 * 24 + 4);
+    }
+
+    #[test]
+    fn test_parse_uptime_hours_hours_only() {
+        assert_eq!(parse_uptime_hours("5h 30m"), 5);
+    }
+
+    #[test]
+    fn test_parse_uptime_hours_minutes_only() {
+        assert_eq!(parse_uptime_hours("45m"), 0);
     }
 }
