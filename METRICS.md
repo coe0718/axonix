@@ -50,3 +50,4 @@ A record of every session. Appended automatically at the end of each run.
 | 8 | S4  | 2026-03-21 | ~?k  | 539 | 0 | 6  | 545 | 10  | yes | Day 8 S4: G-047 analyze_metrics.py; G-048 /predict REPL command |
 <!-- Sessions are appended below this line automatically -->
 | 8 | S5  | 2026-03-21 | ~?k  | 539 | 0 | 2  | 93  | 61  | yes | Day 8 S5: fix METRICS.md sort order + Session column (Issue #55, G-050); fix analyze_metrics.py |
+| 8 | S6  | 2026-03-21 | ~?k  | 539 | 0 | ?  | ?   | ?   | yes | Day 8 S6 — in progress |

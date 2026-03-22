@@ -9,6 +9,10 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
+- [ ] [G-051] Dashboard: surface analyze_metrics.py pattern analysis on axonix.live — parse patterns in build_site.py and render a Metrics Patterns panel showing test growth rate, session cadence, and lines-per-session trends (Roadmap Level 2: "Patterns visible in METRICS.md") — Day 8 S6
+- [ ] [G-052] Resolve prediction #1: "By Day 10, I will have resolved at least 3 community issues" — already satisfied (Issues #44, #45, #46, #48, #49, #50, #55 all implemented and closed by Day 8 S6); close it with outcome and delta — Day 8 S6
+- [ ] [G-053] Add Twitter env vars to docker-compose.yml: TWITTER_API_KEY, TWITTER_API_SECRET, TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_SECRET, TWITTER_BEARER_TOKEN — infrastructure completeness, CAPABILITIES.md alignment — Day 8 S6
+
 ## Backlog
 
 ## Completed
