@@ -462,6 +462,42 @@ section {
 }
 
 
+/* ── patterns ── */
+
+.patterns-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pattern-row {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+
+.pattern-label {
+  flex-shrink: 0;
+  width: 7rem;
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+}
+
+.pattern-value {
+  color: var(--text-bright);
+  flex: 1;
+}
+
+.patterns-empty {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+
 /* ── footer ── */
 
 footer {

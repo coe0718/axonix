@@ -60,23 +60,25 @@ def parse_metrics(content):
             continue
         cols = [c.strip() for c in line.split("|")]
         cols = [c for c in cols if c]  # drop empty from leading/trailing |
-        if len(cols) < 8:
+        if len(cols) < 9:
             continue
         try:
             int(cols[0])  # first col must be a day number
         except ValueError:
             continue
+        # Columns: Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes
         sessions.append({
             "day": cols[0],
-            "date": cols[1],
-            "tokens": cols[2],
-            "tests_passed": cols[3],
-            "tests_failed": cols[4],
-            "files_changed": cols[5],
-            "lines_added": cols[6],
-            "lines_removed": cols[7],
-            "committed": cols[8] if len(cols) > 8 else "?",
-            "notes": cols[9] if len(cols) > 9 else "",
+            "session": cols[1] if len(cols) > 1 else "",
+            "date": cols[2] if len(cols) > 2 else "",
+            "tokens": cols[3] if len(cols) > 3 else "",
+            "tests_passed": cols[4] if len(cols) > 4 else "",
+            "tests_failed": cols[5] if len(cols) > 5 else "",
+            "files_changed": cols[6] if len(cols) > 6 else "",
+            "lines_added": cols[7] if len(cols) > 7 else "",
+            "lines_removed": cols[8] if len(cols) > 8 else "",
+            "committed": cols[9] if len(cols) > 9 else "?",
+            "notes": cols[10] if len(cols) > 10 else "",
         })
     return sessions
 
@@ -127,6 +129,102 @@ def render_stats(sessions):
             f'        <div class="stat-card">\n'
             f'          <span class="stat-value">{html.escape(str(value))}</span>\n'
             f'          <span class="stat-label">{html.escape(label)}</span>\n'
+            f'        </div>'
+        )
+    parts.append("      </div>")
+    return "\n".join(parts)
+
+
+def render_metrics_patterns(sessions):
+    """Render a patterns panel from parsed metrics sessions."""
+    if not sessions:
+        return '<p class="patterns-empty">No metrics recorded yet.</p>'
+
+    # ── test growth rate ──
+    # collect sessions with parseable test counts
+    test_points = []
+    for s in sessions:
+        try:
+            test_points.append(int(s["tests_passed"]))
+        except (ValueError, AttributeError):
+            test_points.append(None)
+
+    valid_tests = [(i, v) for i, v in enumerate(test_points) if v is not None]
+    if len(valid_tests) >= 2:
+        first_idx, first_val = valid_tests[0]
+        last_idx, last_val = valid_tests[-1]
+        span = last_idx - first_idx
+        if span > 0:
+            growth_per_session = (last_val - first_val) / span
+            growth_str = f"+{growth_per_session:.1f} tests/session ({first_val}→{last_val})"
+        else:
+            growth_str = f"{last_val} tests (1 data point)"
+    else:
+        growth_str = "?"
+
+    # ── session cadence ──
+    total_sessions = len(sessions)
+    # unique days
+    days_seen = set()
+    for s in sessions:
+        try:
+            days_seen.add(int(s["day"]))
+        except (ValueError, AttributeError):
+            pass
+    total_days = len(days_seen) if days_seen else 1
+    cadence = total_sessions / total_days
+    cadence_str = f"{total_sessions} sessions across {total_days} days ({cadence:.1f}/day)"
+
+    # ── lines per session ──
+    lines_vals = []
+    for s in sessions:
+        try:
+            v = int(s["lines_added"].replace(",", "").replace("?", ""))
+            lines_vals.append(v)
+        except (ValueError, AttributeError):
+            pass
+    if lines_vals:
+        avg_lines = sum(lines_vals) / len(lines_vals)
+        lines_str = f"~{avg_lines:.0f} lines/session (over {len(lines_vals)} sessions)"
+    else:
+        lines_str = "?"
+
+    # ── most productive day ──
+    day_lines: dict = {}
+    for s in sessions:
+        try:
+            day_key = int(s["day"])
+            val = int(s["lines_added"].replace(",", "").replace("?", ""))
+            day_lines[day_key] = day_lines.get(day_key, 0) + val
+        except (ValueError, AttributeError):
+            pass
+    if day_lines:
+        best_day = max(day_lines, key=lambda d: day_lines[d])
+        best_day_str = f"Day {best_day} ({day_lines[best_day]:,} lines)"
+    else:
+        best_day_str = "?"
+
+    # ── commit rate ──
+    committed_count = sum(
+        1 for s in sessions if s.get("committed", "").lower().strip() == "yes"
+    )
+    commit_rate = (committed_count / total_sessions * 100) if total_sessions else 0
+    commit_str = f"{committed_count}/{total_sessions} ({commit_rate:.0f}%)"
+
+    patterns = [
+        ("test growth", growth_str),
+        ("cadence", cadence_str),
+        ("lines/session", lines_str),
+        ("peak day", best_day_str),
+        ("commit rate", commit_str),
+    ]
+
+    parts = ['      <div class="patterns-list">']
+    for label, value in patterns:
+        parts.append(
+            f'        <div class="pattern-row">\n'
+            f'          <span class="pattern-label">{html.escape(label)}</span>\n'
+            f'          <span class="pattern-value">{html.escape(value)}</span>\n'
             f'        </div>'
         )
     parts.append("      </div>")
@@ -415,6 +513,7 @@ HTML_TEMPLATE = """\
       <a href="https://stream.axonix.live">stream \u2197</a>
       <a href="#live">live</a>
       <a href="#stats">stats</a>
+      <a href="#patterns">patterns</a>
       <a href="#journal">journal</a>
       <a href="#goals">goals</a>
       <a href="#identity">identity</a>
@@ -443,6 +542,11 @@ HTML_TEMPLATE = """\
     <section id="stats">
       <h2 class="section-label">// stats</h2>
 {stats_html}
+    </section>
+
+    <section id="patterns">
+      <h2 class="section-label">// patterns</h2>
+{patterns_html}
     </section>
 
     <section id="journal">
@@ -994,6 +1098,42 @@ section {
 }
 
 
+/* ── patterns ── */
+
+.patterns-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pattern-row {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+
+.pattern-label {
+  flex-shrink: 0;
+  width: 7rem;
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+}
+
+.pattern-value {
+  color: var(--text-bright);
+  flex: 1;
+}
+
+.patterns-empty {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+
 /* ── footer ── */
 
 footer {
@@ -1055,6 +1195,7 @@ def build():
     open_predictions = parse_open_predictions()
 
     stats_html = render_stats(metrics)
+    patterns_html = render_metrics_patterns(metrics)
     live_state_html = render_live_state(goals, open_predictions)
     journal_html = render_journal(parse_journal(read_file("JOURNAL.md")))
     goals_html = render_goals(goals)
@@ -1064,6 +1205,7 @@ def build():
         day_count=day_count,
         live_state_html=live_state_html,
         stats_html=stats_html,
+        patterns_html=patterns_html,
         journal_html=journal_html,
         goals_html=goals_html,
         identity_html=identity_html,
