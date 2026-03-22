@@ -47,6 +47,14 @@ if [ -f EVOLVE_PROPOSED.md ]; then
 fi
 
 tg_notify "🤖 *Axonix* — Day $DAY, Session $SESSION starting"
+
+# ── Morning brief (first session of each day only) ──
+if [ "$SESSION" = "1" ] && [ -n "${TELEGRAM_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ]; then
+    echo "→ Sending morning brief to Telegram..."
+    ./target/release/axonix --brief-telegram || true
+    echo "  Morning brief sent."
+fi
+
 echo "Model: $MODEL"
 echo ""
 
@@ -144,9 +152,9 @@ SESSION_START_SHA=$(git rev-parse HEAD 2>/dev/null || echo "")
 # ── Step 3b: Write METRICS.md stub before agent runs (crash safety) ──
 # If the session crashes before Phase 4c, this row ensures a partial record exists.
 # Step 5a will replace "in progress" with real stats at wrap-up.
-if ! grep -qE "^\| $DAY \| $DATE.*S$SESSION" METRICS.md 2>/dev/null; then
+if ! grep -qE "^\| $DAY \| S$SESSION \|" METRICS.md 2>/dev/null; then
     TEST_COUNT_PRE=$(cargo test --quiet 2>/dev/null | grep "test result" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" | head -1 || echo "?")
-    echo "| $DAY | $DATE | ~?k | ${TEST_COUNT_PRE:-?} | ? | ? | ? | ? | ? | Day $DAY S$SESSION — in progress |" >> METRICS.md
+    echo "| $DAY | S$SESSION | $DATE | ~?k | ${TEST_COUNT_PRE:-?} | ? | ? | ? | ? | ? | Day $DAY S$SESSION — in progress |" >> METRICS.md
     echo "  METRICS.md stub row written."
 fi
 
@@ -179,7 +187,7 @@ $RECENT_JOURNAL
 === END JOURNAL ===
 
 === RECENT METRICS (last 5 sessions) ===
-| Day | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
+| Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 $RECENT_METRICS
 === END METRICS ===
 
@@ -244,7 +252,7 @@ Step 4b — Update GOALS.md right now:
 Step 4c — Write a METRICS.md stub row right now:
 Run: cargo test 2>&1 | grep "^test result" | head -1
 Write this row (fill in actual test count, leave ? for stats filled in later):
-  | $DAY | $DATE | ~?k | <tests passed> | 0 | ? | ? | ? | yes | Day $DAY S$SESSION — in progress |
+  | $DAY | S$SESSION | $DATE | ~?k | <tests passed> | 0 | ? | ? | ? | yes | Day $DAY S$SESSION — in progress |
 
 Step 4d — Commit all three together:
   git add JOURNAL.md GOALS.md METRICS.md && git commit -m "docs(journal): Day $DAY Session $SESSION — [title]"
@@ -351,11 +359,11 @@ if grep -q "in progress" METRICS.md 2>/dev/null; then
     # Replace the stub row with real values
     sed -i "s|.* in progress .*|| " METRICS.md 2>/dev/null || true
     sed -i '/^$/d' METRICS.md 2>/dev/null || true
-    echo "| $DAY | $DATE | ~?k | ${TEST_COUNT:-?} | 0 | ${FILES_CHANGED:-?} | ${LINES_ADDED:-0} | ${LINES_REMOVED:-0} | yes | Day $DAY S$SESSION |" >> METRICS.md
+    echo "| $DAY | S$SESSION | $DATE | ~?k | ${TEST_COUNT:-?} | 0 | ${FILES_CHANGED:-?} | ${LINES_ADDED:-0} | ${LINES_REMOVED:-0} | yes | Day $DAY S$SESSION |" >> METRICS.md
     echo "  Metrics stub row replaced with real stats."
 elif [ "$METRICS_ROWS_AFTER" -le "$METRICS_ROWS_BEFORE" ]; then
     echo "  WARNING: METRICS.md not updated this session — appending fallback row"
-    echo "| $DAY | $DATE | ~?k | ${TEST_COUNT:-?} | 0 | ${FILES_CHANGED:-?} | ${LINES_ADDED:-0} | ${LINES_REMOVED:-0} | yes | Day $DAY S$SESSION — auto-generated (agent missed wrap-up) |" >> METRICS.md
+    echo "| $DAY | S$SESSION | $DATE | ~?k | ${TEST_COUNT:-?} | 0 | ${FILES_CHANGED:-?} | ${LINES_ADDED:-0} | ${LINES_REMOVED:-0} | yes | Day $DAY S$SESSION — auto-generated (agent missed wrap-up) |" >> METRICS.md
     echo "  Fallback metrics row appended."
 fi
 
