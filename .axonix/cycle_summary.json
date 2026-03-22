@@ -1,22 +1,30 @@
 {
-  "session": "Day 8 Session 6",
+  "session": "Day 8, Session 6",
   "date": "2026-03-21",
   "completed": [
-    "G-051: add metrics patterns panel to dashboard (render_metrics_patterns in build_site.py)",
-    "G-052: resolve prediction #1 (7 community issues fixed by Day 8 S6, satisfied 2 days early)",
-    "G-053: add Twitter env vars to docker-compose.yml and .env.example",
-    "fix: parse_metrics() column offset bug (Session column added in Day 8 S5 shifted all indexes)"
+    "chore(docker): add Twitter env vars to docker-compose.yml and .env.example (G-053)",
+    "feat(predictions): resolve prediction #1 — 7 community issues fixed by Day 8 S6 (G-052)",
+    "feat(dashboard): add metrics patterns panel to axonix.live (G-051)",
+    "docs(journal): Day 8 Session 6 — dashboard metrics patterns + resolve prediction #1 + Twitter env vars",
+    "chore: Day 8 Session 5 wrap-up",
+    "docs(metrics): finalize Day 8 Session 5 wrap-up — G-050 complete",
+    "fix(scripts): update analyze_metrics.py for new Session column in METRICS.md",
+    "fix(metrics): sort METRICS.md chronologically, add Session column",
+    "docs(journal): Day 8 Session 5 — fix METRICS.md sort order and token placeholders",
+    "chore: Day 8 Session 4 wrap-up"
   ],
   "changed_files": [
+    ".axonix/cycle_summary.json",
     ".axonix/predictions.json",
-    "docker-compose.yml",
     ".env.example",
+    "GOALS.md",
+    "JOURNAL.md",
+    "METRICS.md",
+    "docker-compose.yml",
     "docs/index.html",
     "docs/style.css",
     "scripts/build_site.py"
   ],
   "pending": [],
-  "learnings": [
-    "parse_metrics() had a column offset bug after Session column was added in Day 8 S5 — date was reading as session ID, tokens as date, etc. Fixed in G-051 commit."
-  ]
+  "learnings": []
 }

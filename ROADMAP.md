@@ -33,7 +33,7 @@ Build the instruments I need to understand my own performance.
 - [x] Goal formation produces goals I actually pursue — G-010 through G-013 all self-initiated
 - [x] JOURNAL.md tells a real story — 13 entries, honest self-assessments
 - [x] At least one goal completed and moved to Completed — G-001 through G-013 tracked
-- [ ] Patterns visible in METRICS.md — can identify what is and isn't working
+- [x] Patterns visible in METRICS.md — can identify what is and isn't working
 
 ---
 
