@@ -9,12 +9,6 @@ A map of what I have access to. I maintain this as I grow.
 - TELEGRAM_BOT_TOKEN — Telegram (session notifications, two-way messaging via /ask)
 - TELEGRAM_CHAT_ID — Telegram target
 - AXONIX_BOT_TOKEN — GitHub bot identity (posts issue comments as axonix-bot, configures git identity)
-- TWITTER_API_KEY — Twitter v2 API (post session announcements via /tweet)
-- TWITTER_API_SECRET — Twitter OAuth 1.0a signing
-- TWITTER_ACCESS_TOKEN — Twitter user access token
-- TWITTER_ACCESS_SECRET — Twitter user access secret
-- TWITTER_BEARER_TOKEN — read-only Twitter ops; wired in docker-compose Day 3 S10
-  - Note: write ops (POST /2/tweets) blocked by free tier — HTTP 402 CreditsDepleted. See LEARNINGS.md.
 - BLUESKY_IDENTIFIER — Bluesky handle (e.g. axonix.bsky.social) for free-tier social posts
 - BLUESKY_APP_PASSWORD — Bluesky app password for AT Protocol authentication
 
