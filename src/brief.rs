@@ -22,6 +22,7 @@ pub struct Brief {
 /// One session row from METRICS.md.
 pub struct SessionSummary {
     pub day: String,
+    pub session: String, // e.g. "S1", "S2"
     pub date: String,
     pub tests: String,
     pub notes: String,
@@ -79,8 +80,9 @@ impl Brief {
         } else {
             for s in &self.recent_sessions {
                 out.push_str(&format!(
-                    "   Day {} {} — {} tests — {}\n",
+                    "   Day {} {} {} — {} tests — {}\n",
                     s.day,
+                    s.session,
                     s.date,
                     s.tests,
                     truncate_str(&s.notes, 55)
@@ -127,7 +129,10 @@ impl Brief {
         // Last session
         out.push_str("📊 *Last Session*\n");
         if let Some(last) = self.recent_sessions.last() {
-            out.push_str(&format!("Day {} {} — {} tests\n", last.day, last.date, last.tests));
+            out.push_str(&format!(
+                "Day {} {} {} — {} tests\n",
+                last.day, last.session, last.date, last.tests
+            ));
             out.push_str(&format!("_{}_\n", truncate_str(&last.notes, 60)));
         } else {
             out.push_str("_(no data)_\n");
@@ -207,20 +212,23 @@ pub fn parse_recent_metrics(n: usize) -> Vec<SessionSummary> {
 }
 
 /// Parse a single METRICS.md table row.
-/// Format: | Day | Date | Tokens | Tests Passed | Tests Failed | Files | Lines+ | Lines- | Committed | Notes |
+/// Format: | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 fn parse_metrics_row(line: &str) -> Option<SessionSummary> {
     let cols: Vec<&str> = line
         .split('|')
         .map(|s| s.trim())
         .collect();
-    // Need at least 10 columns: empty, Day, Date, Tokens, Tests, Fail, Files, Lines+, Lines-, Committed, Notes, empty
-    if cols.len() < 10 {
+    // Need at least 12 columns:
+    //   [0]="", [1]=Day, [2]=Session, [3]=Date, [4]=Tokens, [5]=Tests,
+    //   [6]=Failed, [7]=Files, [8]=+Lines, [9]=-Lines, [10]=Committed, [11]=Notes, [12]=""
+    if cols.len() < 12 {
         return None;
     }
     let day = cols.get(1)?.trim().to_string();
-    let date = cols.get(2)?.trim().to_string();
-    let tests = cols.get(4)?.trim().to_string();
-    let notes = cols.get(10).unwrap_or(&"").trim().to_string();
+    let session = cols.get(2).unwrap_or(&"").trim().to_string();
+    let date = cols.get(3)?.trim().to_string();
+    let tests = cols.get(5)?.trim().to_string();
+    let notes = cols.get(11).unwrap_or(&"").trim().to_string();
 
     // Skip header row: Day must parse as a number
     if day.parse::<u32>().is_err() {
@@ -230,7 +238,7 @@ fn parse_metrics_row(line: &str) -> Option<SessionSummary> {
         return None;
     }
 
-    Some(SessionSummary { day, date, tests, notes })
+    Some(SessionSummary { day, session, date, tests, notes })
 }
 
 /// Truncate a string to `max_chars` characters (on char boundary).
@@ -259,9 +267,10 @@ mod tests {
 
     #[test]
     fn test_parse_metrics_row_valid() {
-        let line = "| 4 | 2026-03-17 | ~30k | 362 | 0 | 5 | 380 | 10 | yes | Day 4 S4: complete G-021 |";
+        let line = "| 4 | S4 | 2026-03-17 | ~30k | 362 | 0 | 5 | 380 | 10 | yes | Day 4 S4: complete G-021 |";
         let row = parse_metrics_row(line).expect("should parse valid row");
         assert_eq!(row.day, "4");
+        assert_eq!(row.session, "S4");
         assert_eq!(row.date, "2026-03-17");
         assert_eq!(row.tests, "362");
         assert!(row.notes.contains("G-021"), "notes should contain G-021");
@@ -269,7 +278,7 @@ mod tests {
 
     #[test]
     fn test_parse_metrics_row_header_returns_none() {
-        let line = "| Day | Date | Tokens Used | Tests Passed | Tests Failed | Files Changed | Lines Added | Lines Removed | Committed | Notes |";
+        let line = "| Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |";
         assert!(parse_metrics_row(line).is_none(), "header row should return None");
     }
 
@@ -379,6 +388,7 @@ mod tests {
             open_predictions: vec![(1, "2026-03-17".to_string(), "build will succeed".to_string())],
             recent_sessions: vec![SessionSummary {
                 day: "4".to_string(),
+                session: "S6".to_string(),
                 date: "2026-03-17".to_string(),
                 tests: "362".to_string(),
                 notes: "Day 4 S6 test".to_string(),
@@ -416,6 +426,7 @@ mod tests {
             open_predictions: vec![],
             recent_sessions: vec![SessionSummary {
                 day: "4".to_string(),
+                session: "S1".to_string(),
                 date: "2026-03-17".to_string(),
                 tests: "362".to_string(),
                 notes: "test".to_string(),
@@ -445,10 +456,10 @@ mod tests {
     fn test_parse_recent_metrics_returns_last_n() {
         // We can verify the trimming logic works
         let rows: Vec<SessionSummary> = vec![
-            SessionSummary { day: "1".to_string(), date: "2026-03-14".to_string(), tests: "40".to_string(), notes: "first".to_string() },
-            SessionSummary { day: "2".to_string(), date: "2026-03-15".to_string(), tests: "100".to_string(), notes: "second".to_string() },
-            SessionSummary { day: "3".to_string(), date: "2026-03-16".to_string(), tests: "200".to_string(), notes: "third".to_string() },
-            SessionSummary { day: "4".to_string(), date: "2026-03-17".to_string(), tests: "362".to_string(), notes: "fourth".to_string() },
+            SessionSummary { day: "1".to_string(), session: "S1".to_string(), date: "2026-03-14".to_string(), tests: "40".to_string(), notes: "first".to_string() },
+            SessionSummary { day: "2".to_string(), session: "S1".to_string(), date: "2026-03-15".to_string(), tests: "100".to_string(), notes: "second".to_string() },
+            SessionSummary { day: "3".to_string(), session: "S1".to_string(), date: "2026-03-16".to_string(), tests: "200".to_string(), notes: "third".to_string() },
+            SessionSummary { day: "4".to_string(), session: "S1".to_string(), date: "2026-03-17".to_string(), tests: "362".to_string(), notes: "fourth".to_string() },
         ];
         let n = 3;
         let start = rows.len().saturating_sub(n);
@@ -553,11 +564,13 @@ mod tests {
     fn test_session_summary_fields() {
         let s = SessionSummary {
             day: "5".to_string(),
+            session: "S2".to_string(),
             date: "2026-03-18".to_string(),
             tests: "450".to_string(),
             notes: "big session".to_string(),
         };
         assert_eq!(s.day, "5");
+        assert_eq!(s.session, "S2");
         assert_eq!(s.date, "2026-03-18");
         assert_eq!(s.tests, "450");
         assert_eq!(s.notes, "big session");
@@ -570,6 +583,7 @@ mod tests {
             open_predictions: vec![],
             recent_sessions: vec![SessionSummary {
                 day: "7".to_string(),
+                session: "S3".to_string(),
                 date: "2026-03-20".to_string(),
                 tests: "434".to_string(),
                 notes: "Day 7 session".to_string(),
@@ -578,6 +592,7 @@ mod tests {
         };
         let output = brief.format_terminal();
         assert!(output.contains("Day 7"), "should show day number");
+        assert!(output.contains("S3"), "should show session");
         assert!(output.contains("434"), "should show test count");
         assert!(output.contains("2026-03-20"), "should show date");
     }
@@ -598,12 +613,13 @@ mod tests {
 
     #[test]
     fn test_parse_metrics_row_real_format() {
-        // Test the exact format used in METRICS.md
-        let line = "| 7 | 2026-03-20 | ~25k | 434 | 0 | 5 | 88 | 15 | yes | Day 7 S3 notes |";
+        // Test the exact 11-column format used in METRICS.md (with Session column)
+        let line = "| 7 | S3 | 2026-03-20 | ~25k | 434 | 0 | 5 | 88 | 15 | yes | Day 7 S3 notes |";
         let result = parse_metrics_row(line);
         assert!(result.is_some(), "real METRICS.md format should parse: {line}");
         let row = result.unwrap();
         assert_eq!(row.day, "7");
+        assert_eq!(row.session, "S3");
         assert_eq!(row.tests, "434");
         assert!(row.notes.contains("Day 7 S3 notes"));
     }
@@ -611,7 +627,7 @@ mod tests {
     #[test]
     fn test_parse_metrics_row_with_unknown_tokens() {
         // ~?k tokens should still parse if other fields are valid
-        let line = "| 6 | 2026-03-19 | ~?k | 406 | 0 | 2 | 172 | 5 | yes | auto-generated |";
+        let line = "| 6 | S1 | 2026-03-19 | ~?k | 406 | 0 | 2 | 172 | 5 | yes | auto-generated |";
         let result = parse_metrics_row(line);
         assert!(result.is_some(), "row with ~?k tokens should still parse");
         let row = result.unwrap();
