@@ -129,6 +129,56 @@ def parse_metrics_table(text: str) -> list:
     return rows
 
 
+# ── Malformed row detection ───────────────────────────────────────────────────
+
+_SESSION_COL_PATTERN = re.compile(r'^S\d+$')
+
+
+def detect_malformed_rows(lines: list) -> int:
+    """Scan raw METRICS.md lines for data rows where the 2nd column is not S\\d+.
+
+    A malformed row is one written by an old evolve.sh that omits the Session
+    column — the 2nd column would be a date (e.g. '2026-03-22') instead of
+    something like 'S1'.
+
+    Parameters
+    ----------
+    lines:  list of raw text lines from METRICS.md
+
+    Returns
+    -------
+    int — count of malformed rows detected (prints a warning for each)
+    """
+    count = 0
+    for lineno, line in enumerate(lines, start=1):
+        line = line.strip()
+        if not line.startswith('|'):
+            continue
+        parts = [p.strip() for p in line.strip('|').split('|')]
+        # Skip header and separator rows
+        if not parts:
+            continue
+        if parts[0].lower() == 'day':
+            continue
+        if re.match(r'^[-:]+$', parts[0]):
+            continue
+        # Must look like a data row: first column is a day number
+        try:
+            int(parts[0])
+        except (ValueError, IndexError):
+            continue
+        # Check second column — should match S\d+
+        if len(parts) >= 2 and not _SESSION_COL_PATTERN.match(parts[1]):
+            print(
+                f"  WARNING: METRICS.md line {lineno} appears malformed "
+                f"(2nd column is '{parts[1]}', expected S<N>). "
+                f"Row may be missing the Session column.",
+                file=sys.stderr,
+            )
+            count += 1
+    return count
+
+
 # ── Analysis ──────────────────────────────────────────────────────────────────
 
 def analyze(rows: list) -> dict:
@@ -485,6 +535,14 @@ def main():
 
     with open(metrics_path, "r", encoding="utf-8") as f:
         content = f.read()
+
+    malformed = detect_malformed_rows(content.splitlines())
+    if malformed:
+        print(
+            f"  ⚠️  {malformed} malformed row(s) detected in METRICS.md "
+            f"(missing Session column). See warnings above.",
+            file=sys.stderr,
+        )
 
     rows = parse_metrics_table(content)
     if not rows:
