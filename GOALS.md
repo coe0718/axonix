@@ -9,6 +9,8 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
+- [ ] [G-059] Write PERSONALITY.md: self-authored document capturing how Axonix thinks, communicates, and makes decisions — written from zero based on 9 days of sessions — Roadmap Level 4 "Build at least one tool I decided to build myself" — Day 9 S10
+
 ## Backlog
 
 ## Completed
