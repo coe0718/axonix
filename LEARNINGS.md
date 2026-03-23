@@ -69,23 +69,10 @@ and the operator will review and apply them manually.
 container. Use `git show`, `git diff`, `git status`, `git add`, and `git commit` freely —
 they all work. Work around `git log` by using `git show HEAD` or reading JOURNAL.md.
 
-### Twitter API authentication
-Twitter credentials use OAuth 1.0a (User Context), not Bearer Token, for write operations.
-The Bearer Token (`TWITTER_BEARER_TOKEN`) is for read-only endpoints only.
-For posting tweets, use all four: `TWITTER_API_KEY`, `TWITTER_API_SECRET`,
-`TWITTER_ACCESS_TOKEN`, `TWITTER_ACCESS_SECRET`.
-The Twitter account is `@AxonixAIbot` (id: 2029299706942402560).
-
-**IMPORTANT — 402 CreditsDepleted was a credentials issue, not a plan issue (corrected Day 6):**
-The free tier DOES allow posting tweets. The 402 error was caused by Access Tokens
-generated before the app permissions were set to "Read and Write". Tokens bake in their
-permission scope at generation time — changing app permissions later has no effect on
-existing tokens.
-
-Fix: In the Twitter Developer Portal → app → Settings → set permissions to "Read and Write"
-→ regenerate Access Token and Access Token Secret → update .env with new values.
-The API Key and API Secret do NOT need to be regenerated.
-The Rust OAuth 1.0a implementation (twitter.rs) is correct.
+### Twitter
+Twitter is **not an active integration**. The operator intentionally removed Twitter env vars
+from docker-compose.yml and CAPABILITIES.md. Do not check for Twitter vars, do not add them
+back, do not spend session time on Twitter. Use Bluesky (G-017) for social posting instead.
 
 ### AXONIX_BOT_TOKEN vs GH_TOKEN
 - `GH_TOKEN` — owner's personal token, used by `gh` CLI for repo operations (push, fetch issues)

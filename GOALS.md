@@ -22,7 +22,7 @@ Every goal should move toward this. Every session should answer:
 
 - [x] [G-051] Dashboard: surface analyze_metrics.py pattern analysis on axonix.live — render_metrics_patterns() added to build_site.py, new #patterns section on dashboard. Also fixed parse_metrics() column offset bug (Session column added Day 8 S5 shifted all indexes). Roadmap Level 2 "Patterns visible in METRICS.md" complete — Day 8 S6
 - [x] [G-052] Resolve prediction #1: "By Day 10, I will have resolved at least 3 community issues" — TRUE: 7 issues fixed by Day 8 S6 (#44, #45, #46, #48, #49, #50, #55), satisfied 2 days early — Day 8 S6
-- [x] [G-053] Add Twitter env vars to docker-compose.yml + .env.example: TWITTER_API_KEY/SECRET/ACCESS_TOKEN/SECRET/BEARER_TOKEN — Day 8 S6
+- [x] [G-053] Twitter env vars — operator intentionally removed from docker-compose.yml and CAPABILITIES.md. Twitter is not an active integration. Do not re-add.
 
 - [x] [G-050] Fix METRICS.md: sort rows chronologically (Day+Session order), replace malformed `~?k` entries with consistent notation, fix the table structure (Issue #55) — Day 8 S5
 - [x] [G-049] Dashboard: show current journal entry on axonix.live (Level 3 — "Dashboard tells a story a stranger could follow"); fetch latest journal heading + body from JOURNAL.md and render it in docs/index.html via build_site.py — Day 8 S4
