@@ -32,6 +32,7 @@ pub struct Brief {
     pub note: Option<String>,
     pub health: Option<HealthSummary>,
     pub bluesky_stats: Option<(usize, usize, Option<String>)>, // (total, root_posts, last_date)
+    pub caddy: Option<crate::health::CaddyHealth>,
 }
 
 /// One session row from METRICS.md.
@@ -61,6 +62,14 @@ impl Brief {
             None
         };
 
+        let caddy_url_configured = std::env::var("CADDY_ADMIN_URL").is_ok();
+        let caddy_result = crate::health::caddy_health();
+        let caddy = if caddy_result.reachable || caddy_url_configured {
+            Some(caddy_result)
+        } else {
+            None
+        };
+
         Brief {
             active_goals,
             open_predictions,
@@ -68,6 +77,7 @@ impl Brief {
             note: None,
             health,
             bluesky_stats,
+            caddy,
         }
     }
 
@@ -115,6 +125,12 @@ impl Brief {
             }
         }
         out.push('\n');
+
+        // Caddy infrastructure health
+        if let Some(caddy) = &self.caddy {
+            out.push_str(&format!("🔗 Caddy: {}\n", caddy.format()));
+            out.push('\n');
+        }
 
         // Bluesky post stats
         if let Some((total, root, last_date)) = &self.bluesky_stats {
@@ -188,6 +204,11 @@ impl Brief {
             None => {
                 out.push_str("🖥 Health: (unavailable)\n");
             }
+        }
+
+        // Caddy infrastructure health (compact)
+        if let Some(caddy) = &self.caddy {
+            out.push_str(&format!("🔗 {}\n", caddy.format()));
         }
 
         // Bluesky post stats (compact)
@@ -518,6 +539,7 @@ mod tests {
             note: None,
             health: None,
             bluesky_stats: None,
+            caddy: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("MORNING BRIEF"), "should contain header");
@@ -538,6 +560,7 @@ mod tests {
             note: None,
             health: None,
             bluesky_stats: None,
+            caddy: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("no active goals"), "should note empty goals");
@@ -560,6 +583,7 @@ mod tests {
             note: None,
             health: None,
             bluesky_stats: None,
+            caddy: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Axonix Morning Brief*"), "should have bold header");
@@ -575,6 +599,7 @@ mod tests {
             note: Some("deploy needed".to_string()),
             health: None,
             bluesky_stats: None,
+            caddy: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("deploy needed"), "note should appear in output");
@@ -610,6 +635,7 @@ mod tests {
             note: None,
             health: None,
             bluesky_stats: None,
+            caddy: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("end of brief"), "should have end marker");
@@ -628,6 +654,7 @@ mod tests {
             note: None,
             health: None,
             bluesky_stats: None,
+            caddy: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("Goal one"));
@@ -647,6 +674,7 @@ mod tests {
             note: None,
             health: None,
             bluesky_stats: None,
+            caddy: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("#1"), "should show prediction IDs");
@@ -664,6 +692,7 @@ mod tests {
             note: None,
             health: None,
             bluesky_stats: None,
+            caddy: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Axonix Morning Brief*"), "should have header");
@@ -680,6 +709,7 @@ mod tests {
             note: Some("important note here".to_string()),
             health: None,
             bluesky_stats: None,
+            caddy: None,
         };
         let output = brief.format_telegram();
         // format_telegram doesn't render notes (compact format) — but must not panic
@@ -696,6 +726,7 @@ mod tests {
             note: None,
             health: None,
             bluesky_stats: None,
+            caddy: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("alpha"));
@@ -733,6 +764,7 @@ mod tests {
             note: None,
             health: None,
             bluesky_stats: None,
+            caddy: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("Day 7"), "should show day number");
@@ -794,6 +826,7 @@ mod tests {
                 uptime_hours: 142,
             }),
             bluesky_stats: None,
+            caddy: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("SYSTEM HEALTH"), "should contain SYSTEM HEALTH section");
@@ -812,6 +845,7 @@ mod tests {
             note: None,
             health: None,
             bluesky_stats: None,
+            caddy: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("SYSTEM HEALTH"), "should still contain section header");
@@ -832,6 +866,7 @@ mod tests {
                 uptime_hours: 72,
             }),
             bluesky_stats: None,
+            caddy: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("Health:"), "telegram brief should contain Health: line");
@@ -883,6 +918,7 @@ mod tests {
             note: None,
             health: None,
             bluesky_stats: Some((10, 7, Some("2026-03-22".to_string()))),
+            caddy: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("BLUESKY"), "should contain BLUESKY section");
@@ -900,6 +936,7 @@ mod tests {
             note: None,
             health: None,
             bluesky_stats: None,
+            caddy: None,
         };
         let output = brief.format_terminal();
         assert!(!output.contains("BLUESKY"), "no bluesky_stats → no BLUESKY section");
@@ -914,6 +951,7 @@ mod tests {
             note: None,
             health: None,
             bluesky_stats: Some((5, 3, Some("2026-03-21".to_string()))),
+            caddy: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Bluesky*"), "telegram should show *Bluesky* label");
@@ -930,6 +968,7 @@ mod tests {
             note: None,
             health: None,
             bluesky_stats: Some((2, 0, None)),
+            caddy: None,
         };
         let terminal = brief.format_terminal();
         assert!(terminal.contains("(never)"), "no last date should display (never)");
