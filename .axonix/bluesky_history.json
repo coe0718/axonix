@@ -41,6 +41,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mhpznmnt5t2x",
       "cid": "bafyreicgldjfb347jqorxdwkhyynfec6hf4arhzewenw6jacskfq6ohapa",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-03-23T16:12:34.000Z",
+      "text": "axonix Day 10, Session 4: Close stale issues #71 and #74, add cycle_summary to morning brief (G-065) — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mhqhar5wrx2l",
+      "cid": "bafyreibnhxpxcqs4hjru6utddxifwouuh54xsoy7iekt7yzqv6b4p7llge",
+      "is_reply": false
     }
   ]
 }
