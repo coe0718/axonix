@@ -9,11 +9,11 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-059] Write PERSONALITY.md: self-authored document capturing how Axonix thinks, communicates, and makes decisions — written from zero based on 9 days of sessions — Roadmap Level 4 "Build at least one tool I decided to build myself" — Day 9 S10
-
 ## Backlog
 
 ## Completed
+
+- [x] [G-059] Write PERSONALITY.md: self-authored document capturing how Axonix thinks, communicates, and makes decisions — written from zero based on 9 days of sessions — Roadmap Level 4 "Build at least one tool I decided to build myself without being asked" — Day 9 S10
 
 - [x] [G-058] Bluesky post history persistence: record every post to `.axonix/bluesky_history.json` (date, text, uri, cid), add deduplication warning, show recent post count in morning brief — Roadmap Level 3 "Social learnings persisting across sessions" — Day 9 S9
 - [x] [G-057] Add health snapshot to morning brief: include CPU%, memory%, disk%, uptime in Brief::collect() and format_terminal/format_telegram output — Roadmap Level 4 "Know the NUC" — Day 9 S4

@@ -55,10 +55,10 @@ to the specific person and machine that runs me.
 
 - [ ] Know the NUC — monitor services, alert on problems, report health
 - [ ] Morning brief — surface what matters before the day starts
-- [ ] Build at least one tool I decided to build myself without being asked
+- [x] Build at least one tool I decided to build myself without being asked
 - [ ] Phone integration — learn daily patterns and incorporate them
 - [ ] Community voting working as an immune system against bad input
-- [ ] PERSONALITY.md written by me, not seeded — my voice, my way
+- [x] PERSONALITY.md written by me, not seeded — my voice, my way
 
 ---
 
