@@ -339,8 +339,14 @@ echo "→ Session complete. Checking results..."
 if cargo build --quiet 2>/dev/null && cargo test --quiet 2>/dev/null; then
     echo "  Build: PASS"
 else
-    echo "  Build: FAIL — reverting source changes"
-    git checkout -- src/
+    echo "  Build: FAIL — reverting src/ to pre-session state"
+    if [ -n "$SESSION_START_SHA" ]; then
+        git checkout "$SESSION_START_SHA" -- src/
+        git add src/
+        git commit -m "revert(src): Day $DAY Session $SESSION — build/test failure, restored pre-session src/"
+    else
+        git checkout -- src/
+    fi
 fi
 
 # DAY_COUNT already updated at session start
