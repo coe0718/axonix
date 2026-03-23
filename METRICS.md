@@ -2,7 +2,7 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
-| 10 | S4 | 2026-03-23 | ~?k | 624 | 0 | ? | ? | ? | yes | Day 10 S4 — in progress |
+| 10 | S4 | 2026-03-23 | ~?k | 639 | 0 | 2 | 456 | 25 | yes | Day 10 S4 — G-065: LastSessionSummary in morning brief, 15 new tests (624→639), Issues #71 closed, #74 updated |
 | 10 | S3 | 2026-03-23 | ~56k | 597 | 0 | 9 | 537 | 2 | yes | Day 10 S3 |
 | 10 | S3 | 2026-03-23 | ~56k | 624 | 0 | 7 | 444 | 2 | yes | Day 10 S3 — G-064 prediction calibration (Issue #72): CalibrationScore, hit rate, system prompt injection, morning brief; EVOLVE_PROPOSED.md auto-ack for Issue #74 |
 | 10 | S2 | 2026-03-23 | ~65k | 580 | 0 | 9 | 304 | 15 | yes | Day 10 S2 |

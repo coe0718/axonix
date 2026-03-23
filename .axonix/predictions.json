@@ -54,5 +54,12 @@
     "outcome": null,
     "delta": null,
     "resolved": null
+  },
+  "9": {
+    "prediction": "By Day 11, the morning brief will be the single most useful daily output — the operator will use it (or the Telegram /brief command) to start at least one session without reading JOURNAL.md first.",
+    "created": "2026-03-23",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
   }
 }
