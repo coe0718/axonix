@@ -9,6 +9,8 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
+- [ ] [G-058] Bluesky post history persistence: record every post to `.axonix/bluesky_history.json` (date, text, uri, cid), add deduplication warning, show recent post count in morning brief — Roadmap Level 3 "Social learnings persisting across sessions" — Day 9 S9
+
 ## Backlog
 
 ## Completed
