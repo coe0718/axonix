@@ -181,6 +181,85 @@ def detect_malformed_rows(lines: list) -> int:
 
 # ── Analysis ──────────────────────────────────────────────────────────────────
 
+def compute_velocity(rows: list) -> dict:
+    """Compute session velocity metrics from a list of SessionRow objects.
+
+    Velocity measures how productive each session is:
+    - tests_per_session: average test count added per session (last 5 sessions with known data)
+    - trend: "up", "down", or "flat" — compare last 3 vs prior 3 sessions' test deltas
+    - sessions_analyzed: how many sessions were used for the calculation
+
+    Returns a dict with keys: tests_per_session, trend, sessions_analyzed.
+    Returns None values if insufficient data.
+    """
+    # Extract test counts from rows that have known values
+    known = [(i, r.tests_passed) for i, r in enumerate(rows) if r.tests_passed is not None]
+    if len(known) < 2:
+        return {"tests_per_session": None, "trend": "unknown", "sessions_analyzed": len(known)}
+
+    # Compute per-session test deltas (consecutive known rows)
+    deltas = []
+    for i in range(1, len(known)):
+        _, t_prev = known[i - 1]
+        _, t_curr = known[i]
+        deltas.append(t_curr - t_prev)
+
+    # Use last 5 deltas for current velocity
+    recent_deltas = deltas[-5:] if len(deltas) >= 5 else deltas
+    tests_per_session = sum(recent_deltas) / len(recent_deltas) if recent_deltas else None
+
+    # Trend: compare last 3 deltas vs prior 3 deltas (need at least 4 total)
+    trend = "unknown"
+    if len(deltas) >= 4:
+        half = len(deltas) // 2
+        recent_half = deltas[half:]
+        prior_half = deltas[:half]
+        recent_avg = sum(recent_half) / len(recent_half) if recent_half else 0.0
+        prior_avg = sum(prior_half) / len(prior_half) if prior_half else 0.0
+        if prior_avg == 0:
+            trend = "flat"
+        else:
+            change_pct = (recent_avg - prior_avg) / abs(prior_avg) * 100
+            if change_pct > 5:
+                trend = "up"
+            elif change_pct < -5:
+                trend = "down"
+            else:
+                trend = "flat"
+    elif len(deltas) >= 2:
+        # Simple: are we adding more tests recently?
+        recent_avg = deltas[-1]
+        prior_avg = deltas[0]
+        if recent_avg > prior_avg + 1:
+            trend = "up"
+        elif recent_avg < prior_avg - 1:
+            trend = "down"
+        else:
+            trend = "flat"
+
+    return {
+        "tests_per_session": tests_per_session,
+        "trend": trend,
+        "sessions_analyzed": len(recent_deltas),
+    }
+
+
+def format_velocity(velocity: dict) -> str:
+    """Format velocity metrics as a human-readable string."""
+    lines = []
+    lines.append("  Session Velocity:")
+    tps = velocity.get("tests_per_session")
+    trend = velocity.get("trend", "unknown")
+    n = velocity.get("sessions_analyzed", 0)
+    trend_arrow = {"up": "📈", "down": "📉", "flat": "➡️", "unknown": "❓"}.get(trend, "")
+    if tps is not None:
+        lines.append(f"    Tests added/session  : {tps:+.1f} {trend_arrow} ({trend})")
+    else:
+        lines.append("    Tests added/session  : (insufficient data)")
+    lines.append(f"    Sessions analyzed    : {n}")
+    return "\n".join(lines)
+
+
 def analyze(rows: list) -> dict:
     """Compute pattern analysis from a list of SessionRow objects.
 
@@ -325,7 +404,6 @@ def format_report(stats: dict) -> str:
     lines.append(f"  Verdict              : {verdict_symbol} {verdict.upper()}")
     lines.append("=" * 58)
     return "\n".join(lines)
-
 
 # ── Unit tests ────────────────────────────────────────────────────────────────
 
@@ -551,6 +629,10 @@ def main():
 
     stats = analyze(rows)
     print(format_report(stats))
+
+    velocity = compute_velocity(rows)
+    print()
+    print(format_velocity(velocity))
 
 
 if __name__ == "__main__":
