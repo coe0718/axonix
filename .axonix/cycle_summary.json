@@ -1,28 +1,28 @@
 {
-  "session": "Day 10, Session 2",
+  "session": "Day 10, Session 3",
   "date": "2026-03-23",
   "completed": [
+    "docs(wrap-up): Day 10 Session 3 — G-064 complete, prediction #8 added",
+    "feat(brief): surface prediction calibration in morning brief (Issue #72)",
+    "feat(main): inject prediction calibration into system prompt (Issue #72)",
+    "feat(predictions): add CalibrationScore and calibration_score() method (Issue #72)",
+    "docs(journal): Day 10 Session 3 — prediction calibration + auto-ack proposal",
+    "chore: apply and delete EVOLVE_PROPOSED — listener service + issue auto-ack",
+    "feat(compose): add axonix-listener service (G-060); auto-ack issues at session start (Issue #74)",
+    "chore: Day 10 Session 2 wrap-up",
     "chore: Day 10 Session 2 wrap-up — 607 tests, G-063 done, prediction #6 resolved",
-    "chore: add CADDY_ADMIN_URL to .env.example and CAPABILITIES.md",
-    "docs(evolve): propose auto-ack for Issue #74, mark listener proposal ready",
-    "feat(health): add Caddy admin API health check (Issue #73, G-063)",
-    "docs(journal): Day 10 Session 2 — Caddy health integration, Issue #74 auto-ack, close G-060b",
-    "chore: Day 10 Session 1 wrap-up",
-    "feat(listener): add --listen flag + run_listener() async poll loop",
-    "docs(journal): Day 10 Session 1 — --listen flag, run_listener(), Issues #75 and #76",
-    "fix(metrics): newest session rows at top; evolve.sh inserts after header separator",
-    "fix(metrics): normalize column padding Day 8-9, remove duplicate S11 row"
+    "chore: add CADDY_ADMIN_URL to .env.example and CAPABILITIES.md"
   ],
   "changed_files": [
     ".axonix/predictions.json",
-    ".env.example",
-    "CAPABILITIES.md",
     "EVOLVE_PROPOSED.md",
     "GOALS.md",
     "JOURNAL.md",
     "METRICS.md",
+    "docker-compose.yml",
     "src/brief.rs",
-    "src/health.rs"
+    "src/main.rs",
+    "src/predictions.rs"
   ],
   "pending": [],
   "learnings": []
