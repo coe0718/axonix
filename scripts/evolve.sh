@@ -292,11 +292,34 @@ This phase finalises them with real numbers.
 
 - Update the METRICS.md stub row you wrote in Phase 4:
     Find the "in progress" row and replace it with actual values:
-    | $DAY | $DATE | ~Xk | <tests passed> | 0 | <files changed> | <lines added> | <lines removed> | yes | <one line summary> |
+    | $DAY | S$SESSION | $DATE | ~?k | <tests passed> | 0 | <files changed> | <lines added> | <lines removed> | yes | <one line summary> |
     Run cargo test for exact count. Use git diff --stat HEAD~N HEAD to get file/line counts.
+    Leave the token column as ~?k — evolve.sh will fill it in automatically after the session ends.
 - Cross-check GOALS.md: for every goal mentioned as done in your journal, verify it is [x].
 - If you added a new environment variable, add it to docker-compose.yml, .env.example, CAPABILITIES.md.
 - Verify: cargo build && cargo test
+
+=== PHASE 8: Write a Prediction ===
+
+At the end of every session, write at least one forward-looking prediction.
+
+Read .axonix/predictions.json. Find the highest existing integer key N. Add a new entry with key N+1:
+
+  {
+    "N+1": {
+      "prediction": "<specific, falsifiable, time-bounded claim about your own progress>",
+      "created": "$DATE",
+      "outcome": null,
+      "delta": null,
+      "resolved": null
+    }
+  }
+
+Append it to .axonix/predictions.json (merge into the existing JSON object — do not overwrite).
+Good predictions name a specific day, metric, or behaviour. Examples:
+  "By Day $((DAY + 3)), the personal assistant architecture will be designed and a goal will be open for it."
+  "The test count will reach N by Day $((DAY + 2))."
+  "The most common failure mode in the next 5 sessions will be X."
 
 == EVOLVE_PROPOSED.md RULES ==
 
@@ -332,6 +355,19 @@ cargo run --bin axonix -- \
 
 rm -f "$PROMPT_FILE"
 
+# ── Compute approximate token total from session log ──
+TOTAL_TOKENS=0
+if [ -f /tmp/session.log ]; then
+    TOTAL_TOKENS=$(sed 's/\x1b\[[0-9;]*m//g' /tmp/session.log \
+        | grep -oE 'tokens: [0-9]+ in / [0-9]+ out' \
+        | awk -F'[^0-9]+' 'BEGIN{s=0} {s += $2 + $3} END{print s+0}')
+fi
+if [ "${TOTAL_TOKENS:-0}" -gt 0 ] 2>/dev/null; then
+    TOKEN_K="~$(( TOTAL_TOKENS / 1000 ))k"
+else
+    TOKEN_K="~?k"
+fi
+
 echo ""
 echo "→ Session complete. Checking results..."
 
@@ -352,8 +388,13 @@ fi
 # DAY_COUNT already updated at session start
 
 # ── Step 5a: Metrics fallback — fill in real stats ──
+# Patch ~?k token placeholder in any row the agent already wrote for this session.
 # If agent wrote a stub row ("in progress"), replace it with real numbers.
 # If agent wrote nothing, append a new row.
+if [ "$TOKEN_K" != "~?k" ] && grep -qE "^\| $DAY \| S$SESSION \| $DATE \| ~\?k " METRICS.md 2>/dev/null; then
+    sed -i "s/^\(| $DAY | S$SESSION | $DATE | \)~?k /\1$TOKEN_K /" METRICS.md 2>/dev/null || true
+    echo "  Token count patched to $TOKEN_K in agent-written row."
+fi
 TEST_COUNT=$(cargo test --quiet 2>/dev/null | grep "test result" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" | head -1 || echo "?")
 DIFF_STAT=$(git diff --stat "${SESSION_START_SHA}..HEAD" 2>/dev/null | tail -1 || echo "")
 FILES_CHANGED=$(echo "$DIFF_STAT" | grep -oE "[0-9]+ file" | grep -oE "[0-9]+" || echo "?")
@@ -362,15 +403,15 @@ LINES_REMOVED=$(echo "$DIFF_STAT" | grep -oE "[0-9]+ deletion" | grep -oE "[0-9]
 METRICS_ROWS_AFTER=$(grep -cE "^\| [0-9]" METRICS.md 2>/dev/null || echo "0")
 
 if grep -q "in progress" METRICS.md 2>/dev/null; then
-    # Replace the stub row with real values
+    # Replace the stub row with real values (token count filled by evolve.sh)
     sed -i "s|.* in progress .*|| " METRICS.md 2>/dev/null || true
     sed -i '/^$/d' METRICS.md 2>/dev/null || true
-    echo "| $DAY | S$SESSION | $DATE | ~?k | ${TEST_COUNT:-?} | 0 | ${FILES_CHANGED:-?} | ${LINES_ADDED:-0} | ${LINES_REMOVED:-0} | yes | Day $DAY S$SESSION |" >> METRICS.md
-    echo "  Metrics stub row replaced with real stats."
+    echo "| $DAY | S$SESSION | $DATE | $TOKEN_K | ${TEST_COUNT:-?} | 0 | ${FILES_CHANGED:-?} | ${LINES_ADDED:-0} | ${LINES_REMOVED:-0} | yes | Day $DAY S$SESSION |" >> METRICS.md
+    echo "  Metrics stub row replaced with real stats (tokens: $TOKEN_K)."
 elif [ "$METRICS_ROWS_AFTER" -le "$METRICS_ROWS_BEFORE" ]; then
     echo "  WARNING: METRICS.md not updated this session — appending fallback row"
-    echo "| $DAY | S$SESSION | $DATE | ~?k | ${TEST_COUNT:-?} | 0 | ${FILES_CHANGED:-?} | ${LINES_ADDED:-0} | ${LINES_REMOVED:-0} | yes | Day $DAY S$SESSION — auto-generated (agent missed wrap-up) |" >> METRICS.md
-    echo "  Fallback metrics row appended."
+    echo "| $DAY | S$SESSION | $DATE | $TOKEN_K | ${TEST_COUNT:-?} | 0 | ${FILES_CHANGED:-?} | ${LINES_ADDED:-0} | ${LINES_REMOVED:-0} | yes | Day $DAY S$SESSION — auto-generated (agent missed wrap-up) |" >> METRICS.md
+    echo "  Fallback metrics row appended (tokens: $TOKEN_K)."
 fi
 
 # ── Step 5b: Auto-mark completed goals from session commit messages ──
