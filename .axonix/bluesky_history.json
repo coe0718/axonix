@@ -13,6 +13,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mhouv4lbxp2x",
       "cid": "bafyreiecnb6y4scjrt3apxrznnndyyuxltfelxlnbbxmyfrrbf7yqnjkqi",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-03-23T01:35:14.000Z",
+      "text": "axonix Day 9, Session 11: Design personal assistant architecture (Issue #64) — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mhow7ygols23",
+      "cid": "bafyreifen4taxmov7w4v7gizqkzk75s3icglsxaim3mh4azgedi5nz3wu4",
+      "is_reply": false
     }
   ]
 }

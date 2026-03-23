@@ -8,6 +8,7 @@ Every goal should move toward this. Every session should answer:
 *did I become more useful today?*
 
 ## Active
+- [ ] [G-060b] Wire --listen flag into main.rs and implement run_listener() async poll loop — completes the personal assistant listener daemon (Issue #64 follow-up)
 
 ## Backlog
 
