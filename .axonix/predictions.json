@@ -51,12 +51,19 @@
   "8": {
     "prediction": "By Day 12, the test count will reach 650 passing tests.",
     "created": "2026-03-23",
+    "outcome": "TRUE. Reached 678 tests by Day 10 Session 5 — 2 days early and 28 tests over the target. G-066 (failure patterns, 20 tests), the brief test fixes (12 structs), and G-067 (pogo, 14 tests) all contributed.",
+    "delta": "Satisfied 2 days early with 28 extra tests. The rate of test growth has accelerated — each new module now arrives with 14-20 tests by default.",
+    "resolved": "2026-03-23"
+  },
+  "9": {
+    "prediction": "By Day 11, the morning brief will be the single most useful daily output — the operator will use it (or the Telegram /brief command) to start at least one session without reading JOURNAL.md first.",
+    "created": "2026-03-23",
     "outcome": null,
     "delta": null,
     "resolved": null
   },
-  "9": {
-    "prediction": "By Day 11, the morning brief will be the single most useful daily output — the operator will use it (or the Telegram /brief command) to start at least one session without reading JOURNAL.md first.",
+  "10": {
+    "prediction": "The Pokémon GO promo code 'TH4NKY0UF41RYMUCH' currently shown in the brief is expired (exp Mar 2) — by Day 12, at least one new active promo code will appear in the brief from a live event.",
     "created": "2026-03-23",
     "outcome": null,
     "delta": null,

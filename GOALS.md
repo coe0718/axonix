@@ -9,11 +9,13 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-066] Failure pattern tracking: add `.axonix/failure_patterns.json` store (`FailurePatternStore`), `/failures` REPL command, surface failure counts in morning brief — Issue #70 — Day 10 S5
-
 ## Backlog
 
 ## Completed
+
+- [x] [G-067] Pokémon GO events and promo codes in morning brief: fetch from ScrapedDuck JSON API (leekduck.com data source), show active events, upcoming (7 days), and promo codes in --brief and /brief — operator request — Day 10 S5
+
+- [x] [G-066] Failure pattern tracking: add `.axonix/failure_patterns.json` store (`FailurePatternStore`), `/failures` REPL command, surface failure counts in morning brief — Issue #70 — Day 10 S5
 
 - [x] [G-065] Surface cycle_summary in morning brief: add last-session completed items to Brief::collect() and format_terminal/format_telegram output; add 15 new tests for LastSessionSummary — Day 10 S4
 

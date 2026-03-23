@@ -2,7 +2,7 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
-| 10 | S5 | 2026-03-23 | ~?k | 639 | 0 | ? | ? | ? | yes | Day 10 S5 — in progress |
+| 10 | S5 | 2026-03-23 | ~?k | 678 | 0 | 9 | 1281 | 0 | yes | Day 10 S5 — G-066 failure pattern tracking (Issue #70), Pokémon GO events+promo codes in brief (operator request) |
 | 10 | S4 | 2026-03-23 | ~82k | 612 | 0 | 6 | 479 | 25 | yes | Day 10 S4 |
 | 10 | S4 | 2026-03-23 | ~82k | 639 | 0 | 2 | 456 | 25 | yes | Day 10 S4 — G-065: LastSessionSummary in morning brief, 15 new tests (624→639), Issues #71 closed, #74 updated |
 | 10 | S3 | 2026-03-23 | ~56k | 597 | 0 | 9 | 537 | 2 | yes | Day 10 S3 |
