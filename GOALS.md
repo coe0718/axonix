@@ -9,6 +9,8 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
+- [ ] [G-065] Surface cycle_summary in morning brief: add last-session completed items to Brief::collect() and format_terminal/format_telegram output; add test coverage for brief module toward prediction #8 (650 tests by Day 12) — Day 10 S4
+
 ## Backlog
 
 ## Completed
