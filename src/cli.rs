@@ -21,6 +21,8 @@ pub struct CliArgs {
     pub brief_telegram: bool,
     /// If set, run health watch loop: check thresholds every N seconds and send Telegram alerts.
     pub watch: bool,
+    /// If set, run the always-on Telegram listener daemon (polls for /ask commands).
+    pub listen: bool,
     /// If set, write cycle_summary.json from real data (git log, GOALS.md) and exit.
     pub write_summary: Option<String>,
     /// If set, read .axonix/cycle_summary.json and send a compact summary to Telegram.
@@ -69,6 +71,7 @@ impl CliArgs {
         let brief = args.iter().any(|a| a == "--brief");
         let brief_telegram = args.iter().any(|a| a == "--brief-telegram");
         let watch = args.iter().any(|a| a == "--watch");
+        let listen = args.iter().any(|a| a == "--listen");
         let session_summary_telegram = args.iter().any(|a| a == "--session-summary-telegram");
 
         let write_summary = args
@@ -86,6 +89,7 @@ impl CliArgs {
             brief: brief || brief_telegram,
             brief_telegram,
             watch,
+            listen,
             write_summary,
             session_summary_telegram,
         })
@@ -107,6 +111,7 @@ pub fn print_help() {
     println!("  --brief                 Print morning brief (goals, predictions, metrics) and exit");
     println!("  --brief-telegram        Send morning brief to Telegram and exit (for cron push at 7 AM)");
     println!("  --watch                 Start health watch loop: alert via Telegram when thresholds exceeded");
+    println!("  --listen                Run always-on Telegram listener daemon (polls for /ask commands)");
     println!("  --write-summary <label> Write .axonix/cycle_summary.json from real git/GOALS data and exit");
     println!("  --session-summary-telegram  Read .axonix/cycle_summary.json and send a compact summary to Telegram");
     println!("  --help, -h              Show this help message");
@@ -464,6 +469,7 @@ mod tests {
         assert!(!cli.discuss, "discuss default false");
         assert!(!cli.brief, "brief default false");
         assert!(!cli.watch, "watch default false");
+        assert!(!cli.listen, "listen default false");
         assert!(cli.prompt.is_none(), "prompt default None");
         assert!(cli.bluesky_post.is_none(), "bluesky_post default None");
         assert!(!cli.brief_telegram, "brief_telegram default false");
@@ -551,5 +557,26 @@ mod tests {
             .into_iter().map(String::from).collect();
         let cli = CliArgs::parse(&args).unwrap();
         assert!(!cli.session_summary_telegram, "session_summary_telegram should be false when flag absent");
+    }
+
+    /// Verifies --listen sets listen = true (G-060b).
+    #[test]
+    fn test_cli_args_listen_flag() {
+        let args: Vec<String> = vec!["axonix", "--listen"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(cli.listen, "--listen should set listen to true");
+        assert!(cli.prompt.is_none(), "--listen should not set prompt");
+        assert!(!cli.brief, "--listen should not set brief");
+        assert!(!cli.watch, "--listen should not set watch");
+    }
+
+    /// Verifies listen is false by default (G-060b).
+    #[test]
+    fn test_cli_args_listen_false_by_default() {
+        let args: Vec<String> = vec!["axonix"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(!cli.listen, "listen should be false when --listen not passed");
     }
 }

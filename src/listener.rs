@@ -40,6 +40,14 @@
 //! ```
 
 use crate::conversation_memory::ConversationMemory;
+use crate::telegram::{TelegramClient, BotCommand, TELEGRAM_HELP_TEXT};
+use crate::health::HealthSnapshot;
+use yoagent::agent::Agent;
+use yoagent::provider::AnthropicProvider;
+use yoagent::tools::default_tools;
+use yoagent::context::ContextConfig;
+use yoagent::retry::RetryConfig;
+use yoagent::{AgentEvent, StreamDelta};
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -167,6 +175,190 @@ pub fn build_listener_system_prompt(memory: &ConversationMemory) -> String {
     parts.join("\n")
 }
 
+// ── Listener agent builder ────────────────────────────────────────────────────
+
+fn make_listener_agent(api_key: &str, model: &str, system_prompt: &str) -> Agent {
+    Agent::new(AnthropicProvider)
+        .with_system_prompt(system_prompt)
+        .with_model(model)
+        .with_api_key(api_key)
+        .with_tools(default_tools())
+        .with_context_config(ContextConfig {
+            max_context_tokens: 80_000,
+            system_prompt_tokens: 4_000,
+            keep_recent: 10,
+            keep_first: 2,
+            tool_output_max_lines: 40,
+        })
+        .with_retry_config(RetryConfig {
+            max_retries: 3,
+            initial_delay_ms: 1000,
+            backoff_multiplier: 2.0,
+            max_delay_ms: 30_000,
+        })
+}
+
+// ── run_listener ──────────────────────────────────────────────────────────────
+
+/// Run the always-on Telegram listener loop.
+///
+/// Polls Telegram every `config.poll_interval_secs` seconds.
+/// Handles `/ask <text>` commands with a short-context agent response.
+/// Records every conversation turn to ConversationMemory.
+/// Runs until Ctrl+C (i.e. until the process is killed).
+#[allow(clippy::too_many_lines)]
+pub async fn run_listener(
+    config: &ListenerConfig,
+    tg: &TelegramClient,
+    api_key: &str,
+    model: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    // Load conversation memory from config path or default
+    let memory_path = config
+        .memory_path
+        .as_deref()
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(crate::conversation_memory::default_conversation_memory_path);
+    let mut mem = ConversationMemory::load(&memory_path);
+
+    // Build system prompt and agent (refreshed if context grows too large)
+    let system_prompt = build_listener_system_prompt(&mem);
+    let mut agent = make_listener_agent(api_key, model, &system_prompt);
+    let mut agent_turn_count: usize = 0;
+
+    let mut stats = ListenerStats::new();
+    let mut offset: i64 = 0;
+    let start_time = std::time::Instant::now();
+
+    loop {
+        // Update uptime
+        stats.uptime_secs = start_time.elapsed().as_secs();
+
+        // Poll for updates
+        let updates = match tg.get_updates(offset).await {
+            Ok(u) => u,
+            Err(e) => {
+                eprintln!("  ⚠ listener: get_updates error: {e}");
+                stats.errors += 1;
+                tokio::time::sleep(std::time::Duration::from_secs(config.poll_interval_secs)).await;
+                continue;
+            }
+        };
+
+        // Advance offset to acknowledge received updates
+        if let Some(last) = updates.last() {
+            offset = last.update_id + 1;
+        }
+
+        // Extract all recognised commands from the batch
+        let commands = tg.extract_commands(&updates);
+
+        for cmd in commands {
+            match cmd {
+                BotCommand::Ask(ask_cmd) => {
+                    // Send "processing" acknowledgement
+                    let _ = tg.reply_to("⏳ Processing...", ask_cmd.message_id).await;
+
+                    // Rebuild agent if it has processed too many turns (context hygiene)
+                    if agent_turn_count > 50 {
+                        let fresh_prompt = build_listener_system_prompt(&mem);
+                        agent = make_listener_agent(api_key, model, &fresh_prompt);
+                        agent_turn_count = 0;
+                    }
+
+                    // Run the agent — prompt() returns a streaming event receiver
+                    let mut rx = agent.prompt(&ask_cmd.prompt).await;
+                    let mut response_text = String::new();
+                    let mut had_error = false;
+
+                    while let Some(event) = rx.recv().await {
+                        match event {
+                            AgentEvent::MessageUpdate {
+                                delta: StreamDelta::Text { delta },
+                                ..
+                            } => {
+                                response_text.push_str(&delta);
+                            }
+                            AgentEvent::InputRejected { reason } => {
+                                eprintln!("  ⚠ listener: input rejected: {reason}");
+                                had_error = true;
+                            }
+                            _ => {}
+                        }
+                    }
+
+                    if had_error || response_text.is_empty() {
+                        let msg = if had_error {
+                            "⚠️ Request was rejected by the agent.".to_string()
+                        } else {
+                            "⚠️ No response from agent.".to_string()
+                        };
+                        let _ = tg.reply_to(&msg, ask_cmd.message_id).await;
+                        stats.errors += 1;
+                    } else {
+                        // Truncate to max_response_chars
+                        let reply = if response_text.chars().count() > config.max_response_chars {
+                            let truncated: String = response_text
+                                .chars()
+                                .take(config.max_response_chars)
+                                .collect();
+                            format!("{truncated}\n_(truncated)_")
+                        } else {
+                            response_text.clone()
+                        };
+
+                        let _ = tg.reply_to(&reply, ask_cmd.message_id).await;
+
+                        // Record turn in memory
+                        mem.push("user", &ask_cmd.prompt, "telegram");
+                        mem.push("assistant", &response_text, "telegram");
+                        if let Err(e) = mem.save() {
+                            eprintln!("  ⚠ listener: failed to save memory: {e}");
+                        }
+
+                        agent_turn_count += 2; // user + assistant
+                        stats.messages_handled += 1;
+                    }
+                }
+                BotCommand::Health { message_id } => {
+                    let snap = HealthSnapshot::collect();
+                    let reply = snap.format_compact();
+                    let _ = tg.reply_to(&reply, message_id).await;
+                    stats.messages_handled += 1;
+                }
+                BotCommand::Brief { message_id } => {
+                    let brief = crate::brief::Brief::collect();
+                    let reply = brief.format_telegram();
+                    let _ = tg.reply_to(&reply, message_id).await;
+                    stats.messages_handled += 1;
+                }
+                BotCommand::Status { message_id } => {
+                    let reply = TelegramClient::format_status_reply(
+                        model,
+                        "listener",
+                        stats.uptime_secs,
+                        0,
+                        0,
+                    );
+                    let _ = tg.reply_to(&reply, message_id).await;
+                    stats.messages_handled += 1;
+                }
+                BotCommand::Help { message_id } => {
+                    let _ = tg.reply_to(TELEGRAM_HELP_TEXT, message_id).await;
+                    stats.messages_handled += 1;
+                }
+            }
+        }
+
+        // Log stats summary every 100 messages
+        if stats.messages_handled > 0 && stats.messages_handled % 100 == 0 {
+            eprintln!("  {}", stats.format());
+        }
+
+        // Sleep between polls
+        tokio::time::sleep(std::time::Duration::from_secs(config.poll_interval_secs)).await;
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -338,5 +530,49 @@ mod tests {
     #[test]
     fn test_format_duration_hours_and_minutes() {
         assert_eq!(format_duration(12000), "3h 20m");
+    }
+
+    // ── run_listener unit tests ───────────────────────────────────────────────
+
+    /// Verify default ListenerConfig values for poll interval and response length.
+    #[test]
+    fn test_listener_config_default_poll_and_response() {
+        let cfg = ListenerConfig::default();
+        assert_eq!(cfg.poll_interval_secs, 2, "default poll interval must be 2s");
+        assert_eq!(cfg.max_response_chars, 3000, "default max_response_chars must be 3000");
+    }
+
+    /// Verify ListenerStats messages_handled increments correctly.
+    #[test]
+    fn test_listener_stats_increment() {
+        let mut stats = ListenerStats::new();
+        assert_eq!(stats.messages_handled, 0);
+        stats.messages_handled += 1;
+        assert_eq!(stats.messages_handled, 1);
+        stats.messages_handled += 99;
+        assert_eq!(stats.messages_handled, 100);
+    }
+
+    /// Verify build_listener_system_prompt includes recent turns when memory has turns.
+    #[test]
+    fn test_listener_system_prompt_with_recent_turns() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut mem = ConversationMemory::new(dir.path().join("conv.json"));
+        mem.push("user", "what is the weather?", "telegram");
+        mem.push("assistant", "I cannot check the weather.", "telegram");
+        let prompt = build_listener_system_prompt(&mem);
+        assert!(
+            prompt.contains("weather"),
+            "prompt should include recent turn text: {prompt}"
+        );
+        assert!(
+            prompt.contains("Recent Conversations"),
+            "prompt should include context section header: {prompt}"
+        );
+        assert_eq!(
+            mem.turns.len(),
+            2,
+            "memory should still have exactly 2 turns after building prompt"
+        );
     }
 }

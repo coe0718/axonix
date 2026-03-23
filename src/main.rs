@@ -371,6 +371,29 @@ async fn main() {
         }
     }
 
+    // --listen mode: run always-on Telegram listener daemon (G-060b)
+    if cli_args.listen {
+        match &tg {
+            None => {
+                eprintln!("{RED}error:{RESET} --listen requires Telegram. Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID.");
+                std::process::exit(1);
+            }
+            Some(tg_client) => {
+                eprintln!("{DIM}  axonix --listen — personal assistant daemon active{RESET}");
+                eprintln!("{DIM}  Press Ctrl+C to stop{RESET}");
+                let config = axonix::listener::ListenerConfig::default();
+                match axonix::listener::run_listener(&config, tg_client, &api_key, &model).await {
+                    Ok(_) => {}
+                    Err(e) => {
+                        eprintln!("{RED}  ✗ listener error: {e}{RESET}");
+                        std::process::exit(1);
+                    }
+                }
+                return;
+            }
+        }
+    }
+
     // --session-summary-telegram: read .axonix/cycle_summary.json and send to Telegram (Closes #46)
     if cli_args.session_summary_telegram {
         let summary = axonix::cycle_summary::CycleSummary::default_path();
