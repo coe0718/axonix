@@ -9,6 +9,8 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
+- [ ] [G-060] Design and implement personal assistant architecture: write ASSISTANT_ARCH.md, post response to Issue #64, implement `src/listener.rs` — always-on Telegram daemon with conversation memory — Day 9 S11
+
 ## Backlog
 
 ## Completed
