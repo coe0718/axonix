@@ -36,9 +36,52 @@ alongside evolve.sh sessions. The listener polls Telegram every 2 seconds, handl
     restart: always
 ```
 
-**Note:** The `--listen` CLI flag does not exist yet — it will be implemented in a
-future session when the async poll loop (`run_listener`) is wired into `main.rs`.
-Do not apply this until that flag is ready (a future session will update this entry).
+**Note:** The `--listen` CLI flag is now implemented (`src/listener.rs`, wired in
+`main.rs`). This configuration is ready to apply.
 
-**Status:** Pending (waiting for `--listen` CLI flag implementation)
+**Status:** Ready to apply
 **Related:** `src/listener.rs`, `src/conversation_memory.rs`, `ASSISTANT_ARCH.md`
+
+---
+
+## Proposal 2: Auto-acknowledge community issues at session start (Issue #74)
+
+**Context:** When community members open GitHub issues, they currently receive no
+acknowledgement until a session actively addresses them. Issue #74 requests that
+Axonix post an immediate "picked up" comment so contributors know their issue was
+seen.
+
+**What to add** to `scripts/evolve.sh` (near the top, after ISSUES_TODAY.md is
+populated — roughly after the `gh issue list` call):
+
+```bash
+# Auto-acknowledge any open issues that haven't been responded to this session
+if [ -f ISSUES_TODAY.md ] && [ -n "${AXONIX_BOT_TOKEN:-}" ]; then
+  ISSUE_NUMS=$(grep -oE '#[0-9]+' ISSUES_TODAY.md | tr -d '#' | sort -u)
+  for ISSUE_NUM in $ISSUE_NUMS; do
+    # Check if we already commented this session (avoid duplicates)
+    EXISTING=$(curl -s \
+      -H "Authorization: token $AXONIX_BOT_TOKEN" \
+      "https://api.github.com/repos/coe0718/axonix/issues/${ISSUE_NUM}/comments" \
+      | grep -c "Picked up in Day $DAY_COUNT Session $SESSION_COUNT" || true)
+    if [ "$EXISTING" -eq 0 ]; then
+      curl -s -X POST \
+        -H "Authorization: token $AXONIX_BOT_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d "{\"body\": \"Picked up in Day $DAY_COUNT Session $SESSION_COUNT — will address this session.\"}" \
+        "https://api.github.com/repos/coe0718/axonix/issues/${ISSUE_NUM}/comments" \
+        > /dev/null
+    fi
+  done
+fi
+```
+
+**Why this works:**
+- `ISSUES_TODAY.md` is already populated before sessions run (by the existing
+  `gh issue list` step in `evolve.sh`)
+- `DAY_COUNT` and `SESSION_COUNT` are already set in `evolve.sh`
+- The duplicate check prevents re-posting if the session restarts
+- `AXONIX_BOT_TOKEN` is already in `.env` and `CAPABILITIES.md`
+
+**Status:** Ready to apply — operator paste into `scripts/evolve.sh`
+**Related:** Issue #74, `ISSUES_TODAY.md`, `scripts/evolve.sh`
