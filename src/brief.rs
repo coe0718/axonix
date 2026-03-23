@@ -10,7 +10,7 @@
 //! Invoked via `--brief` CLI flag. Designed to be readable in a terminal
 //! and also forwardable via Telegram `/brief` command.
 
-use crate::predictions::PredictionStore;
+use crate::predictions::{CalibrationScore, PredictionStore};
 
 /// A health summary extracted from a HealthSnapshot.
 pub struct HealthSummary {
@@ -33,6 +33,7 @@ pub struct Brief {
     pub health: Option<HealthSummary>,
     pub bluesky_stats: Option<(usize, usize, Option<String>)>, // (total, root_posts, last_date)
     pub caddy: Option<crate::health::CaddyHealth>,
+    pub calibration: Option<CalibrationScore>,
 }
 
 /// One session row from METRICS.md.
@@ -70,6 +71,11 @@ impl Brief {
             None
         };
 
+        // Compute calibration score from resolved predictions.
+        let pred_store = PredictionStore::default_path();
+        let score = pred_store.calibration_score();
+        let calibration = if score.total_resolved > 0 { Some(score) } else { None };
+
         Brief {
             active_goals,
             open_predictions,
@@ -78,6 +84,7 @@ impl Brief {
             health,
             bluesky_stats,
             caddy,
+            calibration,
         }
     }
 
@@ -108,6 +115,16 @@ impl Brief {
             for (id, date, text) in &self.open_predictions {
                 out.push_str(&format!("   #{id} [{date}] {text}\n"));
             }
+        }
+        // Calibration line (shown if there are resolved predictions)
+        if let Some(cal) = &self.calibration {
+            out.push_str(&format!(
+                "  calibration: {}/{} correct ({:.1}%) — bias: {}\n",
+                cal.correct,
+                cal.total_resolved,
+                cal.hit_rate * 100.0,
+                cal.direction_bias,
+            ));
         }
         out.push('\n');
 
@@ -190,6 +207,16 @@ impl Brief {
             for (id, date, text) in &self.open_predictions {
                 out.push_str(&format!("• #{id} [{date}] {}\n", truncate_str(text, 50)));
             }
+        }
+        // Calibration line (compact)
+        if let Some(cal) = &self.calibration {
+            out.push_str(&format!(
+                "📊 Calibration: {}/{} ({:.0}%) — {}\n",
+                cal.correct,
+                cal.total_resolved,
+                cal.hit_rate * 100.0,
+                cal.direction_bias,
+            ));
         }
         out.push('\n');
 
@@ -540,6 +567,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            calibration: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("MORNING BRIEF"), "should contain header");
@@ -561,6 +589,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            calibration: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("no active goals"), "should note empty goals");
@@ -584,6 +613,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            calibration: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Axonix Morning Brief*"), "should have bold header");
@@ -600,6 +630,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            calibration: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("deploy needed"), "note should appear in output");
@@ -636,6 +667,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            calibration: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("end of brief"), "should have end marker");
@@ -655,6 +687,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            calibration: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("Goal one"));
@@ -675,6 +708,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            calibration: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("#1"), "should show prediction IDs");
@@ -693,6 +727,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            calibration: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Axonix Morning Brief*"), "should have header");
@@ -710,6 +745,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            calibration: None,
         };
         let output = brief.format_telegram();
         // format_telegram doesn't render notes (compact format) — but must not panic
@@ -727,6 +763,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            calibration: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("alpha"));
@@ -765,6 +802,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            calibration: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("Day 7"), "should show day number");
@@ -827,6 +865,7 @@ mod tests {
             }),
             bluesky_stats: None,
             caddy: None,
+            calibration: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("SYSTEM HEALTH"), "should contain SYSTEM HEALTH section");
@@ -846,6 +885,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            calibration: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("SYSTEM HEALTH"), "should still contain section header");
@@ -867,6 +907,7 @@ mod tests {
             }),
             bluesky_stats: None,
             caddy: None,
+            calibration: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("Health:"), "telegram brief should contain Health: line");
@@ -919,6 +960,7 @@ mod tests {
             health: None,
             bluesky_stats: Some((10, 7, Some("2026-03-22".to_string()))),
             caddy: None,
+            calibration: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("BLUESKY"), "should contain BLUESKY section");
@@ -937,6 +979,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            calibration: None,
         };
         let output = brief.format_terminal();
         assert!(!output.contains("BLUESKY"), "no bluesky_stats → no BLUESKY section");
@@ -952,6 +995,7 @@ mod tests {
             health: None,
             bluesky_stats: Some((5, 3, Some("2026-03-21".to_string()))),
             caddy: None,
+            calibration: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Bluesky*"), "telegram should show *Bluesky* label");
@@ -969,10 +1013,96 @@ mod tests {
             health: None,
             bluesky_stats: Some((2, 0, None)),
             caddy: None,
+            calibration: None,
         };
         let terminal = brief.format_terminal();
         assert!(terminal.contains("(never)"), "no last date should display (never)");
         let telegram = brief.format_telegram();
         assert!(telegram.contains("(never)"), "telegram: no last date should display (never)");
+    }
+
+    // ── calibration in brief ─────────────────────────────────────────────────────
+
+    #[test]
+    fn test_brief_calibration_terminal_shown_when_some() {
+        use crate::predictions::CalibrationScore;
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: Some(CalibrationScore {
+                total_resolved: 5,
+                correct: 5,
+                hit_rate: 1.0,
+                avg_days_early: 1.2,
+                direction_bias: "optimistic".to_string(),
+            }),
+        };
+        let output = brief.format_terminal();
+        assert!(output.contains("calibration:"), "terminal should show calibration line");
+        assert!(output.contains("5/5"), "should show 5/5 correct");
+        assert!(output.contains("100.0%"), "should show 100.0%");
+        assert!(output.contains("optimistic"), "should show bias");
+    }
+
+    #[test]
+    fn test_brief_calibration_terminal_hidden_when_none() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: None,
+        };
+        let output = brief.format_terminal();
+        assert!(!output.contains("calibration:"), "no calibration → should not show calibration line");
+    }
+
+    #[test]
+    fn test_brief_calibration_telegram_shown_when_some() {
+        use crate::predictions::CalibrationScore;
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: Some(CalibrationScore {
+                total_resolved: 5,
+                correct: 5,
+                hit_rate: 1.0,
+                avg_days_early: 0.0,
+                direction_bias: "optimistic".to_string(),
+            }),
+        };
+        let output = brief.format_telegram();
+        assert!(output.contains("📊 Calibration:"), "telegram should show calibration emoji line");
+        assert!(output.contains("5/5"), "should show 5/5");
+        assert!(output.contains("optimistic"), "should show bias");
+    }
+
+    #[test]
+    fn test_brief_calibration_telegram_hidden_when_none() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: None,
+        };
+        let output = brief.format_telegram();
+        assert!(!output.contains("📊 Calibration:"), "no calibration → should not show calibration line");
     }
 }
