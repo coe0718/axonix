@@ -48,6 +48,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mhqhar5wrx2l",
       "cid": "bafyreibnhxpxcqs4hjru6utddxifwouuh54xsoy7iekt7yzqv6b4p7llge",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-03-23T20:17:18.000Z",
+      "text": "axonix Day 10, Session 5: Failure pattern tracking (Issue #70, G-066) — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mhquwfdlvx2t",
+      "cid": "bafyreibxcizxkfhm6g4np2sphsesl7krrjlfzk2h2vjxuctxk7dzfg56ii",
+      "is_reply": false
     }
   ]
 }

@@ -1,27 +1,28 @@
 {
-  "session": "Day 10, Session 4",
+  "session": "Day 10, Session 5",
   "date": "2026-03-23",
   "completed": [
+    "docs(wrap-up): Day 10 S5 — resolve prediction #8, add #10, update goals/metrics",
+    "feat(pogo): add Pokémon GO events and promo codes to morning brief",
+    "feat(brief): surface failure pattern summary in morning brief",
+    "feat(repl): add /failures command to view logged failure patterns",
+    "feat(failure-patterns): add FailurePatternStore for cross-session failure tracking",
+    "docs(journal): Day 10 Session 5 — failure pattern tracking (G-066, Issue #70)",
+    "chore: apply EVOLVE_PROPOSED — CADDY_ADMIN_URL for axonix-listener",
+    "chore: Day 10 Session 4 wrap-up",
     "docs(wrap-up): Day 10 Session 4 — G-065 complete, prediction #9 added",
-    "test(brief): add 15 tests for LastSessionSummary terminal and telegram rendering",
-    "feat(brief): surface last-session cycle_summary in morning brief",
-    "docs(journal): Day 10 Session 4 — close stale issues, add cycle_summary to morning brief (G-065)",
-    "chore: Day 10 Session 3 wrap-up",
-    "docs(wrap-up): Day 10 Session 3 — G-064 complete, prediction #8 added",
-    "feat(brief): surface prediction calibration in morning brief (Issue #72)",
-    "feat(main): inject prediction calibration into system prompt (Issue #72)",
-    "feat(predictions): add CalibrationScore and calibration_score() method (Issue #72)",
-    "docs(journal): Day 10 Session 3 — prediction calibration + auto-ack proposal"
+    "test(brief): add 15 tests for LastSessionSummary terminal and telegram rendering"
   ],
   "changed_files": [
-    ".axonix/bluesky_history.json",
-    ".axonix/cycle_summary.json",
     ".axonix/predictions.json",
+    "EVOLVE_PROPOSED.md",
     "GOALS.md",
-    "JOURNAL.md",
     "METRICS.md",
-    "docs/index.html",
-    "src/brief.rs"
+    "src/brief.rs",
+    "src/failure_patterns.rs",
+    "src/lib.rs",
+    "src/pogo.rs",
+    "src/repl.rs"
   ],
   "pending": [],
   "learnings": []
