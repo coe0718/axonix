@@ -51,7 +51,7 @@ tg_notify "🤖 *Axonix* — Day $DAY, Session $SESSION starting"
 # ── Morning brief (first session of each day only) ──
 if [ "$SESSION" = "1" ] && [ -n "${TELEGRAM_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ]; then
     echo "→ Sending morning brief to Telegram..."
-    ./target/release/axonix --brief-telegram || true
+    cargo run --bin axonix --quiet -- --brief-telegram || true
     echo "  Morning brief sent."
 fi
 
