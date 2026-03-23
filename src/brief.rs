@@ -31,6 +31,7 @@ pub struct Brief {
     pub recent_sessions: Vec<SessionSummary>,
     pub note: Option<String>,
     pub health: Option<HealthSummary>,
+    pub bluesky_stats: Option<(usize, usize, Option<String>)>, // (total, root_posts, last_date)
 }
 
 /// One session row from METRICS.md.
@@ -50,12 +51,23 @@ impl Brief {
         let recent_sessions = parse_recent_metrics(3);
         let health = collect_health_summary();
 
+        use crate::bluesky::BlueskyHistory;
+        let history = BlueskyHistory::default_path();
+        let bluesky_stats = if !history.is_empty() {
+            let (total, root, _replies) = history.stats();
+            let last_date = history.last_root_post_date();
+            Some((total, root, last_date))
+        } else {
+            None
+        };
+
         Brief {
             active_goals,
             open_predictions,
             recent_sessions,
             note: None,
             health,
+            bluesky_stats,
         }
     }
 
@@ -103,6 +115,14 @@ impl Brief {
             }
         }
         out.push('\n');
+
+        // Bluesky post stats
+        if let Some((total, root, last_date)) = &self.bluesky_stats {
+            out.push_str("📡 BLUESKY\n");
+            let date_str = last_date.as_deref().unwrap_or("(never)");
+            out.push_str(&format!("   {root} posts ({total} total incl. replies) — last: {date_str}\n"));
+            out.push('\n');
+        }
 
         // Recent metrics
         out.push_str("📊 RECENT SESSIONS\n");
@@ -169,6 +189,13 @@ impl Brief {
                 out.push_str("🖥 Health: (unavailable)\n");
             }
         }
+
+        // Bluesky post stats (compact)
+        if let Some((total, root, last_date)) = &self.bluesky_stats {
+            let date_str = last_date.as_deref().unwrap_or("(never)");
+            out.push_str(&format!("📡 *Bluesky*: {root} posts (last: {date_str})\n"));
+        }
+
         out.push('\n');
 
         // Last session
@@ -490,6 +517,7 @@ mod tests {
             }],
             note: None,
             health: None,
+            bluesky_stats: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("MORNING BRIEF"), "should contain header");
@@ -509,6 +537,7 @@ mod tests {
             recent_sessions: vec![],
             note: None,
             health: None,
+            bluesky_stats: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("no active goals"), "should note empty goals");
@@ -530,6 +559,7 @@ mod tests {
             }],
             note: None,
             health: None,
+            bluesky_stats: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Axonix Morning Brief*"), "should have bold header");
@@ -544,6 +574,7 @@ mod tests {
             recent_sessions: vec![],
             note: Some("deploy needed".to_string()),
             health: None,
+            bluesky_stats: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("deploy needed"), "note should appear in output");
@@ -578,6 +609,7 @@ mod tests {
             recent_sessions: vec![],
             note: None,
             health: None,
+            bluesky_stats: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("end of brief"), "should have end marker");
@@ -595,6 +627,7 @@ mod tests {
             recent_sessions: vec![],
             note: None,
             health: None,
+            bluesky_stats: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("Goal one"));
@@ -613,6 +646,7 @@ mod tests {
             recent_sessions: vec![],
             note: None,
             health: None,
+            bluesky_stats: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("#1"), "should show prediction IDs");
@@ -629,6 +663,7 @@ mod tests {
             recent_sessions: vec![],
             note: None,
             health: None,
+            bluesky_stats: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Axonix Morning Brief*"), "should have header");
@@ -644,6 +679,7 @@ mod tests {
             recent_sessions: vec![],
             note: Some("important note here".to_string()),
             health: None,
+            bluesky_stats: None,
         };
         let output = brief.format_telegram();
         // format_telegram doesn't render notes (compact format) — but must not panic
@@ -659,6 +695,7 @@ mod tests {
             recent_sessions: vec![],
             note: None,
             health: None,
+            bluesky_stats: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("alpha"));
@@ -695,6 +732,7 @@ mod tests {
             }],
             note: None,
             health: None,
+            bluesky_stats: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("Day 7"), "should show day number");
@@ -755,6 +793,7 @@ mod tests {
                 disk_pct: 55.0,
                 uptime_hours: 142,
             }),
+            bluesky_stats: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("SYSTEM HEALTH"), "should contain SYSTEM HEALTH section");
@@ -772,6 +811,7 @@ mod tests {
             recent_sessions: vec![],
             note: None,
             health: None,
+            bluesky_stats: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("SYSTEM HEALTH"), "should still contain section header");
@@ -791,6 +831,7 @@ mod tests {
                 disk_pct: 20.0,
                 uptime_hours: 72,
             }),
+            bluesky_stats: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("Health:"), "telegram brief should contain Health: line");
@@ -829,5 +870,70 @@ mod tests {
     #[test]
     fn test_parse_uptime_hours_minutes_only() {
         assert_eq!(parse_uptime_hours("45m"), 0);
+    }
+
+    // ── Brief::bluesky_stats ──────────────────────────────────────────────────────
+
+    #[test]
+    fn test_brief_bluesky_stats_shows_in_terminal() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: Some((10, 7, Some("2026-03-22".to_string()))),
+        };
+        let output = brief.format_terminal();
+        assert!(output.contains("BLUESKY"), "should contain BLUESKY section");
+        assert!(output.contains("7 posts"), "should show root post count");
+        assert!(output.contains("10 total"), "should show total incl. replies");
+        assert!(output.contains("2026-03-22"), "should show last date");
+    }
+
+    #[test]
+    fn test_brief_bluesky_stats_none_not_shown_in_terminal() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+        };
+        let output = brief.format_terminal();
+        assert!(!output.contains("BLUESKY"), "no bluesky_stats → no BLUESKY section");
+    }
+
+    #[test]
+    fn test_brief_bluesky_stats_shows_in_telegram() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: Some((5, 3, Some("2026-03-21".to_string()))),
+        };
+        let output = brief.format_telegram();
+        assert!(output.contains("*Bluesky*"), "telegram should show *Bluesky* label");
+        assert!(output.contains("3 posts"), "should show root count");
+        assert!(output.contains("2026-03-21"), "should show last date");
+    }
+
+    #[test]
+    fn test_brief_bluesky_stats_no_last_date_shows_never() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: Some((2, 0, None)),
+        };
+        let terminal = brief.format_terminal();
+        assert!(terminal.contains("(never)"), "no last date should display (never)");
+        let telegram = brief.format_telegram();
+        assert!(telegram.contains("(never)"), "telegram: no last date should display (never)");
     }
 }
