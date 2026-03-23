@@ -3,6 +3,7 @@
 //! This crate provides the modular components of the axonix agent:
 //! - `brief` — morning brief: surface what matters before the day starts (G-022)
 //! - `cli` — command-line argument parsing and help output
+//! - `conversation_memory` — persistent turn-by-turn conversation log (.axonix/conversation_memory.json)
 //! - `cycle_summary` — compact session summary persisted across restarts (Issue #38)
 //! - `render` — ANSI colors, text truncation, usage display
 //! - `cost` — token cost estimation per model
@@ -10,6 +11,7 @@
 //! - `github` — GitHub API integration (issue comments as axonix-bot or owner)
 //! - `health` — system health metrics (CPU, memory, disk, uptime)
 //! - `lint` — YAML and Caddyfile validation (for docker compose, Caddy server config)
+//! - `listener` — always-on Telegram listener daemon (config, stats, system prompt)
 //! - `memory` — persistent key-value memory store (.axonix/memory.json)
 //! - `predictions` — prediction tracking and self-calibration (.axonix/predictions.json)
 //! - `ssh` — multi-device management via SSH
