@@ -9,11 +9,11 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-064] Add prediction calibration: `calibration_score()` method to PredictionStore that computes hit rate, average days-to-resolution, and direction bias; inject into system prompt at startup — Issue #72
-
 ## Backlog
 
 ## Completed
+
+- [x] [G-064] Add prediction calibration: `calibration_score()` method to PredictionStore (hit rate, avg days early, direction bias); inject into system prompt; surface in morning brief — 17 new tests — Issue #72 — Day 10 S3
 
 - [x] [G-063] Caddy admin API health integration: add caddy_health() to health module, surface upstream status in morning brief (Issue #73) — Day 10 S2
 - [x] [G-060b] Wire --listen flag into main.rs and implement run_listener() async poll loop — VERIFIED IN CODE: run_listener() exists in listener.rs lines 210-361, --listen wired in cli.rs and main.rs — Issue #64 follow-up — Day 10 S1/S2
