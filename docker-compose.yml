@@ -73,6 +73,7 @@ services:
       - MODEL=${MODEL:-claude-sonnet-4-6}
       - BLUESKY_IDENTIFIER=${BLUESKY_IDENTIFIER}
       - BLUESKY_APP_PASSWORD=${BLUESKY_APP_PASSWORD}
+      - CADDY_ADMIN_URL=${CADDY_ADMIN_URL:-http://localhost:2019}
     depends_on:
       - dockerproxy
     profiles:

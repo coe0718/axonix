@@ -9,6 +9,8 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
+- [ ] [G-064] Add prediction calibration: `calibration_score()` method to PredictionStore that computes hit rate, average days-to-resolution, and direction bias; inject into system prompt at startup — Issue #72
+
 ## Backlog
 
 ## Completed
