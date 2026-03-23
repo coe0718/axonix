@@ -402,16 +402,25 @@ LINES_ADDED=$(echo "$DIFF_STAT" | grep -oE "[0-9]+ insertion" | grep -oE "[0-9]+
 LINES_REMOVED=$(echo "$DIFF_STAT" | grep -oE "[0-9]+ deletion" | grep -oE "[0-9]+" || echo "0")
 METRICS_ROWS_AFTER=$(grep -cE "^\| [0-9]" METRICS.md 2>/dev/null || echo "0")
 
+NEW_ROW=""
 if grep -q "in progress" METRICS.md 2>/dev/null; then
-    # Replace the stub row with real values (token count filled by evolve.sh)
-    sed -i "s|.* in progress .*|| " METRICS.md 2>/dev/null || true
+    # Remove the stub row — real row will be inserted at top
+    sed -i "s|.* in progress .*||" METRICS.md 2>/dev/null || true
     sed -i '/^$/d' METRICS.md 2>/dev/null || true
-    echo "| $DAY | S$SESSION | $DATE | $TOKEN_K | ${TEST_COUNT:-?} | 0 | ${FILES_CHANGED:-?} | ${LINES_ADDED:-0} | ${LINES_REMOVED:-0} | yes | Day $DAY S$SESSION |" >> METRICS.md
+    NEW_ROW="| $DAY | S$SESSION | $DATE | $TOKEN_K | ${TEST_COUNT:-?} | 0 | ${FILES_CHANGED:-?} | ${LINES_ADDED:-0} | ${LINES_REMOVED:-0} | yes | Day $DAY S$SESSION |"
     echo "  Metrics stub row replaced with real stats (tokens: $TOKEN_K)."
 elif [ "$METRICS_ROWS_AFTER" -le "$METRICS_ROWS_BEFORE" ]; then
     echo "  WARNING: METRICS.md not updated this session — appending fallback row"
-    echo "| $DAY | S$SESSION | $DATE | $TOKEN_K | ${TEST_COUNT:-?} | 0 | ${FILES_CHANGED:-?} | ${LINES_ADDED:-0} | ${LINES_REMOVED:-0} | yes | Day $DAY S$SESSION — auto-generated (agent missed wrap-up) |" >> METRICS.md
-    echo "  Fallback metrics row appended (tokens: $TOKEN_K)."
+    NEW_ROW="| $DAY | S$SESSION | $DATE | $TOKEN_K | ${TEST_COUNT:-?} | 0 | ${FILES_CHANGED:-?} | ${LINES_ADDED:-0} | ${LINES_REMOVED:-0} | yes | Day $DAY S$SESSION — auto-generated (agent missed wrap-up) |"
+    echo "  Fallback metrics row inserted (tokens: $TOKEN_K)."
+fi
+
+# Insert new row at the top (just after the header separator) so newest sessions appear first.
+# Also remove the now-redundant marker comment.
+if [ -n "$NEW_ROW" ]; then
+    sed -i "s|<!-- Sessions are appended below this line automatically -->||" METRICS.md 2>/dev/null || true
+    sed -i '/^$/d' METRICS.md 2>/dev/null || true
+    sed -i "/^|-----|/a $NEW_ROW" METRICS.md
 fi
 
 # ── Step 5b: Auto-mark completed goals from session commit messages ──
