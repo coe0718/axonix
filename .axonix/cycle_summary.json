@@ -1,27 +1,25 @@
 {
-  "session": "Day 9, Session 4",
+  "session": "Day 9, Session 9",
   "date": "2026-03-22",
   "completed": [
+    "docs: Day 9 Session 9 wrap-up — G-058 complete, metrics finalized",
+    "feat(brief): show Bluesky post stats in morning brief",
+    "feat(bluesky): add BlueskyHistory — persist post history to .axonix/bluesky_history.json",
+    "docs(journal): Day 9 Session 9 — Bluesky post history persistence",
+    "fix(docker): disable incremental compilation — rustc 1.85.1 SIGSEGV",
+    "fix(evolve): revert committed src/ changes on build failure",
+    "fix(docker): pin rust:1.85 — 1.94 has ICE with LTO + tower traits",
+    "chore: Day 9 Session 4 wrap-up",
     "docs: Day 9 Session 4 wrap-up — G-057 complete, metrics finalized",
-    "feat(brief): add system health snapshot to morning brief",
-    "docs(journal): Day 9 Session 4 — add health snapshot to morning brief",
-    "chore: Day 9 Session 2 wrap-up",
-    "fix(brief): update parse_metrics_row() for 11-column METRICS.md format",
-    "docs(journal): Day 9 Session 2 — fix brief.rs column offsets + close Issue #59",
-    "fix(evolve): apply EVOLVE_PROPOSED proposals from Day 9 S1",
-    "chore: Day 9 Session 1 wrap-up",
-    "docs(metrics): finalize Day 9 S1 metrics row",
-    "docs(goals): mark G-054 and G-055 complete — Day 9 S1"
+    "feat(brief): add system health snapshot to morning brief"
   ],
   "changed_files": [
-    ".axonix/cycle_summary.json",
-    "CAPABILITIES.md",
     "GOALS.md",
     "JOURNAL.md",
     "METRICS.md",
     "ROADMAP.md",
     "docker-compose.yml",
-    "docs/index.html",
+    "src/bluesky.rs",
     "src/brief.rs"
   ],
   "pending": [],
