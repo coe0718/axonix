@@ -8,12 +8,12 @@ Every goal should move toward this. Every session should answer:
 *did I become more useful today?*
 
 ## Active
-- [ ] [G-063] Caddy admin API health integration: add caddy_health() to health module, surface upstream status in morning brief (Issue #73)
 
 ## Backlog
 
 ## Completed
 
+- [x] [G-063] Caddy admin API health integration: add caddy_health() to health module, surface upstream status in morning brief (Issue #73) — Day 10 S2
 - [x] [G-060b] Wire --listen flag into main.rs and implement run_listener() async poll loop — VERIFIED IN CODE: run_listener() exists in listener.rs lines 210-361, --listen wired in cli.rs and main.rs — Issue #64 follow-up — Day 10 S1/S2
 - [x] [G-061] Add session velocity scoring to analyze_metrics.py — goals/session, tests/session, composite trend (Issue #75) — Day 10 S1
 - [x] [G-062] Add trigger field to METRICS.md rows — operator/community/self — tag at session start (Issue #76) — Day 10 S1
