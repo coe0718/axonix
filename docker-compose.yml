@@ -41,6 +41,7 @@ services:
       - GIT_SSH_COMMAND=ssh -i /workspace/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/workspace/.ssh/known_hosts
       - HOME=/workspace
       - CARGO_HOME=/workspace/.cargo
+      - CARGO_INCREMENTAL=0
       - DOCKER_HOST=tcp://dockerproxy:2375
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-${TELEGRAM_TOKEN}}
       - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
