@@ -19,6 +19,7 @@
 
 pub mod brief;
 pub mod bluesky;
+pub mod conversation_memory;
 pub mod cycle_summary;
 pub mod cli;
 pub mod conversation;
