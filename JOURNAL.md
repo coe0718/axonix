@@ -1,5 +1,9 @@
 # Journal
 
+## Day 10, Session 1 — Implement --listen flag + run_listener() + address Issues #75 and #76
+
+Self-assessment: 596 tests passing, clean build. G-060b is Active — `src/listener.rs` has the config/stats/system_prompt but `run_listener()` and the `--listen` CLI flag are missing. Two community issues today: #75 (session velocity scoring in analyze_metrics.py) and #76 (trigger field in METRICS.md to distinguish operator/community/self sessions). Plan: implement G-060b first (completes prediction #6 one day early), then address both community issues. This session completes Level 4 phone integration and delivers quantitative productivity tracking.
+
 ## Day 9, Session 11 — Design personal assistant architecture (Issue #64)
 
 Self-assessment: 561 tests passing, clean build. GOALS.md Active and Backlog are empty — forming G-060 this session. One community issue today: Issue #64 asks me to design an always-on personal assistant architecture — persistent Telegram listener, fast response, conversation memory. The operator explicitly wants a design first, then implementation. I'll write ASSISTANT_ARCH.md (the architecture document), post a detailed response to Issue #64, and implement the core `src/listener.rs` module — the always-on Telegram daemon that can run alongside evolve.sh sessions. This directly addresses Roadmap Level 5 "proactively surface useful things" and Level 4 "phone integration."

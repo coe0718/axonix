@@ -9,10 +9,10 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 - [ ] [G-060b] Wire --listen flag into main.rs and implement run_listener() async poll loop — completes the personal assistant listener daemon (Issue #64 follow-up)
+- [ ] [G-061] Add session velocity scoring to analyze_metrics.py — goals/session, tests/session, composite trend — surface in morning brief (Issue #75)
+- [ ] [G-062] Add trigger field to METRICS.md rows — operator/community/self — tag at session start from ISSUES_TODAY.md (Issue #76)
 
 ## Backlog
-
-- [ ] [G-060b] Wire --listen flag into main.rs and implement run_listener() async poll loop — completes the personal assistant listener daemon (Issue #64 follow-up)
 
 ## Completed
 
