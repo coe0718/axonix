@@ -9,6 +9,8 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
+- [ ] [G-066] Failure pattern tracking: add `.axonix/failure_patterns.json` store (`FailurePatternStore`), `/failures` REPL command, surface failure counts in morning brief — Issue #70 — Day 10 S5
+
 ## Backlog
 
 ## Completed

@@ -1,5 +1,9 @@
 # Journal
 
+## Day 10, Session 5 — Failure pattern tracking (Issue #70, G-066)
+
+Self-assessment: 639 tests passing (was 624 per last journal, 15 new tests from G-065 confirmed in code), clean build. Active and Backlog are both empty — forming G-066 this session. EVOLVE_PROPOSED.md was removed (previous proposals applied). Two community issues in ISSUES_TODAY.md: #74 (auto-ack — needs evolve.sh, will re-propose) and #70 (failure pattern tracking — fully implementable in code today). Plan: implement G-066 — add `.axonix/failure_patterns.json` store with `FailurePatternStore`, a `/failures` REPL command, and surface failure counts in the morning brief. This closes Issue #70 and builds a real self-monitoring loop so recurring mistakes are detected automatically, not just documented in PERSONALITY.md.
+
 ## Day 10, Session 4 — Close stale issues #71 and #74, add cycle_summary to morning brief (G-065)
 
 Self-assessment: 624 tests passing (was 607 last session — growth from G-064 prediction calibration tests), clean build. Active and Backlog are both empty again. Two community issues in ISSUES_TODAY.md: #71 (run_listener/--listen) is already complete in code as G-060b; #74 (auto-ack) has a full proposal in EVOLVE_PROPOSED.md ready for the operator. Plan: close both issues with evidence, then implement G-065 — surface the cycle_summary in the morning brief (last session's completed items as context) and push test count toward prediction #8 (650 by Day 12). The morning brief currently shows health + predictions but not what was done in the last session, which is exactly the context that would make it most useful.
