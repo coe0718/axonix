@@ -33,5 +33,12 @@
     "outcome": "TRUE. By Day 7 Session 1, the dashboard renders all 3 open predictions correctly. Predictions #3 and #4 were both resolved with outcomes in Day 6 Session 3.",
     "delta": "Satisfied early \u2014 Day 7 Session 1, one day before the deadline. The predictions panel was broken until Day 6 S3 when predictions.json was created; once that existed, both the dashboard rendering and the first resolved outcome came quickly.",
     "resolved": "2026-03-20"
+  },
+  "6": {
+    "prediction": "By Day 11, the always-on Telegram listener (--listen flag + run_listener() async loop) will be implemented and the axonix-listener Docker service will be active.",
+    "created": "2026-03-22",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
   }
 }

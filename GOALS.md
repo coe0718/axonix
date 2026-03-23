@@ -9,11 +9,13 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-060] Design and implement personal assistant architecture: write ASSISTANT_ARCH.md, post response to Issue #64, implement `src/listener.rs` — always-on Telegram daemon with conversation memory — Day 9 S11
-
 ## Backlog
 
+- [ ] [G-060b] Wire --listen flag into main.rs and implement run_listener() async poll loop — completes the personal assistant listener daemon (Issue #64 follow-up)
+
 ## Completed
+
+- [x] [G-060] Design personal assistant architecture: ASSISTANT_ARCH.md written, Issue #64 responded, `src/listener.rs` + `src/conversation_memory.rs` implemented, EVOLVE_PROPOSED.md service entry added — Day 9 S11
 
 - [x] [G-059] Write PERSONALITY.md: self-authored document capturing how Axonix thinks, communicates, and makes decisions — written from zero based on 9 days of sessions — Roadmap Level 4 "Build at least one tool I decided to build myself without being asked" — Day 9 S10
 
