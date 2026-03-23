@@ -49,6 +49,8 @@ pub struct Brief {
     pub last_session: Option<LastSessionSummary>,
     /// Most common failure type + total count, if any failures have been logged.
     pub failure_summary: Option<String>,
+    /// Pokémon GO active events, upcoming events, and promo codes from leekduck.com.
+    pub pogo: Option<crate::pogo::PogoData>,
 }
 
 /// One session row from METRICS.md.
@@ -125,6 +127,10 @@ impl Brief {
             calibration,
             last_session,
             failure_summary,
+            pogo: {
+                let data = crate::pogo::PogoData::fetch();
+                if !data.is_empty() { Some(data) } else { None }
+            },
         }
     }
 
@@ -214,6 +220,12 @@ impl Brief {
         // Failure pattern summary (if any failures logged)
         if let Some(fs) = &self.failure_summary {
             out.push_str(&format!("{fs}\n"));
+            out.push('\n');
+        }
+
+        // Pokémon GO events and promo codes
+        if let Some(ref pogo) = self.pogo {
+            out.push_str(&pogo.format_terminal());
             out.push('\n');
         }
 
@@ -309,6 +321,12 @@ impl Brief {
         // Failure pattern summary (compact)
         if let Some(fs) = &self.failure_summary {
             out.push_str(&format!("{fs}\n"));
+        }
+
+        // Pokémon GO events and promo codes (compact)
+        if let Some(ref pogo) = self.pogo {
+            out.push_str(&pogo.format_telegram());
+            out.push('\n');
         }
 
         // Bluesky post stats (compact)
@@ -661,6 +679,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("MORNING BRIEF"), "should contain header");
@@ -685,6 +704,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("no active goals"), "should note empty goals");
@@ -711,6 +731,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Axonix Morning Brief*"), "should have bold header");
@@ -730,6 +751,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("deploy needed"), "note should appear in output");
@@ -769,6 +791,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("end of brief"), "should have end marker");
@@ -791,6 +814,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("Goal one"));
@@ -814,6 +838,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("#1"), "should show prediction IDs");
@@ -835,6 +860,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Axonix Morning Brief*"), "should have header");
@@ -855,6 +881,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_telegram();
         // format_telegram doesn't render notes (compact format) — but must not panic
@@ -875,6 +902,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("alpha"));
@@ -916,6 +944,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("Day 7"), "should show day number");
@@ -981,6 +1010,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("SYSTEM HEALTH"), "should contain SYSTEM HEALTH section");
@@ -1003,6 +1033,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("SYSTEM HEALTH"), "should still contain section header");
@@ -1027,6 +1058,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("Health:"), "telegram brief should contain Health: line");
@@ -1082,6 +1114,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("BLUESKY"), "should contain BLUESKY section");
@@ -1103,6 +1136,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_terminal();
         assert!(!output.contains("BLUESKY"), "no bluesky_stats → no BLUESKY section");
@@ -1121,6 +1155,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Bluesky*"), "telegram should show *Bluesky* label");
@@ -1141,6 +1176,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let terminal = brief.format_terminal();
         assert!(terminal.contains("(never)"), "no last date should display (never)");
@@ -1170,6 +1206,7 @@ mod tests {
             }),
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("calibration:"), "terminal should show calibration line");
@@ -1191,6 +1228,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_terminal();
         assert!(!output.contains("calibration:"), "no calibration → should not show calibration line");
@@ -1216,6 +1254,7 @@ mod tests {
             }),
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("📊 Calibration:"), "telegram should show calibration emoji line");
@@ -1236,6 +1275,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_telegram();
         assert!(!output.contains("📊 Calibration:"), "no calibration → should not show calibration line");
@@ -1262,6 +1302,7 @@ mod tests {
                 test_count: None,
             }),
         failure_summary: None,
+        pogo: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("LAST SESSION"), "should contain LAST SESSION header");
@@ -1282,6 +1323,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("LAST SESSION"), "header still present when None");
@@ -1310,6 +1352,7 @@ mod tests {
                 test_count: Some(624),
             }),
         failure_summary: None,
+        pogo: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("G-064: prediction calibration"), "should show first completed item");
@@ -1342,6 +1385,7 @@ mod tests {
                 test_count: None,
             }),
         failure_summary: None,
+        pogo: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("item five"), "fifth item should appear");
@@ -1367,6 +1411,7 @@ mod tests {
                 test_count: Some(624),
             }),
         failure_summary: None,
+        pogo: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("624 tests"), "should show numeric test count");
@@ -1391,6 +1436,7 @@ mod tests {
                 test_count: None,
             }),
         failure_summary: None,
+        pogo: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("? tests"), "should show '? tests' when count is None");
@@ -1417,6 +1463,7 @@ mod tests {
                 test_count: Some(624),
             }),
         failure_summary: None,
+        pogo: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Last Session*"), "telegram should show bold Last Session header");
@@ -1437,6 +1484,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Last Session*"), "telegram header still present when None");
@@ -1465,6 +1513,7 @@ mod tests {
                 test_count: Some(624),
             }),
         failure_summary: None,
+        pogo: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("G-064: prediction calibration"), "telegram should show completed items");
@@ -1490,6 +1539,7 @@ mod tests {
                 test_count: Some(624),
             }),
         failure_summary: None,
+        pogo: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("624 tests"), "telegram should show numeric test count");
@@ -1514,6 +1564,7 @@ mod tests {
                 test_count: None,
             }),
         failure_summary: None,
+        pogo: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("? tests"), "telegram should show '? tests' when count is None");
@@ -1540,6 +1591,7 @@ mod tests {
                 test_count: Some(624),
             }),
         failure_summary: None,
+        pogo: None,
         };
         let terminal = brief.format_terminal();
         assert!(terminal.contains("no completed items recorded"), "empty completed should show fallback in terminal");
@@ -1568,6 +1620,7 @@ mod tests {
                 test_count: None,
             }),
         failure_summary: None,
+        pogo: None,
         };
         let output = brief.format_terminal();
         // The full 80-char string should NOT appear (truncated to 60)
@@ -1590,6 +1643,7 @@ mod tests {
             calibration: None,
             last_session: None,
             failure_summary: None,
+            pogo: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("📝 LAST SESSION"), "LAST SESSION header must always appear in terminal brief");
@@ -1614,6 +1668,7 @@ mod tests {
                 test_count: Some(624),
             }),
         failure_summary: None,
+        pogo: None,
         };
         let terminal = brief.format_terminal();
         assert!(terminal.contains("2026-03-23"), "terminal should show date next to session name");
