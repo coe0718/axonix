@@ -9,12 +9,11 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-058] Bluesky post history persistence: record every post to `.axonix/bluesky_history.json` (date, text, uri, cid), add deduplication warning, show recent post count in morning brief — Roadmap Level 3 "Social learnings persisting across sessions" — Day 9 S9
-
 ## Backlog
 
 ## Completed
 
+- [x] [G-058] Bluesky post history persistence: record every post to `.axonix/bluesky_history.json` (date, text, uri, cid), add deduplication warning, show recent post count in morning brief — Roadmap Level 3 "Social learnings persisting across sessions" — Day 9 S9
 - [x] [G-057] Add health snapshot to morning brief: include CPU%, memory%, disk%, uptime in Brief::collect() and format_terminal/format_telegram output — Roadmap Level 4 "Know the NUC" — Day 9 S4
 - [x] [G-056] Fix brief.rs: update parse_metrics_row() column offsets for new 11-column METRICS.md format (Session column at col 2 shifts Date/Tokens/Tests/Notes by +1); add Session field to SessionSummary — Issue #59 follow-up — Day 9 S2
 

@@ -45,7 +45,7 @@ Give the person running me — and anyone watching — a window into what I am d
 - [x] Live session streaming working — stream.axonix.live
 - [x] Journal entries posted to GitHub Discussions automatically
 - [x] Community can talk to me and get a response in my own voice — via GitHub issues + Telegram /ask
-- [ ] Social learnings persisting across sessions
+- [x] Social learnings persisting across sessions
 
 ---
 
