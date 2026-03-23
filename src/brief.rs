@@ -24,6 +24,18 @@ pub struct HealthSummary {
     pub uptime_hours: u64,
 }
 
+/// Summary of the last completed session, loaded from `.axonix/cycle_summary.json`.
+pub struct LastSessionSummary {
+    /// Session label e.g. "Day 10, Session 3"
+    pub session: String,
+    /// ISO date e.g. "2026-03-23"
+    pub date: String,
+    /// Completed items from that session (up to 5 shown)
+    pub completed: Vec<String>,
+    /// Test count at session end, if recorded
+    pub test_count: Option<u32>,
+}
+
 /// A morning brief summary.
 pub struct Brief {
     pub active_goals: Vec<String>,
@@ -34,6 +46,7 @@ pub struct Brief {
     pub bluesky_stats: Option<(usize, usize, Option<String>)>, // (total, root_posts, last_date)
     pub caddy: Option<crate::health::CaddyHealth>,
     pub calibration: Option<CalibrationScore>,
+    pub last_session: Option<LastSessionSummary>,
 }
 
 /// One session row from METRICS.md.
@@ -76,6 +89,17 @@ impl Brief {
         let score = pred_store.calibration_score();
         let calibration = if score.total_resolved > 0 { Some(score) } else { None };
 
+        // Load last cycle summary from .axonix/cycle_summary.json
+        let last_session = {
+            let cs = crate::cycle_summary::CycleSummary::default_path();
+            cs.data.map(|d| LastSessionSummary {
+                session: d.session.clone(),
+                date: d.date.clone(),
+                completed: d.completed.clone(),
+                test_count: d.test_count,
+            })
+        };
+
         Brief {
             active_goals,
             open_predictions,
@@ -85,6 +109,7 @@ impl Brief {
             bluesky_stats,
             caddy,
             calibration,
+            last_session,
         }
     }
 
@@ -103,6 +128,28 @@ impl Brief {
         } else {
             for g in &self.active_goals {
                 out.push_str(&format!("   • {g}\n"));
+            }
+        }
+        out.push('\n');
+
+        // Last session (from cycle_summary.json)
+        out.push_str("📝 LAST SESSION\n");
+        match &self.last_session {
+            Some(ls) => {
+                out.push_str(&format!("   {} ({})\n", ls.session, ls.date));
+                for item in ls.completed.iter().take(5) {
+                    out.push_str(&format!("   ✓ {}\n", truncate_str(item, 60)));
+                }
+                if ls.completed.is_empty() {
+                    out.push_str("   (no completed items recorded)\n");
+                }
+                match ls.test_count {
+                    Some(n) => out.push_str(&format!("   🧪 {n} tests\n")),
+                    None => out.push_str("   🧪 ? tests\n"),
+                }
+            }
+            None => {
+                out.push_str("   (no cycle summary found)\n");
             }
         }
         out.push('\n');
@@ -244,10 +291,28 @@ impl Brief {
             out.push_str(&format!("📡 *Bluesky*: {root} posts (last: {date_str})\n"));
         }
 
+        // Last session from cycle_summary.json
+        out.push_str("\n📝 *Last Session*\n");
+        match &self.last_session {
+            Some(ls) => {
+                out.push_str(&format!("• {} ({})\n", ls.session, ls.date));
+                for item in ls.completed.iter().take(5) {
+                    out.push_str(&format!("✓ {}\n", truncate_str(item, 60)));
+                }
+                match ls.test_count {
+                    Some(n) => out.push_str(&format!("🧪 {n} tests\n")),
+                    None => out.push_str("🧪 ? tests\n"),
+                }
+            }
+            None => {
+                out.push_str("_(no cycle summary found)_\n");
+            }
+        }
+
         out.push('\n');
 
-        // Last session
-        out.push_str("📊 *Last Session*\n");
+        // Last session from METRICS.md
+        out.push_str("📊 *Recent Metrics*\n");
         if let Some(last) = self.recent_sessions.last() {
             out.push_str(&format!(
                 "Day {} {} {} — {} tests\n",
@@ -568,6 +633,7 @@ mod tests {
             bluesky_stats: None,
             caddy: None,
             calibration: None,
+            last_session: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("MORNING BRIEF"), "should contain header");
@@ -590,6 +656,7 @@ mod tests {
             bluesky_stats: None,
             caddy: None,
             calibration: None,
+            last_session: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("no active goals"), "should note empty goals");
@@ -614,6 +681,7 @@ mod tests {
             bluesky_stats: None,
             caddy: None,
             calibration: None,
+            last_session: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Axonix Morning Brief*"), "should have bold header");
@@ -631,6 +699,7 @@ mod tests {
             bluesky_stats: None,
             caddy: None,
             calibration: None,
+            last_session: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("deploy needed"), "note should appear in output");
@@ -668,6 +737,7 @@ mod tests {
             bluesky_stats: None,
             caddy: None,
             calibration: None,
+            last_session: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("end of brief"), "should have end marker");
@@ -688,6 +758,7 @@ mod tests {
             bluesky_stats: None,
             caddy: None,
             calibration: None,
+            last_session: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("Goal one"));
@@ -709,6 +780,7 @@ mod tests {
             bluesky_stats: None,
             caddy: None,
             calibration: None,
+            last_session: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("#1"), "should show prediction IDs");
@@ -728,6 +800,7 @@ mod tests {
             bluesky_stats: None,
             caddy: None,
             calibration: None,
+            last_session: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Axonix Morning Brief*"), "should have header");
@@ -746,6 +819,7 @@ mod tests {
             bluesky_stats: None,
             caddy: None,
             calibration: None,
+            last_session: None,
         };
         let output = brief.format_telegram();
         // format_telegram doesn't render notes (compact format) — but must not panic
@@ -764,6 +838,7 @@ mod tests {
             bluesky_stats: None,
             caddy: None,
             calibration: None,
+            last_session: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("alpha"));
@@ -803,6 +878,7 @@ mod tests {
             bluesky_stats: None,
             caddy: None,
             calibration: None,
+            last_session: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("Day 7"), "should show day number");
@@ -866,6 +942,7 @@ mod tests {
             bluesky_stats: None,
             caddy: None,
             calibration: None,
+            last_session: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("SYSTEM HEALTH"), "should contain SYSTEM HEALTH section");
@@ -886,6 +963,7 @@ mod tests {
             bluesky_stats: None,
             caddy: None,
             calibration: None,
+            last_session: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("SYSTEM HEALTH"), "should still contain section header");
@@ -908,6 +986,7 @@ mod tests {
             bluesky_stats: None,
             caddy: None,
             calibration: None,
+            last_session: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("Health:"), "telegram brief should contain Health: line");
@@ -961,6 +1040,7 @@ mod tests {
             bluesky_stats: Some((10, 7, Some("2026-03-22".to_string()))),
             caddy: None,
             calibration: None,
+            last_session: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("BLUESKY"), "should contain BLUESKY section");
@@ -980,6 +1060,7 @@ mod tests {
             bluesky_stats: None,
             caddy: None,
             calibration: None,
+            last_session: None,
         };
         let output = brief.format_terminal();
         assert!(!output.contains("BLUESKY"), "no bluesky_stats → no BLUESKY section");
@@ -996,6 +1077,7 @@ mod tests {
             bluesky_stats: Some((5, 3, Some("2026-03-21".to_string()))),
             caddy: None,
             calibration: None,
+            last_session: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Bluesky*"), "telegram should show *Bluesky* label");
@@ -1014,6 +1096,7 @@ mod tests {
             bluesky_stats: Some((2, 0, None)),
             caddy: None,
             calibration: None,
+            last_session: None,
         };
         let terminal = brief.format_terminal();
         assert!(terminal.contains("(never)"), "no last date should display (never)");
@@ -1041,6 +1124,7 @@ mod tests {
                 avg_days_early: 1.2,
                 direction_bias: "optimistic".to_string(),
             }),
+            last_session: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("calibration:"), "terminal should show calibration line");
@@ -1060,6 +1144,7 @@ mod tests {
             bluesky_stats: None,
             caddy: None,
             calibration: None,
+            last_session: None,
         };
         let output = brief.format_terminal();
         assert!(!output.contains("calibration:"), "no calibration → should not show calibration line");
@@ -1083,6 +1168,7 @@ mod tests {
                 avg_days_early: 0.0,
                 direction_bias: "optimistic".to_string(),
             }),
+            last_session: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("📊 Calibration:"), "telegram should show calibration emoji line");
@@ -1101,6 +1187,7 @@ mod tests {
             bluesky_stats: None,
             caddy: None,
             calibration: None,
+            last_session: None,
         };
         let output = brief.format_telegram();
         assert!(!output.contains("📊 Calibration:"), "no calibration → should not show calibration line");
