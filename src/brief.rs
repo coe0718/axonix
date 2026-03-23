@@ -1192,4 +1192,369 @@ mod tests {
         let output = brief.format_telegram();
         assert!(!output.contains("📊 Calibration:"), "no calibration → should not show calibration line");
     }
+
+    // ── LastSessionSummary — terminal format ──────────────────────────────────────
+
+    /// Last session section renders session label when Some (terminal format)
+    #[test]
+    fn test_last_session_terminal_renders_session_label() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: None,
+            last_session: Some(LastSessionSummary {
+                session: "Day 10, Session 3".to_string(),
+                date: "2026-03-23".to_string(),
+                completed: vec![],
+                test_count: None,
+            }),
+        };
+        let output = brief.format_terminal();
+        assert!(output.contains("LAST SESSION"), "should contain LAST SESSION header");
+        assert!(output.contains("Day 10, Session 3"), "should show session label");
+    }
+
+    /// Last session section renders gracefully when None (terminal format — no crash)
+    #[test]
+    fn test_last_session_terminal_none() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: None,
+            last_session: None,
+        };
+        let output = brief.format_terminal();
+        assert!(output.contains("LAST SESSION"), "header still present when None");
+        assert!(output.contains("no cycle summary found"), "should show fallback message");
+    }
+
+    /// Last session shows completed items (up to 5) in terminal format
+    #[test]
+    fn test_last_session_terminal_completed_items() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: None,
+            last_session: Some(LastSessionSummary {
+                session: "Day 10, Session 3".to_string(),
+                date: "2026-03-23".to_string(),
+                completed: vec![
+                    "G-064: prediction calibration".to_string(),
+                    "G-065: test coverage".to_string(),
+                ],
+                test_count: Some(624),
+            }),
+        };
+        let output = brief.format_terminal();
+        assert!(output.contains("G-064: prediction calibration"), "should show first completed item");
+        assert!(output.contains("G-065: test coverage"), "should show second completed item");
+    }
+
+    /// Last session truncates completed items beyond 5 in terminal format
+    #[test]
+    fn test_last_session_terminal_max_five_items() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: None,
+            last_session: Some(LastSessionSummary {
+                session: "Day 10, Session 3".to_string(),
+                date: "2026-03-23".to_string(),
+                completed: vec![
+                    "item one".to_string(),
+                    "item two".to_string(),
+                    "item three".to_string(),
+                    "item four".to_string(),
+                    "item five".to_string(),
+                    "item six — should not appear".to_string(),
+                ],
+                test_count: None,
+            }),
+        };
+        let output = brief.format_terminal();
+        assert!(output.contains("item five"), "fifth item should appear");
+        assert!(!output.contains("item six"), "sixth item should be truncated away");
+    }
+
+    /// Last session shows test count when Some in terminal format
+    #[test]
+    fn test_last_session_terminal_test_count() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: None,
+            last_session: Some(LastSessionSummary {
+                session: "Day 10, Session 3".to_string(),
+                date: "2026-03-23".to_string(),
+                completed: vec![],
+                test_count: Some(624),
+            }),
+        };
+        let output = brief.format_terminal();
+        assert!(output.contains("624 tests"), "should show numeric test count");
+    }
+
+    /// Last session shows "? tests" when test_count is None in terminal format
+    #[test]
+    fn test_last_session_terminal_no_test_count() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: None,
+            last_session: Some(LastSessionSummary {
+                session: "Day 10, Session 3".to_string(),
+                date: "2026-03-23".to_string(),
+                completed: vec![],
+                test_count: None,
+            }),
+        };
+        let output = brief.format_terminal();
+        assert!(output.contains("? tests"), "should show '? tests' when count is None");
+    }
+
+    // ── LastSessionSummary — telegram format ──────────────────────────────────────
+
+    /// Telegram format renders last session label
+    #[test]
+    fn test_last_session_telegram_renders_label() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: None,
+            last_session: Some(LastSessionSummary {
+                session: "Day 10, Session 3".to_string(),
+                date: "2026-03-23".to_string(),
+                completed: vec!["G-064: prediction calibration".to_string()],
+                test_count: Some(624),
+            }),
+        };
+        let output = brief.format_telegram();
+        assert!(output.contains("*Last Session*"), "telegram should show bold Last Session header");
+        assert!(output.contains("Day 10, Session 3"), "should show session label in telegram");
+    }
+
+    /// Telegram format renders correctly when last_session is None
+    #[test]
+    fn test_last_session_telegram_none() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: None,
+            last_session: None,
+        };
+        let output = brief.format_telegram();
+        assert!(output.contains("*Last Session*"), "telegram header still present when None");
+        assert!(output.contains("no cycle summary found"), "should show fallback when None");
+    }
+
+    /// Telegram format shows completed items
+    #[test]
+    fn test_last_session_telegram_completed_items() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: None,
+            last_session: Some(LastSessionSummary {
+                session: "Day 10, Session 3".to_string(),
+                date: "2026-03-23".to_string(),
+                completed: vec![
+                    "G-064: prediction calibration".to_string(),
+                    "G-065: test coverage".to_string(),
+                ],
+                test_count: Some(624),
+            }),
+        };
+        let output = brief.format_telegram();
+        assert!(output.contains("G-064: prediction calibration"), "telegram should show completed items");
+        assert!(output.contains("G-065: test coverage"), "telegram should show second item");
+    }
+
+    /// Telegram format shows test count when Some
+    #[test]
+    fn test_last_session_telegram_test_count() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: None,
+            last_session: Some(LastSessionSummary {
+                session: "Day 10, Session 3".to_string(),
+                date: "2026-03-23".to_string(),
+                completed: vec![],
+                test_count: Some(624),
+            }),
+        };
+        let output = brief.format_telegram();
+        assert!(output.contains("624 tests"), "telegram should show numeric test count");
+    }
+
+    /// Telegram format shows "? tests" when test_count is None
+    #[test]
+    fn test_last_session_telegram_no_test_count() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: None,
+            last_session: Some(LastSessionSummary {
+                session: "Day 10, Session 3".to_string(),
+                date: "2026-03-23".to_string(),
+                completed: vec![],
+                test_count: None,
+            }),
+        };
+        let output = brief.format_telegram();
+        assert!(output.contains("? tests"), "telegram should show '? tests' when count is None");
+    }
+
+    // ── LastSessionSummary — edge cases ───────────────────────────────────────────
+
+    /// LastSessionSummary with empty completed renders gracefully (terminal + telegram)
+    #[test]
+    fn test_last_session_empty_completed() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: None,
+            last_session: Some(LastSessionSummary {
+                session: "Day 10, Session 3".to_string(),
+                date: "2026-03-23".to_string(),
+                completed: vec![],
+                test_count: Some(624),
+            }),
+        };
+        let terminal = brief.format_terminal();
+        assert!(terminal.contains("no completed items recorded"), "empty completed should show fallback in terminal");
+        // telegram format: no crash, session label still appears
+        let telegram = brief.format_telegram();
+        assert!(telegram.contains("Day 10, Session 3"), "session label should appear in telegram even if no items");
+    }
+
+    /// Long completed items are truncated to 60 chars in terminal
+    #[test]
+    fn test_last_session_truncation() {
+        let long_item = "A".repeat(80);
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: None,
+            last_session: Some(LastSessionSummary {
+                session: "Day 10, Session 3".to_string(),
+                date: "2026-03-23".to_string(),
+                completed: vec![long_item.clone()],
+                test_count: None,
+            }),
+        };
+        let output = brief.format_terminal();
+        // The full 80-char string should NOT appear (truncated to 60)
+        assert!(!output.contains(&long_item), "80-char item should be truncated in terminal output");
+        // But a 60-char prefix should be present
+        assert!(output.contains(&"A".repeat(60)), "first 60 chars should be present");
+    }
+
+    /// Brief with last_session=None still has LAST SESSION header in terminal
+    #[test]
+    fn test_last_session_section_header_always_present() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: None,
+            last_session: None,
+        };
+        let output = brief.format_terminal();
+        assert!(output.contains("📝 LAST SESSION"), "LAST SESSION header must always appear in terminal brief");
+    }
+
+    /// Brief with last_session renders date alongside session name in terminal
+    #[test]
+    fn test_last_session_date_shown() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: None,
+            last_session: Some(LastSessionSummary {
+                session: "Day 10, Session 3".to_string(),
+                date: "2026-03-23".to_string(),
+                completed: vec!["G-064: prediction calibration".to_string()],
+                test_count: Some(624),
+            }),
+        };
+        let terminal = brief.format_terminal();
+        assert!(terminal.contains("2026-03-23"), "terminal should show date next to session name");
+        let telegram = brief.format_telegram();
+        assert!(telegram.contains("2026-03-23"), "telegram should show date next to session name");
+    }
 }
