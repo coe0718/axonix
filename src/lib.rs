@@ -5,6 +5,7 @@
 //! - `cli` — command-line argument parsing and help output
 //! - `conversation_memory` — persistent turn-by-turn conversation log (.axonix/conversation_memory.json)
 //! - `cycle_summary` — compact session summary persisted across restarts (Issue #38)
+//! - `failure_patterns` — cross-session failure pattern tracking (.axonix/failure_patterns.json) (G-066)
 //! - `render` — ANSI colors, text truncation, usage display
 //! - `cost` — token cost estimation per model
 //! - `conversation` — saving conversations to markdown
@@ -27,6 +28,7 @@ pub mod cycle_summary;
 pub mod cli;
 pub mod conversation;
 pub mod cost;
+pub mod failure_patterns;
 pub mod github;
 pub mod health;
 pub mod lint;
