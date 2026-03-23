@@ -41,6 +41,89 @@ impl Prediction {
     }
 }
 
+/// Calibration score across all resolved predictions.
+#[derive(Debug, Clone)]
+pub struct CalibrationScore {
+    /// Total number of resolved predictions.
+    pub total_resolved: usize,
+    /// Number of predictions whose outcome contains "TRUE".
+    pub correct: usize,
+    /// correct / total_resolved (0.0 if no resolved predictions).
+    pub hit_rate: f64,
+    /// Average days early (positive = early, negative = late). 0.0 if no delta data.
+    pub avg_days_early: f64,
+    /// "optimistic", "pessimistic", or "calibrated".
+    pub direction_bias: String,
+}
+
+impl CalibrationScore {
+    /// Format for injection into a system prompt.
+    ///
+    /// Returns `None` if `total_resolved == 0`.
+    pub fn format_for_system_prompt(&self) -> Option<String> {
+        if self.total_resolved == 0 {
+            return None;
+        }
+        let hit_pct = self.hit_rate * 100.0;
+        let timing_line = if self.avg_days_early > 0.0 {
+            format!("Average resolution: {:.1} days early", self.avg_days_early)
+        } else if self.avg_days_early < 0.0 {
+            format!("Average resolution: {:.1} days late", self.avg_days_early.abs())
+        } else {
+            "Average resolution: on time".to_string()
+        };
+        let bias_advice = match self.direction_bias.as_str() {
+            "optimistic" => "make bold, specific predictions",
+            "pessimistic" => "be more confident — you may be underestimating",
+            _ => "keep making precise, verifiable predictions",
+        };
+        Some(format!(
+            "## Prediction Calibration\n\
+             {} resolved predictions: {}/{} correct ({:.1}% hit rate)\n\
+             {}\n\
+             Bias: {} — {}",
+            self.total_resolved,
+            self.correct,
+            self.total_resolved,
+            hit_pct,
+            timing_line,
+            self.direction_bias,
+            bias_advice,
+        ))
+    }
+}
+
+/// Parse days from a delta string.
+///
+/// Looks for patterns like:
+/// - "1 day(s) early" → +1.0
+/// - "3 days early"   → +3.0
+/// - "2 day(s) late"  → -2.0
+/// - "1 days late"    → -1.0
+///
+/// Returns `None` if no parseable pattern found.
+fn parse_days_from_delta(delta: &str) -> Option<f64> {
+    let lower = delta.to_lowercase();
+    // Find a number followed by "day"
+    let day_pos = lower.find("day")?;
+    // Work backwards from "day" to find the number
+    let before_day = lower[..day_pos].trim_end();
+    let num_str: String = before_day.chars().rev()
+        .take_while(|c| c.is_ascii_digit())
+        .collect::<String>()
+        .chars().rev().collect();
+    let n: f64 = num_str.parse().ok()?;
+    // Now determine direction: look after "day..." for "early" or "late"
+    let after_day = &lower[day_pos..];
+    if after_day.contains("early") {
+        Some(n)
+    } else if after_day.contains("late") {
+        Some(-n)
+    } else {
+        None
+    }
+}
+
 /// Persistent prediction store backed by a JSON file.
 pub struct PredictionStore {
     path: PathBuf,
@@ -177,6 +260,78 @@ impl PredictionStore {
     /// Number of resolved predictions.
     pub fn resolved_count(&self) -> usize {
         self.entries.values().filter(|p| p.is_resolved()).count()
+    }
+
+    /// Compute a calibration score across all resolved predictions.
+    ///
+    /// Returns a `CalibrationScore` with hit rate, avg_days_early, and direction_bias.
+    /// If there are no resolved predictions, returns a zero-state score.
+    pub fn calibration_score(&self) -> CalibrationScore {
+        let resolved = self.resolved();
+        let total_resolved = resolved.len();
+
+        if total_resolved == 0 {
+            return CalibrationScore {
+                total_resolved: 0,
+                correct: 0,
+                hit_rate: 0.0,
+                avg_days_early: 0.0,
+                direction_bias: String::new(),
+            };
+        }
+
+        let correct = resolved
+            .iter()
+            .filter(|(_, p)| {
+                p.outcome.as_deref().map(|o| o.contains("TRUE")).unwrap_or(false)
+            })
+            .count();
+
+        let hit_rate = correct as f64 / total_resolved as f64;
+
+        // Parse avg_days_early from delta fields.
+        // Looks for patterns like "N day(s) early" or "N day(s) late".
+        let mut delta_sum: f64 = 0.0;
+        let mut delta_count: usize = 0;
+
+        for (_, pred) in &resolved {
+            if let Some(delta_text) = &pred.delta {
+                if let Some(days) = parse_days_from_delta(delta_text) {
+                    delta_sum += days;
+                    delta_count += 1;
+                }
+            }
+        }
+
+        let avg_days_early = if delta_count > 0 {
+            delta_sum / delta_count as f64
+        } else {
+            0.0
+        };
+
+        let direction_bias = if hit_rate > 0.7 && avg_days_early > 0.5 {
+            "optimistic".to_string()
+        } else if hit_rate < 0.4 {
+            "pessimistic".to_string()
+        } else {
+            "calibrated".to_string()
+        };
+
+        CalibrationScore {
+            total_resolved,
+            correct,
+            hit_rate,
+            avg_days_early,
+            direction_bias,
+        }
+    }
+
+    /// Format calibration data for injection into a system prompt.
+    ///
+    /// Returns `None` if there are no resolved predictions.
+    pub fn format_calibration_for_system_prompt(&self) -> Option<String> {
+        let score = self.calibration_score();
+        score.format_for_system_prompt()
     }
 
     /// Format open predictions as a block suitable for injection into a system prompt.
@@ -481,5 +636,148 @@ mod tests {
     fn test_resolved_empty() {
         let (store, _dir) = tmp_store();
         assert!(store.resolved().is_empty());
+    }
+
+    // ── calibration ──────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_calibration_zero_resolved() {
+        let (store, _dir) = tmp_store();
+        let score = store.calibration_score();
+        assert_eq!(score.total_resolved, 0);
+        assert_eq!(score.correct, 0);
+        assert_eq!(score.hit_rate, 0.0);
+        assert_eq!(score.avg_days_early, 0.0);
+        assert!(score.direction_bias.is_empty(), "empty store should have empty bias");
+    }
+
+    #[test]
+    fn test_calibration_all_correct() {
+        let (mut store, _dir) = tmp_store();
+        let id1 = store.predict("prediction one");
+        let id2 = store.predict("prediction two");
+        let id3 = store.predict("prediction three");
+        store.resolve(id1, "TRUE", None).unwrap();
+        store.resolve(id2, "TRUE — exactly right", None).unwrap();
+        store.resolve(id3, "TRUE", None).unwrap();
+        let score = store.calibration_score();
+        assert_eq!(score.total_resolved, 3);
+        assert_eq!(score.correct, 3);
+        assert!((score.hit_rate - 1.0).abs() < 1e-9, "hit_rate should be 1.0");
+    }
+
+    #[test]
+    fn test_calibration_mixed() {
+        let (mut store, _dir) = tmp_store();
+        let id1 = store.predict("will succeed");
+        let id2 = store.predict("will also succeed");
+        let id3 = store.predict("will fail");
+        store.resolve(id1, "TRUE", None).unwrap();
+        store.resolve(id2, "TRUE", None).unwrap();
+        store.resolve(id3, "FALSE", None).unwrap();
+        let score = store.calibration_score();
+        assert_eq!(score.total_resolved, 3);
+        assert_eq!(score.correct, 2);
+        let expected = 2.0 / 3.0;
+        assert!((score.hit_rate - expected).abs() < 1e-9,
+            "hit_rate should be ~0.667, got {}", score.hit_rate);
+        assert_eq!(score.direction_bias, "calibrated");
+    }
+
+    #[test]
+    fn test_calibration_format_some() {
+        let (mut store, _dir) = tmp_store();
+        let id1 = store.predict("will pass");
+        store.resolve(id1, "TRUE", Some("1 day(s) early")).unwrap();
+        let result = store.format_calibration_for_system_prompt();
+        assert!(result.is_some(), "should return Some when there are resolved predictions");
+        let text = result.unwrap();
+        assert!(text.contains("Prediction Calibration"), "should contain section header");
+        assert!(text.contains("1/1"), "should show 1/1 correct");
+        assert!(text.contains("100.0%"), "should show 100% hit rate");
+    }
+
+    #[test]
+    fn test_calibration_format_none() {
+        let (store, _dir) = tmp_store();
+        let result = store.format_calibration_for_system_prompt();
+        assert!(result.is_none(), "should return None when 0 resolved predictions");
+    }
+
+    #[test]
+    fn test_calibration_avg_days_early_early() {
+        let (mut store, _dir) = tmp_store();
+        let id1 = store.predict("will finish early");
+        let id2 = store.predict("will also finish early");
+        store.resolve(id1, "TRUE", Some("3 day(s) early")).unwrap();
+        store.resolve(id2, "TRUE", Some("1 days early")).unwrap();
+        let score = store.calibration_score();
+        assert!((score.avg_days_early - 2.0).abs() < 1e-9,
+            "avg_days_early should be 2.0, got {}", score.avg_days_early);
+    }
+
+    #[test]
+    fn test_calibration_avg_days_late() {
+        let (mut store, _dir) = tmp_store();
+        let id1 = store.predict("will be late");
+        store.resolve(id1, "FALSE", Some("2 day(s) late")).unwrap();
+        let score = store.calibration_score();
+        assert!((score.avg_days_early - (-2.0)).abs() < 1e-9,
+            "avg_days_early should be -2.0 for late, got {}", score.avg_days_early);
+    }
+
+    #[test]
+    fn test_calibration_no_delta_skipped() {
+        let (mut store, _dir) = tmp_store();
+        let id1 = store.predict("no delta");
+        store.resolve(id1, "TRUE", None).unwrap();
+        let score = store.calibration_score();
+        assert_eq!(score.avg_days_early, 0.0, "no delta → avg_days_early should be 0.0");
+    }
+
+    #[test]
+    fn test_calibration_direction_optimistic() {
+        let (mut store, _dir) = tmp_store();
+        for _ in 0..4 {
+            let id = store.predict("will succeed");
+            store.resolve(id, "TRUE", Some("2 days early")).unwrap();
+        }
+        let id5 = store.predict("this one too");
+        store.resolve(id5, "TRUE", Some("1 days early")).unwrap();
+        let score = store.calibration_score();
+        // hit_rate = 1.0 > 0.7, avg_days_early > 0.5 → optimistic
+        assert_eq!(score.direction_bias, "optimistic");
+    }
+
+    #[test]
+    fn test_calibration_direction_pessimistic() {
+        let (mut store, _dir) = tmp_store();
+        for _ in 0..4 {
+            let id = store.predict("will not succeed");
+            store.resolve(id, "FALSE", None).unwrap();
+        }
+        let score = store.calibration_score();
+        // hit_rate = 0.0 < 0.4 → pessimistic
+        assert_eq!(score.direction_bias, "pessimistic");
+    }
+
+    #[test]
+    fn test_parse_days_from_delta_early() {
+        assert_eq!(parse_days_from_delta("1 day(s) early"), Some(1.0));
+        assert_eq!(parse_days_from_delta("3 days early"), Some(3.0));
+        assert_eq!(parse_days_from_delta("10 day early"), Some(10.0));
+    }
+
+    #[test]
+    fn test_parse_days_from_delta_late() {
+        assert_eq!(parse_days_from_delta("2 day(s) late"), Some(-2.0));
+        assert_eq!(parse_days_from_delta("5 days late"), Some(-5.0));
+    }
+
+    #[test]
+    fn test_parse_days_from_delta_unparseable() {
+        assert_eq!(parse_days_from_delta("no timing info"), None);
+        assert_eq!(parse_days_from_delta(""), None);
+        assert_eq!(parse_days_from_delta("something happened"), None);
     }
 }
