@@ -225,12 +225,13 @@ fn build_system_prompt(memory: &axonix::memory::MemoryStore, predictions: &axoni
     let mut prompt = SYSTEM_PROMPT.to_string();
     let memory_block = memory.format_for_system_prompt();
     let pred_block = predictions.format_for_system_prompt();
+    let calibration_block = predictions.format_calibration_for_system_prompt();
 
     // Load the last session's cycle summary to reduce context window pressure (Issue #38)
     let cycle = CycleSummary::default_path();
     let cycle_block = cycle.format_for_system_prompt();
 
-    if memory_block.is_some() || pred_block.is_some() || cycle_block.is_some() {
+    if memory_block.is_some() || pred_block.is_some() || calibration_block.is_some() || cycle_block.is_some() {
         prompt.push_str("\n\n## Session Context\n");
         prompt.push_str("The following context has been injected from persistent memory and open predictions.\n");
         if let Some(mem) = memory_block {
@@ -240,6 +241,10 @@ fn build_system_prompt(memory: &axonix::memory::MemoryStore, predictions: &axoni
         if let Some(pred) = pred_block {
             prompt.push('\n');
             prompt.push_str(&pred);
+        }
+        if let Some(cal) = calibration_block {
+            prompt.push('\n');
+            prompt.push_str(&cal);
         }
         if let Some(cycle_text) = cycle_block {
             prompt.push('\n');
