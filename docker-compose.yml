@@ -42,6 +42,7 @@ services:
       - CARGO_HOME=/workspace/.cargo
       - CARGO_INCREMENTAL=0
       - MODEL=${MODEL:-claude-sonnet-4-6}
+      - CADDY_ADMIN_URL=${CADDY_ADMIN_URL:-http://localhost:2019}
     restart: always
 
   axonix:
