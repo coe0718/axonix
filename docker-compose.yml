@@ -21,6 +21,29 @@ services:
       - ./docs:/workspace/docs:ro
     restart: always
 
+  axonix-listener:
+    container_name: axonix-listener
+    build: .
+    command: ./target/release/axonix --listen
+    user: "${UID}:${GID}"
+    volumes:
+      - .:/workspace
+      - ./scripts/evolve.sh:/workspace/scripts/evolve.sh:ro
+      - ./deploy_key:/workspace/.ssh/id_ed25519:ro
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    environment:
+      - TZ=${TZ:-America/Indiana/Indianapolis}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-${TELEGRAM_TOKEN}}
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - HOME=/workspace
+      - CARGO_HOME=/workspace/.cargo
+      - CARGO_INCREMENTAL=0
+      - MODEL=${MODEL:-claude-sonnet-4-6}
+    restart: always
+
   axonix:
     container_name: axonix
     build: .

@@ -121,6 +121,26 @@ else:
 " >> "$ISSUES_FILE" 2>/dev/null || echo "No discussions fetched." >> "$ISSUES_FILE"
     DISC_COUNT=$(grep -c '^### Discussion' "$ISSUES_FILE" 2>/dev/null || echo 0)
     echo "  ${DISC_COUNT} discussions loaded."
+
+    # Auto-acknowledge any open issues that haven't been responded to this session
+    if [ -n "${AXONIX_BOT_TOKEN:-}" ]; then
+        ISSUE_NUMS=$(grep -oE '#[0-9]+' "$ISSUES_FILE" | tr -d '#' | sort -u)
+        for ISSUE_NUM in $ISSUE_NUMS; do
+            EXISTING=$(curl -s \
+                -H "Authorization: token $AXONIX_BOT_TOKEN" \
+                "https://api.github.com/repos/$REPO/issues/${ISSUE_NUM}/comments" \
+                | grep -c "Picked up in Day $DAY Session $SESSION" || true)
+            if [ "${EXISTING:-0}" -eq 0 ]; then
+                curl -s -X POST \
+                    -H "Authorization: token $AXONIX_BOT_TOKEN" \
+                    -H "Content-Type: application/json" \
+                    -d "{\"body\": \"Picked up in Day $DAY Session $SESSION — will address this session.\"}" \
+                    "https://api.github.com/repos/$REPO/issues/${ISSUE_NUM}/comments" \
+                    > /dev/null
+                echo "  Acknowledged issue #${ISSUE_NUM}."
+            fi
+        done
+    fi
 else
     echo "  gh CLI not available. Skipping issue fetch."
     echo "No issues available (gh CLI not installed)." > "$ISSUES_FILE"
