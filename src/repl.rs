@@ -154,6 +154,7 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                 "    /review <desc>     Invoke code_reviewer sub-agent on recent changes".to_string(),
                 "    /summary [text]    Show or update cycle summary (persisted to next session)".to_string(),
                 "    /recap             Post session recap thread to Bluesky (title, commits, tests)".to_string(),
+                "    /failures          Show logged failure patterns across sessions".to_string(),
             ];
             if !skill_names.is_empty() {
                 lines.push("    /skills        Show loaded skills".to_string());
@@ -591,6 +592,16 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
             // The actual async posting is done by main.rs (needs BlueskyClient).
             // We return a __recap marker so the caller can dispatch it.
             CommandResult::Handled(vec!["__recap".to_string()])
+        }
+
+        "/failures" => {
+            // Show logged failure patterns from .axonix/failure_patterns.json
+            use crate::failure_patterns::FailurePatternStore;
+            let store = FailurePatternStore::default_path();
+            let summary = store.failure_summary();
+            let mut lines: Vec<String> = summary.lines().map(|l| format!("  {l}")).collect();
+            lines.push(String::new());
+            CommandResult::Handled(lines)
         }
 
         s if s == "/memory" || s.starts_with("/memory ") => {
@@ -2352,5 +2363,59 @@ mod tests {
             !all.contains("Unknown command"),
             "/summary with only whitespace should not be unknown: {all}"
         );
+    }
+
+    // ── /failures command ─────────────────────────────────────────────────────
+
+    #[test]
+    fn test_failures_returns_handled() {
+        let mut s = state();
+        let result = handle_command("/failures", &mut s, &[]);
+        assert!(matches!(result, CommandResult::Handled(_)), "/failures should return Handled");
+    }
+
+    #[test]
+    fn test_failures_empty_store_shows_no_failures() {
+        // When there's no file at the default path (or it's empty),
+        // /failures should say "(no failures logged yet)"
+        // We use the env var to point to a nonexistent temp path.
+        let dir = tempfile::tempdir().unwrap();
+        let fp = dir.path().join("nope.json");
+        std::env::set_var("AXONIX_FAILURE_PATTERNS_PATH", fp.to_str().unwrap());
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/failures", &mut s, &[]) else {
+            std::env::remove_var("AXONIX_FAILURE_PATTERNS_PATH");
+            panic!("expected Handled");
+        };
+        std::env::remove_var("AXONIX_FAILURE_PATTERNS_PATH");
+        let all = lines.join("\n");
+        assert!(
+            all.contains("no failures"),
+            "/failures on empty store should say no failures: {all}"
+        );
+    }
+
+    #[test]
+    fn test_failures_not_unknown_command() {
+        let mut s = state();
+        let result = handle_command("/failures", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled: {result:?}");
+        };
+        let all = lines.join("\n");
+        assert!(
+            !all.contains("Unknown command"),
+            "/failures should not be treated as unknown: {all}"
+        );
+    }
+
+    #[test]
+    fn test_help_includes_failures_command() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/help", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("/failures"), "/help should document /failures command");
     }
 }
