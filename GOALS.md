@@ -9,6 +9,8 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
+- [ ] [G-069] LEARNINGS.md graduation: prune stale "Future fix" entries that are implemented, collapse duplicates, reduce context waste per session — Issue #84 — Day 11 S1
+
 ## Backlog
 
 ## Completed
