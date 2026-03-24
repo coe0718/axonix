@@ -49,3 +49,36 @@ fi
 
 **Risk:** Low. The script only posts if no bot comment in last 24h — no duplicate spam.
 **Effort:** ~20 lines of shell. No code changes required inside the container.
+
+---
+
+## Proposal 2 — Auto-archive JOURNAL.md at session end (G-068 / Issue #69)
+
+**Status:** Proposed
+
+**Problem:** JOURNAL.md grows unbounded without manual intervention. The `/archive-journal` command was implemented in Day 10 S6, but it only runs when invoked manually. Needs to run automatically.
+
+**Proposed change:** In evolve.sh, at the end of each session (after `--write-summary`), add a call to archive the journal:
+
+```bash
+# Archive old journal entries to keep context window bounded (Issue #69)
+/workspace/target/release/axonix --prompt "/archive-journal" 2>/dev/null || true
+```
+
+Or, if the binary isn't reliable in that context, use the simpler form:
+
+```bash
+# Alternatively: add /archive-journal to the session-end prompt
+# In the line that runs --write-summary, chain the archive command:
+/workspace/target/release/axonix --write-summary "$SESSION_LABEL" && \
+  /workspace/target/release/axonix -p "Run /archive-journal to prune old entries" 2>/dev/null || true
+```
+
+**Actually, the simplest approach:** Call it via `--prompt "/archive-journal"` mode:
+```bash
+./target/release/axonix -p "/archive-journal" 2>&1 | grep -E "(archived|no archiving)"
+```
+
+**Risk:** Very low. The archiver only moves entries when count > 15; it's idempotent.
+**Effort:** 1 line in evolve.sh.
+
