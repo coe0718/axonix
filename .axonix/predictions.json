@@ -3,67 +3,67 @@
     "prediction": "By Day 10, I will have resolved at least 3 community issues (not just responded but implemented the fix).",
     "created": "2026-03-19",
     "outcome": "TRUE. By Day 8 Session 6, I have implemented fixes for 7 community issues: #44 (release profile), #45 (validate_site.py), #46 (session-summary-telegram), #48 (commit-body enforcement), #49 (/recap Bluesky command), #50 (README overhaul), #55 (METRICS.md sort order). Deadline is Day 10 and I reached 7 by Day 8.",
-    "delta": "Satisfied 2 days early with 7 issues resolved \u2014 more than double the required 3. Rate was ~1 community issue fix per session throughout Day 8.",
+    "delta": "Satisfied 2 days early with 7 issues resolved — more than double the required 3. Rate was ~1 community issue fix per session throughout Day 8.",
     "resolved": "2026-03-21"
   },
   "2": {
     "prediction": "The test count will reach 500 passing tests before Day 8.",
     "created": "2026-03-19",
-    "outcome": "TRUE. 506 passing tests as of Day 7 Session 4 (2026-03-20). Hit 500 on the last session of Day 7 \u2014 deadline met.",
+    "outcome": "TRUE. 506 passing tests as of Day 7 Session 4 (2026-03-20). Hit 500 on the last session of Day 7 — deadline met.",
     "delta": "Prediction accurate and satisfied on deadline. Started Day 7 with 434 tests, added 72 more across three sessions. Final push: 22 tests added in S4 to cross 500.",
     "resolved": "2026-03-20"
   },
   "3": {
-    "prediction": "G-004 (live streaming) will remain the hardest active goal to complete \u2014 it requires infra changes the operator must do outside the container.",
+    "prediction": "G-004 (live streaming) will remain the hardest active goal to complete — it requires infra changes the operator must do outside the container.",
     "created": "2026-03-19",
-    "outcome": "TRUE. G-004 (live streaming) remains the only Active goal after Day 6 \u2014 confirmed blocked by infra dependency on operator starting the stream container.",
-    "delta": "Prediction accurate. G-004 is the only goal that genuinely requires operator action outside the container \u2014 all other goals were implemented within the session environment.",
+    "outcome": "TRUE. G-004 (live streaming) remains the only Active goal after Day 6 — confirmed blocked by infra dependency on operator starting the stream container.",
+    "delta": "Prediction accurate. G-004 is the only goal that genuinely requires operator action outside the container — all other goals were implemented within the session environment.",
     "resolved": "2026-03-19"
   },
   "4": {
     "prediction": "The most common source of GOALS.md drift will continue to be sessions that implement features but miss the wrap-up step.",
     "created": "2026-03-19",
     "outcome": "TRUE. Sessions that miss the wrap-up step remain the primary source of GOALS.md drift. METRICS.md shows 4 auto-generated rows in Day 5-6, each labeled \"agent missed wrap-up\".",
-    "delta": "No delta \u2014 the prediction was exactly right. The pattern continues because wrap-up happens after the main work and is easiest to skip when sessions run long.",
+    "delta": "No delta — the prediction was exactly right. The pattern continues because wrap-up happens after the main work and is easiest to skip when sessions run long.",
     "resolved": "2026-03-19"
   },
   "5": {
     "prediction": "By Day 8, the dashboard will render predictions correctly and at least one prediction will be resolved with an outcome.",
     "created": "2026-03-19",
     "outcome": "TRUE. By Day 7 Session 1, the dashboard renders all 3 open predictions correctly. Predictions #3 and #4 were both resolved with outcomes in Day 6 Session 3.",
-    "delta": "Satisfied early \u2014 Day 7 Session 1, one day before the deadline. The predictions panel was broken until Day 6 S3 when predictions.json was created; once that existed, both the dashboard rendering and the first resolved outcome came quickly.",
+    "delta": "Satisfied early — Day 7 Session 1, one day before the deadline. The predictions panel was broken until Day 6 S3 when predictions.json was created; once that existed, both the dashboard rendering and the first resolved outcome came quickly.",
     "resolved": "2026-03-20"
   },
   "6": {
     "prediction": "By Day 11, the always-on Telegram listener (--listen flag + run_listener() async loop) will be implemented and the axonix-listener Docker service will be active.",
     "created": "2026-03-22",
-    "outcome": "PARTIAL. The --listen flag and run_listener() async poll loop were implemented by Day 10 Session 1 \u2014 one day early. The axonix-listener Docker service is proposed in EVOLVE_PROPOSED.md (Proposal 1, now marked Ready to apply) but requires operator action to add to docker-compose.yml. Code half satisfied by Day 10; infra half pending operator.",
-    "delta": "Implementation arrived one day early. The prediction was slightly over-scoped \u2014 the Docker service requires operator action outside the container. Split outcome: code done (TRUE), service active (pending).",
+    "outcome": "PARTIAL. The --listen flag and run_listener() async poll loop were implemented by Day 10 Session 1 — one day early. The axonix-listener Docker service is proposed in EVOLVE_PROPOSED.md (Proposal 1, now marked Ready to apply) but requires operator action to add to docker-compose.yml. Code half satisfied by Day 10; infra half pending operator.",
+    "delta": "Implementation arrived one day early. The prediction was slightly over-scoped — the Docker service requires operator action outside the container. Split outcome: code done (TRUE), service active (pending).",
     "resolved": "2026-03-23"
   },
   "7": {
-    "prediction": "By Day 12, the Caddy admin API health check will surface real upstream data in the morning brief at least once \u2014 confirming the integration works end-to-end with a live Caddy instance.",
+    "prediction": "By Day 12, the Caddy admin API health check will surface real upstream data in the morning brief at least once — confirming the integration works end-to-end with a live Caddy instance.",
     "created": "2026-03-23",
-    "outcome": null,
-    "delta": null,
-    "resolved": null
+    "outcome": "TRUE. Day 11 S5 — brief shows '18 upstream(s) healthy' from live Caddy API at 192.168.1.114:2019. Integration working end-to-end.",
+    "delta": "Resolved Day 11 S5, 1 day before deadline.",
+    "resolved": "2026-03-24"
   },
   "8": {
     "prediction": "By Day 12, the test count will reach 650 passing tests.",
     "created": "2026-03-23",
-    "outcome": "TRUE. Reached 678 tests by Day 10 Session 5 \u2014 2 days early and 28 tests over the target. G-066 (failure patterns, 20 tests), the brief test fixes (12 structs), and G-067 (pogo, 14 tests) all contributed.",
-    "delta": "Satisfied 2 days early with 28 extra tests. The rate of test growth has accelerated \u2014 each new module now arrives with 14-20 tests by default.",
+    "outcome": "TRUE. Reached 678 tests by Day 10 Session 5 — 2 days early and 28 tests over the target. G-066 (failure patterns, 20 tests), the brief test fixes (12 structs), and G-067 (pogo, 14 tests) all contributed.",
+    "delta": "Satisfied 2 days early with 28 extra tests. The rate of test growth has accelerated — each new module now arrives with 14-20 tests by default.",
     "resolved": "2026-03-23"
   },
   "9": {
-    "prediction": "By Day 11, the morning brief will be the single most useful daily output \u2014 the operator will use it (or the Telegram /brief command) to start at least one session without reading JOURNAL.md first.",
+    "prediction": "By Day 11, the morning brief will be the single most useful daily output — the operator will use it (or the Telegram /brief command) to start at least one session without reading JOURNAL.md first.",
     "created": "2026-03-23",
-    "outcome": null,
-    "delta": null,
-    "resolved": null
+    "outcome": "TRUE (after bug fix). Day 11 S5 — fixed parse_recent_metrics() so brief now shows newest sessions. Brief shows live Caddy health, Pokémon GO events, predictions, system health. The G-073 fix was required to make it genuinely useful.",
+    "delta": "Exactly on deadline (Day 11). Required a bug fix to parse_recent_metrics() — the newest-first METRICS.md ordering broke the session display.",
+    "resolved": "2026-03-24"
   },
   "10": {
-    "prediction": "The Pok\u00e9mon GO promo code 'TH4NKY0UF41RYMUCH' currently shown in the brief is expired (exp Mar 2) \u2014 by Day 12, at least one new active promo code will appear in the brief from a live event.",
+    "prediction": "The Pokémon GO promo code 'TH4NKY0UF41RYMUCH' currently shown in the brief is expired (exp Mar 2) — by Day 12, at least one new active promo code will appear in the brief from a live event.",
     "created": "2026-03-23",
     "outcome": null,
     "delta": null,
@@ -77,7 +77,7 @@
     "resolved": null
   },
   "12": {
-    "prediction": "By Day 13, LEARNINGS.md will be pruned again (at least one more stale entry removed) \u2014 the graduation habit added this session will surface at least one additional stale fact within 2 sessions.",
+    "prediction": "By Day 13, LEARNINGS.md will be pruned again (at least one more stale entry removed) — the graduation habit added this session will surface at least one additional stale fact within 2 sessions.",
     "created": "2026-03-24",
     "outcome": null,
     "delta": null,
@@ -86,9 +86,9 @@
   "13": {
     "prediction": "By Day 13, the MetaHealthCheck (G-070) will flag at least one real issue in an actual session — either a stale cycle_summary.json or stale METRICS.md rows — proving the check catches real degradation rather than always showing all-ok.",
     "created": "2026-03-24",
-    "outcome": null,
-    "delta": null,
-    "resolved": null
+    "outcome": "TRUE. Day 11 S5 — MetaHealthCheck flagged ‘1 row(s) with stale ~?k tokens’ in the morning brief on the first run of this session. The check is working and catching real issues.",
+    "delta": "Resolved Day 11 S5, 2 days before deadline (Day 13).",
+    "resolved": "2026-03-24"
   },
   "14": {
     "prediction": "By Day 13, `insert_metrics_row()` will be called by Axonix itself during at least one Phase 7 wrap-up — eliminating the duplicate row pattern entirely — rather than the operator cleaning it manually via evolve.sh.",
