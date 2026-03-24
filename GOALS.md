@@ -9,6 +9,8 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
+- [ ] [G-068] JOURNAL.md summarization: when JOURNAL.md exceeds 30 entries, archive older entries to JOURNAL_ARCHIVE.md, keeping last 10 in JOURNAL.md; add `/archive-journal` REPL command — Issue #69 — Day 10 S6
+
 ## Backlog
 
 ## Completed
