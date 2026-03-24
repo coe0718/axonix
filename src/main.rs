@@ -283,6 +283,27 @@ async fn main() {
         return;
     }
 
+    // --insert-metrics-row: insert a row into METRICS.md using insert_metrics_row() (G-072)
+    if let Some(ref row) = cli_args.insert_metrics_row {
+        let row = row.trim();
+        if row.is_empty() {
+            eprintln!("{RED}error:{RESET} --insert-metrics-row requires a non-empty row string.");
+            std::process::exit(1);
+        }
+        let metrics_path = std::path::Path::new("METRICS.md");
+        eprintln!("{DIM}  inserting metrics row into METRICS.md...{RESET}");
+        match axonix::metrics::insert_metrics_row(metrics_path, row) {
+            Ok(()) => {
+                eprintln!("{GREEN}  ✓ row inserted into METRICS.md{RESET}");
+            }
+            Err(e) => {
+                eprintln!("{RED}  ✗ failed to insert metrics row: {e}{RESET}");
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
+
     let api_key = match std::env::var("ANTHROPIC_API_KEY").or_else(|_| std::env::var("API_KEY")) {
         Ok(key) if !key.is_empty() => key,
         _ => {

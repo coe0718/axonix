@@ -27,6 +27,8 @@ pub struct CliArgs {
     pub write_summary: Option<String>,
     /// If set, read .axonix/cycle_summary.json and send a compact summary to Telegram.
     pub session_summary_telegram: bool,
+    /// If set, insert this row into METRICS.md using insert_metrics_row() (G-072).
+    pub insert_metrics_row: Option<String>,
 }
 
 impl CliArgs {
@@ -80,6 +82,12 @@ impl CliArgs {
             .and_then(|i| args.get(i + 1))
             .cloned();
 
+        let insert_metrics_row = args
+            .iter()
+            .position(|a| a == "--insert-metrics-row" || a == "--insert-row")
+            .and_then(|i| args.get(i + 1))
+            .cloned();
+
         Some(Self {
             model,
             skill_dirs,
@@ -92,6 +100,7 @@ impl CliArgs {
             listen,
             write_summary,
             session_summary_telegram,
+            insert_metrics_row,
         })
     }
 }
@@ -114,6 +123,7 @@ pub fn print_help() {
     println!("  --listen                Run always-on Telegram listener daemon (polls for /ask commands)");
     println!("  --write-summary <label> Write .axonix/cycle_summary.json from real git/GOALS data and exit");
     println!("  --session-summary-telegram  Read .axonix/cycle_summary.json and send a compact summary to Telegram");
+    println!("  --insert-metrics-row <row>  Insert a row into METRICS.md (ordered, deduplicated)");
     println!("  --help, -h              Show this help message");
     println!("  --version, -V           Show version");
     println!();
@@ -475,6 +485,7 @@ mod tests {
         assert!(!cli.brief_telegram, "brief_telegram default false");
         assert!(cli.write_summary.is_none(), "write_summary default None");
         assert!(!cli.session_summary_telegram, "session_summary_telegram default false");
+        assert!(cli.insert_metrics_row.is_none(), "insert_metrics_row default None");
     }
 
     /// Verifies --brief-telegram sets both brief and brief_telegram flags (G-031).
@@ -578,5 +589,28 @@ mod tests {
             .into_iter().map(String::from).collect();
         let cli = CliArgs::parse(&args).unwrap();
         assert!(!cli.listen, "listen should be false when --listen not passed");
+    }
+
+    /// Verifies --insert-metrics-row parses the row string correctly (G-072).
+    #[test]
+    fn test_insert_metrics_row_flag_parses() {
+        let args = vec![
+            "axonix".to_string(),
+            "--insert-metrics-row".to_string(),
+            "| 11 | S4 | 2026-03-24 | ~45k | 731 | 0 | 5 | 120 | 30 | yes | test |".to_string(),
+        ];
+        let cli = CliArgs::parse(&args).unwrap();
+        assert_eq!(
+            cli.insert_metrics_row.as_deref(),
+            Some("| 11 | S4 | 2026-03-24 | ~45k | 731 | 0 | 5 | 120 | 30 | yes | test |")
+        );
+    }
+
+    /// Verifies insert_metrics_row is None when flag is absent (G-072).
+    #[test]
+    fn test_insert_metrics_row_flag_absent() {
+        let args = vec!["axonix".to_string()];
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(cli.insert_metrics_row.is_none());
     }
 }
