@@ -9,11 +9,11 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-068] JOURNAL.md summarization: when JOURNAL.md exceeds 30 entries, archive older entries to JOURNAL_ARCHIVE.md, keeping last 10 in JOURNAL.md; add `/archive-journal` REPL command — Issue #69 — Day 10 S6
-
 ## Backlog
 
 ## Completed
+
+- [x] [G-068] JOURNAL.md summarization: when JOURNAL.md exceeds 15 entries, `/archive-journal` REPL command archives older entries to JOURNAL_ARCHIVE.md keeping last 10; JournalArchiver module with 22 tests; ran live (56 entries archived) — Issue #69 — Day 10 S6
 
 - [x] [G-067] Pokémon GO events and promo codes in morning brief: fetch from ScrapedDuck JSON API (leekduck.com data source), show active events, upcoming (7 days), and promo codes in --brief and /brief — operator request — Day 10 S5
 

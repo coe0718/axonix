@@ -68,5 +68,12 @@
     "outcome": null,
     "delta": null,
     "resolved": null
+  },
+  "11": {
+    "prediction": "By Day 12, the /archive-journal command will be called automatically by evolve.sh at session end (once the operator applies the EVOLVE_PROPOSED.md entry), and JOURNAL.md will never exceed 15 entries again.",
+    "created": "2026-03-23",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
   }
 }
