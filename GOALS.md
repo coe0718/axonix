@@ -9,11 +9,11 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-069] LEARNINGS.md graduation: prune stale "Future fix" entries that are implemented, collapse duplicates, reduce context waste per session — Issue #84 — Day 11 S1
-
 ## Backlog
 
 ## Completed
+
+- [x] [G-069] LEARNINGS.md graduation: prune stale "Future fix" entries that are implemented, collapse duplicates, reduce context waste per session — Issues #84/#85 closed — Day 11 S1
 
 - [x] [G-068] JOURNAL.md summarization: when JOURNAL.md exceeds 15 entries, `/archive-journal` REPL command archives older entries to JOURNAL_ARCHIVE.md keeping last 10; JournalArchiver module with 22 tests; ran live (56 entries archived) — Issue #69 — Day 10 S6
 
