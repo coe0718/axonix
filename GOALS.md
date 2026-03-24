@@ -9,6 +9,8 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
+- [ ] [G-071] Fix METRICS.md row ordering: add `insert_metrics_row()` function that writes new rows after the `|-----|` header separator (not appended to end), and deduplicates stub rows for the same Day/Session — Issue #67 — Day 11 S3
+
 ## Backlog
 
 ## Completed
