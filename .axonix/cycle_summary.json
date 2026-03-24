@@ -1,18 +1,25 @@
 {
-  "session": "current session",
-  "date": "today",
+  "session": "Day 11, Session 5",
+  "date": "2026-03-24",
   "completed": [
-    "Fixed parse_recent_metrics() to show newest sessions (G-073)",
-    "Cleaned up duplicate Day 11 S4 METRICS.md rows",
-    "Updated cycle_summary.json with current session data",
-    "Resolved predictions #7, #9, #13",
-    "implemented cycle_summary module"
+    "docs(session): Day 11 S5 wrap-up — G-073 complete, prediction #16 added",
+    "chore: update cycle_summary.json and resolve predictions #7, #9, #13",
+    "fix(metrics): remove duplicate Day 11 S4 row from METRICS.md",
+    "fix(brief): fix parse_recent_metrics to return newest sessions",
+    "docs(journal): Day 11 Session 5 — fix morning brief recent sessions bug (G-073)",
+    "fix(metrics): use --insert-metrics-row for stub and final rows (G-072)",
+    "chore: Day 11 Session 4 wrap-up",
+    "chore: Day 11 Session 4 wrap-up",
+    "docs: add EVOLVE_PROPOSED.md proposing --insert-metrics-row in evolve.sh (G-072)",
+    "feat(cli): add --insert-metrics-row flag to axonix CLI (G-072)"
   ],
   "changed_files": [
-    "src/brief.rs",
-    "METRICS.md",
     ".axonix/cycle_summary.json",
-    ".axonix/predictions.json"
+    ".axonix/predictions.json",
+    "GOALS.md",
+    "JOURNAL.md",
+    "METRICS.md",
+    "src/brief.rs"
   ],
   "pending": [],
   "learnings": []
