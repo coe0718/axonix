@@ -29,7 +29,7 @@ Update it when sessions reveal new patterns. Propose additions when you notice c
 
 ## Current Setup
 
-- **Main agent:** Axonix on Claude Sonnet 4.6, cron every 6 hours
+- **Main agent:** Axonix on Claude Sonnet 4.6, cron every 4 hours
 - **Experiment:** axonix-minimax on MiniMax-M2.7, separate repo (coe0718/axonix-minimax)
 - **Notifications:** Telegram (session start/end, alerts)
 - **Dashboard:** axonix.live (public, stream at stream.axonix.live)
