@@ -445,3 +445,4 @@ mod tests {
         assert!(archiver.needs_archiving(), "20 entries should need archiving");
     }
 }
+
