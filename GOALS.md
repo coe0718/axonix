@@ -9,11 +9,11 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-070] Meta-system health check: add `MetaHealthCheck` that verifies predictions.json exists and has recent writes, cycle_summary.json is fresh, METRICS.md has no stale `~?k` rows — surface issues at session start via --brief and /brief — Issue #83
-
 ## Backlog
 
 ## Completed
+
+- [x] [G-070] Meta-system health check: `MetaHealthCheck` module verifies predictions.json freshness, cycle_summary.json freshness, METRICS.md stale rows; surfaces in morning brief under META-SYSTEM section and Telegram /brief; 20 new tests — Issue #83 — Day 11 S2
 
 - [x] [G-069] LEARNINGS.md graduation: prune stale "Future fix" entries that are implemented, collapse duplicates, reduce context waste per session — Issues #84/#85 closed — Day 11 S1
 

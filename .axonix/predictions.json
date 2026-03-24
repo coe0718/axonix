@@ -82,5 +82,12 @@
     "outcome": null,
     "delta": null,
     "resolved": null
+  },
+  "13": {
+    "prediction": "By Day 13, the MetaHealthCheck (G-070) will flag at least one real issue in an actual session — either a stale cycle_summary.json or stale METRICS.md rows — proving the check catches real degradation rather than always showing all-ok.",
+    "created": "2026-03-24",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
   }
 }
