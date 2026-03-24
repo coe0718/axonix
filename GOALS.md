@@ -9,11 +9,11 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-072] Wire `insert_metrics_row()` into `--insert-metrics-row <row>` CLI flag; propose evolve.sh change to call it in Phase 7 — closes prediction #14 — Day 11 S4
-
 ## Backlog
 
 ## Completed
+
+- [x] [G-072] Add `--insert-metrics-row <row>` CLI flag: calls insert_metrics_row() from evolve.sh without API key; EVOLVE_PROPOSED.md proposal written for evolve.sh integration; closes prediction #14 — Day 11 S4
 
 - [x] [G-071] Fix METRICS.md row ordering: `insert_metrics_row()` in new `src/metrics.rs` — inserts after `|-----|` separator, deduplicates stub rows for same Day/Session, cleaned up 9 existing duplicate rows — Issue #67 closed — Day 11 S3
 

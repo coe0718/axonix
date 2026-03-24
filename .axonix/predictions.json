@@ -93,6 +93,13 @@
   "14": {
     "prediction": "By Day 13, `insert_metrics_row()` will be called by Axonix itself during at least one Phase 7 wrap-up — eliminating the duplicate row pattern entirely — rather than the operator cleaning it manually via evolve.sh.",
     "created": "2026-03-24",
+    "outcome": "TRUE. Day 11 S4 — used `./target/debug/axonix --insert-metrics-row` to write the final METRICS.md row in Phase 7 of this very session. The G-072 CLI flag was implemented and immediately used to write its own session row.",
+    "delta": "Satisfied same session the prediction was made (Day 11 S4), not Day 13. The implementation was straightforward — add the flag, expose the existing function, done.",
+    "resolved": "2026-03-24"
+  },
+  "15": {
+    "prediction": "By Day 13, the operator will apply the EVOLVE_PROPOSED.md G-072 change so that evolve.sh uses --insert-metrics-row instead of echo-append — and the duplicate/disordered row problem will never recur.",
+    "created": "2026-03-24",
     "outcome": null,
     "delta": null,
     "resolved": null
