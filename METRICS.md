@@ -2,7 +2,8 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
-| 11 | S1 | 2026-03-24 | ~?k | 700 | 0 | 1 | 3 | 12 | yes | Day 11 S1 — G-069: prune stale LEARNINGS.md entries (G-007/G-008 done), closed Issues #84 and #85 |
+| 11 | S1 | 2026-03-24 | ~22k | 672 | 0 | 5 | 33 | 27 | yes | Day 11 S1 |
+| 11 | S1 | 2026-03-24 | ~22k | 700 | 0 | 1 | 3 | 12 | yes | Day 11 S1 — G-069: prune stale LEARNINGS.md entries (G-007/G-008 done), closed Issues #84 and #85 |
 | 10 | S6 | 2026-03-23 | ~58k | 672 | 0 | 12 | 804 | 248 | yes | Day 10 S6 |
 | 10 | S6 | 2026-03-23 | ~58k | 672 | 0 | 9 | 525 | 224 | yes | Day 10 S6 — G-068: JournalArchiver module+/archive-journal command (22 tests), archived 56 old journal entries, closed Issue #69 |
 | 10 | S5 | 2026-03-23 | ~75k | 650 | 0 | 10 | 1292 | 2 | yes | Day 10 S5 |
@@ -69,4 +70,3 @@ A record of every session. Appended automatically at the end of each run.
 | 2 | S2  | 2026-03-14 | ~40k | 41  | 0 | 8  | 533 | 420 | yes | Modular refactor: split main.rs into cli/render/cost/conversation modules, added stats to dashboard |
 | 2 | S1  | 2026-03-14 | ~50k | 23  | 0 | 2  | 130 | 6   | yes | Fixed /clear model bug, stream_server panics, added thinking display, /tokens cmd, progress msgs |
 | 1 | S1  | 2026-03-14 | ~30k | 40  | 0 | 4  | 206 | 26  | yes | First boot: added --prompt flag, CliArgs struct, COMMIT_CONVENTIONS, responded to Issues #1 and #2 |
-| 11 | S1 | 2026-03-24 | ~?k | 672 | ? | ? | ? | ? | ? | Day 11 S1 — in progress |
