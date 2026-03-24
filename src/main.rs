@@ -780,6 +780,24 @@ async fn main() {
                 continue;
             }
 
+            CommandResult::ArchiveJournal => {
+                let archiver = axonix::journal_archive::JournalArchiver::default();
+                match archiver.archive() {
+                    Ok(result) if result.moved == 0 => {
+                        println!("{DIM}  (journal has {} or fewer recent entries — no archiving needed){RESET}\n",
+                            result.kept);
+                    }
+                    Ok(result) => {
+                        println!("{GREEN}  ✓ archived {} entries to {} ({} kept in JOURNAL.md){RESET}\n",
+                            result.moved, result.archive_path, result.kept);
+                    }
+                    Err(e) => {
+                        println!("{RED}  ✗ journal archive failed: {e}{RESET}\n");
+                    }
+                }
+                continue;
+            }
+
             CommandResult::Handled(ref output_lines) => {
                 // Render the output lines, interpreting special markers
                 let mut gh_comment_request: Option<(u64, String)> = None;

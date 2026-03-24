@@ -112,6 +112,8 @@ pub enum CommandResult {
     /// `/issues [N]` — fetch open GitHub issues sorted by reactions.
     /// Carries the limit (default 10, max 30).
     FetchIssues(u8),
+    /// `/archive-journal` — archive old journal entries to JOURNAL_ARCHIVE.md.
+    ArchiveJournal,
 }
 
 /// Process a REPL input string. Returns a `CommandResult`.
@@ -155,6 +157,7 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                 "    /summary [text]    Show or update cycle summary (persisted to next session)".to_string(),
                 "    /recap             Post session recap thread to Bluesky (title, commits, tests)".to_string(),
                 "    /failures          Show logged failure patterns across sessions".to_string(),
+                "    /archive-journal   Archive old journal entries to JOURNAL_ARCHIVE.md".to_string(),
             ];
             if !skill_names.is_empty() {
                 lines.push("    /skills        Show loaded skills".to_string());
@@ -967,6 +970,8 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
 
             CommandResult::FetchIssues(limit)
         }
+
+        "/archive-journal" => CommandResult::ArchiveJournal,
 
         s if s.starts_with('/') => {
             // /status, /context, /tokens are handled by main (they need agent/session data)
