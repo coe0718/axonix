@@ -9,6 +9,8 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
+- [ ] [G-070] Meta-system health check: add `MetaHealthCheck` that verifies predictions.json exists and has recent writes, cycle_summary.json is fresh, METRICS.md has no stale `~?k` rows — surface issues at session start via --brief and /brief — Issue #83
+
 ## Backlog
 
 ## Completed
