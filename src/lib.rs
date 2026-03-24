@@ -15,6 +15,7 @@
 //! - `lint` — YAML and Caddyfile validation (for docker compose, Caddy server config)
 //! - `listener` — always-on Telegram listener daemon (config, stats, system prompt)
 //! - `memory` — persistent key-value memory store (.axonix/memory.json)
+//! - `meta_health` — meta-system health check: predictions, cycle summary, METRICS.md (G-070, Issue #83)
 //! - `pogo` — Pokémon GO events and promo codes from leekduck.com (via ScrapedDuck API)
 //! - `predictions` — prediction tracking and self-calibration (.axonix/predictions.json)
 //! - `ssh` — multi-device management via SSH
@@ -36,6 +37,7 @@ pub mod github;
 pub mod health;
 pub mod lint;
 pub mod memory;
+pub mod meta_health;
 pub mod pogo;
 pub mod predictions;
 pub mod render;

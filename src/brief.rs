@@ -51,6 +51,8 @@ pub struct Brief {
     pub failure_summary: Option<String>,
     /// Pokémon GO active events, upcoming events, and promo codes from leekduck.com.
     pub pogo: Option<crate::pogo::PogoData>,
+    /// Meta-system health check (predictions freshness, cycle_summary freshness, METRICS.md staleness).
+    pub meta_health: Option<crate::meta_health::MetaHealthCheck>,
 }
 
 /// One session row from METRICS.md.
@@ -131,6 +133,7 @@ impl Brief {
                 let data = crate::pogo::PogoData::fetch();
                 if !data.is_empty() { Some(data) } else { None }
             },
+            meta_health: Some(crate::meta_health::MetaHealthCheck::run()),
         }
     }
 
@@ -145,7 +148,7 @@ impl Brief {
         // Active goals
         out.push_str("📋 ACTIVE GOALS\n");
         if self.active_goals.is_empty() {
-            out.push_str("   (no active goals — promote something from backlog)\n");
+            out.push_str("   (no active goals — will form one at session start)\n");
         } else {
             for g in &self.active_goals {
                 out.push_str(&format!("   • {g}\n"));
@@ -172,6 +175,16 @@ impl Brief {
             None => {
                 out.push_str("   (no cycle summary found)\n");
             }
+        }
+        out.push('\n');
+
+        // Meta-system health
+        out.push_str("🔧 META-SYSTEM\n");
+        if let Some(ref mh) = self.meta_health {
+            out.push_str(&mh.format_terminal());
+            out.push('\n');
+        } else {
+            out.push_str("   (not checked)\n");
         }
         out.push('\n');
 
@@ -365,6 +378,15 @@ impl Brief {
             out.push_str(&format!("_{}_\n", truncate_str(&last.notes, 60)));
         } else {
             out.push_str("_(no data)_\n");
+        }
+
+        // Meta-system health (only show if there are issues)
+        if let Some(ref mh) = self.meta_health {
+            if !mh.all_ok() {
+                out.push('\n');
+                out.push_str(&mh.format_telegram());
+                out.push('\n');
+            }
         }
 
         out
@@ -680,6 +702,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("MORNING BRIEF"), "should contain header");
@@ -705,6 +728,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("no active goals"), "should note empty goals");
@@ -732,6 +756,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Axonix Morning Brief*"), "should have bold header");
@@ -752,6 +777,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("deploy needed"), "note should appear in output");
@@ -792,6 +818,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("end of brief"), "should have end marker");
@@ -815,6 +842,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("Goal one"));
@@ -839,6 +867,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("#1"), "should show prediction IDs");
@@ -861,6 +890,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Axonix Morning Brief*"), "should have header");
@@ -882,6 +912,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_telegram();
         // format_telegram doesn't render notes (compact format) — but must not panic
@@ -903,6 +934,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("alpha"));
@@ -945,6 +977,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("Day 7"), "should show day number");
@@ -1011,6 +1044,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("SYSTEM HEALTH"), "should contain SYSTEM HEALTH section");
@@ -1034,6 +1068,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("SYSTEM HEALTH"), "should still contain section header");
@@ -1059,6 +1094,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("Health:"), "telegram brief should contain Health: line");
@@ -1115,6 +1151,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("BLUESKY"), "should contain BLUESKY section");
@@ -1137,6 +1174,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_terminal();
         assert!(!output.contains("BLUESKY"), "no bluesky_stats → no BLUESKY section");
@@ -1156,6 +1194,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Bluesky*"), "telegram should show *Bluesky* label");
@@ -1177,6 +1216,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let terminal = brief.format_terminal();
         assert!(terminal.contains("(never)"), "no last date should display (never)");
@@ -1207,6 +1247,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("calibration:"), "terminal should show calibration line");
@@ -1229,6 +1270,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_terminal();
         assert!(!output.contains("calibration:"), "no calibration → should not show calibration line");
@@ -1255,6 +1297,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("📊 Calibration:"), "telegram should show calibration emoji line");
@@ -1276,6 +1319,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_telegram();
         assert!(!output.contains("📊 Calibration:"), "no calibration → should not show calibration line");
@@ -1303,6 +1347,7 @@ mod tests {
             }),
         failure_summary: None,
         pogo: None,
+        meta_health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("LAST SESSION"), "should contain LAST SESSION header");
@@ -1324,6 +1369,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("LAST SESSION"), "header still present when None");
@@ -1353,6 +1399,7 @@ mod tests {
             }),
         failure_summary: None,
         pogo: None,
+        meta_health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("G-064: prediction calibration"), "should show first completed item");
@@ -1386,6 +1433,7 @@ mod tests {
             }),
         failure_summary: None,
         pogo: None,
+        meta_health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("item five"), "fifth item should appear");
@@ -1412,6 +1460,7 @@ mod tests {
             }),
         failure_summary: None,
         pogo: None,
+        meta_health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("624 tests"), "should show numeric test count");
@@ -1437,6 +1486,7 @@ mod tests {
             }),
         failure_summary: None,
         pogo: None,
+        meta_health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("? tests"), "should show '? tests' when count is None");
@@ -1464,6 +1514,7 @@ mod tests {
             }),
         failure_summary: None,
         pogo: None,
+        meta_health: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Last Session*"), "telegram should show bold Last Session header");
@@ -1485,6 +1536,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Last Session*"), "telegram header still present when None");
@@ -1514,6 +1566,7 @@ mod tests {
             }),
         failure_summary: None,
         pogo: None,
+        meta_health: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("G-064: prediction calibration"), "telegram should show completed items");
@@ -1540,6 +1593,7 @@ mod tests {
             }),
         failure_summary: None,
         pogo: None,
+        meta_health: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("624 tests"), "telegram should show numeric test count");
@@ -1565,6 +1619,7 @@ mod tests {
             }),
         failure_summary: None,
         pogo: None,
+        meta_health: None,
         };
         let output = brief.format_telegram();
         assert!(output.contains("? tests"), "telegram should show '? tests' when count is None");
@@ -1592,6 +1647,7 @@ mod tests {
             }),
         failure_summary: None,
         pogo: None,
+        meta_health: None,
         };
         let terminal = brief.format_terminal();
         assert!(terminal.contains("no completed items recorded"), "empty completed should show fallback in terminal");
@@ -1621,6 +1677,7 @@ mod tests {
             }),
         failure_summary: None,
         pogo: None,
+        meta_health: None,
         };
         let output = brief.format_terminal();
         // The full 80-char string should NOT appear (truncated to 60)
@@ -1644,6 +1701,7 @@ mod tests {
             last_session: None,
             failure_summary: None,
             pogo: None,
+        meta_health: None,
         };
         let output = brief.format_terminal();
         assert!(output.contains("📝 LAST SESSION"), "LAST SESSION header must always appear in terminal brief");
@@ -1669,10 +1727,119 @@ mod tests {
             }),
         failure_summary: None,
         pogo: None,
+        meta_health: None,
         };
         let terminal = brief.format_terminal();
         assert!(terminal.contains("2026-03-23"), "terminal should show date next to session name");
         let telegram = brief.format_telegram();
         assert!(telegram.contains("2026-03-23"), "telegram should show date next to session name");
+    }
+
+    // ── MetaHealthCheck in Brief ──────────────────────────────────────────────────
+
+    /// Brief::collect() returns a Brief with meta_health set to Some
+    #[test]
+    fn test_brief_has_meta_health_field() {
+        // We can verify the field exists and can be Some/None without calling collect()
+        // (which reads disk). Just construct with Some and verify it's accessible.
+        let mh = crate::meta_health::MetaHealthCheck::run_with_paths(
+            std::path::Path::new("/nonexistent/predictions.json"),
+            std::path::Path::new("/nonexistent/cycle_summary.json"),
+            std::path::Path::new("/nonexistent/METRICS.md"),
+        );
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: None,
+            last_session: None,
+            failure_summary: None,
+            pogo: None,
+            meta_health: Some(mh),
+        };
+        assert!(brief.meta_health.is_some(), "meta_health should be Some when set");
+    }
+
+    /// format_terminal output contains "META-SYSTEM" section header
+    #[test]
+    fn test_brief_format_terminal_includes_meta_system() {
+        let mh = crate::meta_health::MetaHealthCheck::run_with_paths(
+            std::path::Path::new("/nonexistent/predictions.json"),
+            std::path::Path::new("/nonexistent/cycle_summary.json"),
+            std::path::Path::new("/nonexistent/METRICS.md"),
+        );
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: None,
+            last_session: None,
+            failure_summary: None,
+            pogo: None,
+            meta_health: Some(mh),
+        };
+        let output = brief.format_terminal();
+        assert!(output.contains("META-SYSTEM"), "format_terminal should include META-SYSTEM section: {output}");
+    }
+
+    /// When meta_health has issues, telegram format mentions them
+    #[test]
+    fn test_brief_format_telegram_includes_meta_health_warning() {
+        // All paths missing -> all three checks fail -> issues present
+        let mh = crate::meta_health::MetaHealthCheck::run_with_paths(
+            std::path::Path::new("/nonexistent/predictions.json"),
+            std::path::Path::new("/nonexistent/cycle_summary.json"),
+            std::path::Path::new("/nonexistent/METRICS.md"),
+        );
+        assert!(!mh.all_ok(), "sanity: check that meta_health has issues");
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: None,
+            last_session: None,
+            failure_summary: None,
+            pogo: None,
+            meta_health: Some(mh),
+        };
+        let output = brief.format_telegram();
+        assert!(
+            output.contains("meta-system") || output.contains("issues"),
+            "telegram should mention meta-system issues when present: {output}"
+        );
+    }
+
+    /// When meta_health is None, format_terminal shows "(not checked)"
+    #[test]
+    fn test_brief_format_terminal_meta_health_none_shows_not_checked() {
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            calibration: None,
+            last_session: None,
+            failure_summary: None,
+            pogo: None,
+            meta_health: None,
+        };
+        let output = brief.format_terminal();
+        assert!(output.contains("META-SYSTEM"), "META-SYSTEM section always present");
+        assert!(output.contains("not checked"), "should show '(not checked)' when meta_health is None");
     }
 }
