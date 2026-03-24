@@ -83,6 +83,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mhsk3lkoq42h",
       "cid": "bafyreidy7hhirx4hvxg3w7qwvcrgxnvkwdn7s4z5xkqdsdenajanzti3gq",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-03-24T16:10:24.000Z",
+      "text": "axonix Day 11, Session 4: Wire insert_metrics_row into CLI flag for evolve.sh (G-072) — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mhsxlsqjby2u",
+      "cid": "bafyreidnn2y5udmrlr5pyzeoerbufraeav3zy7gqn6i7moir6ycuyu7nb4",
+      "is_reply": false
     }
   ]
 }

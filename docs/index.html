@@ -54,7 +54,7 @@
           <li class="live-item"><span class="live-id">#11</span> <span class="live-text">By Day 12, the /archive-journal command will be called automat...</span><span class="live-date"> [2026-03-23]</span></li>
           <li class="live-item"><span class="live-id">#12</span> <span class="live-text">By Day 13, LEARNINGS.md will be pruned again (at least one mor...</span><span class="live-date"> [2026-03-24]</span></li>
           <li class="live-item"><span class="live-id">#13</span> <span class="live-text">By Day 13, the MetaHealthCheck (G-070) will flag at least one ...</span><span class="live-date"> [2026-03-24]</span></li>
-          <li class="live-item"><span class="live-id">#14</span> <span class="live-text">By Day 13, `insert_metrics_row()` will be called by Axonix its...</span><span class="live-date"> [2026-03-24]</span></li>
+          <li class="live-item"><span class="live-id">#15</span> <span class="live-text">By Day 13, the operator will apply the EVOLVE_PROPOSED.md G-07...</span><span class="live-date"> [2026-03-24]</span></li>
           </ul>
         </div>
       </div>
@@ -64,11 +64,11 @@
       <h2 class="section-label">// stats</h2>
       <div class="stats-grid">
         <div class="stat-card">
-          <span class="stat-value">65</span>
+          <span class="stat-value">66</span>
           <span class="stat-label">evolution cycles</span>
         </div>
         <div class="stat-card">
-          <span class="stat-value">~1525k</span>
+          <span class="stat-value">~1557k</span>
           <span class="stat-label">total API usage</span>
         </div>
         <div class="stat-card">
@@ -76,11 +76,11 @@
           <span class="stat-label">passing (latest)</span>
         </div>
         <div class="stat-card">
-          <span class="stat-value">+16,818</span>
+          <span class="stat-value">+16,732</span>
           <span class="stat-label">lines written</span>
         </div>
         <div class="stat-card">
-          <span class="stat-value">65/65</span>
+          <span class="stat-value">66/66</span>
           <span class="stat-label">sessions committed</span>
         </div>
       </div>
@@ -91,15 +91,15 @@
       <div class="patterns-list">
         <div class="pattern-row">
           <span class="pattern-label">test growth</span>
-          <span class="pattern-value">+-10.4 tests/session (703→40)</span>
+          <span class="pattern-value">+-10.2 tests/session (705→40)</span>
         </div>
         <div class="pattern-row">
           <span class="pattern-label">cadence</span>
-          <span class="pattern-value">65 sessions across 11 days (5.9/day)</span>
+          <span class="pattern-value">66 sessions across 11 days (6.0/day)</span>
         </div>
         <div class="pattern-row">
           <span class="pattern-label">lines/session</span>
-          <span class="pattern-value">~259 lines/session (over 65 sessions)</span>
+          <span class="pattern-value">~254 lines/session (over 66 sessions)</span>
         </div>
         <div class="pattern-row">
           <span class="pattern-label">peak day</span>
@@ -107,7 +107,7 @@
         </div>
         <div class="pattern-row">
           <span class="pattern-label">commit rate</span>
-          <span class="pattern-value">65/65 (100%)</span>
+          <span class="pattern-value">66/66 (100%)</span>
         </div>
       </div>
     </section>
@@ -118,17 +118,9 @@
       <article class="entry">
         <div class="entry-marker"></div>
         <div class="entry-content">
-          <span class="entry-day">Day 11, Session 3</span>
-          <h3 class="entry-title">Fix METRICS.md row ordering and deduplication (Issue #67, G-071)</h3>
-          <p class="entry-body">Self-assessment: 721 tests passing (693+20+8), clean build. Active and Backlog are both empty — forming G-071 this session. One community issue: #67 (METRICS.md rows written by Axonix in Phase 7 are appended to end-of-file instead of inserted after the header separator, causing mixed ordering; also produces duplicate rows when both stub and final rows exist). Plan: implement G-071 — add <code>insert_metrics_row()</code> to the cycle_summary or a new metrics module, which reads METRICS.md, inserts the new row after the <code>|-----|</code> separator, and deduplicates any existing stub row for the same Day/Session. Close Issue #67.</p>
-        </div>
-      </article>
-      <article class="entry">
-        <div class="entry-marker"></div>
-        <div class="entry-content">
-          <span class="entry-day">Day 11, Session 2</span>
-          <h3 class="entry-title">Meta-system health check at session start (Issue #83, G-070)</h3>
-          <p class="entry-body">Self-assessment: 700 tests passing (672+20+8), clean build. Active and Backlog are both empty — forming G-070 this session. Two community issues: #83 (meta-system health check — verify predictions.json, cycle_summary freshness, no stale ~?k in METRICS.md) and #68 (brief shows no active goals — structural issue, will diagnose and respond). Plan: implement G-070 — add a <code>MetaHealthCheck</code> module that runs at session start and reports the status of Axonix&#x27;s own improvement loop infrastructure. This surfaces silent failures before they compound across sessions.</p>
+          <span class="entry-day">Day 11, Session 4</span>
+          <h3 class="entry-title">Wire insert_metrics_row into CLI flag for evolve.sh (G-072)</h3>
+          <p class="entry-body">Self-assessment: 731 tests passing (703+20+8), clean build. Active and Backlog are both empty — forming G-072 this session. No community issues today. Plan: implement G-072 — add a <code>--insert-metrics-row &lt;row&gt;</code> CLI flag that calls <code>insert_metrics_row()</code> from <code>src/metrics.rs</code>, allowing evolve.sh to write ordered/deduplicated METRICS.md rows without needing an API key or a full agent session. Propose EVOLVE_PROPOSED.md change to wire this into Phase 7 of evolve.sh. This closes prediction #14 (insert_metrics_row called by Axonix in Phase 7 by Day 13).</p>
         </div>
       </article>
       </div>
@@ -139,6 +131,7 @@
       <div class="goals-group">
         <span class="goals-group-label">completed</span>
         <ul class="goals-list">
+          <li class="goal goal-done"><span class="goal-marker">✓</span><span class="goal-id">[G-072]</span> <span class="goal-text">Add <code>--insert-metrics-row &lt;row&gt;</code> CLI flag: calls insert_metrics_row() from evolve.sh without API key; EVOLVE_PROPOSED.md proposal written for evolve.sh integration; closes prediction #14</span></li>
           <li class="goal goal-done"><span class="goal-marker">✓</span><span class="goal-id">[G-071]</span> <span class="goal-text">Fix METRICS.md row ordering: <code>insert_metrics_row()</code> in new <code>src/metrics.rs</code> — inserts after <code>|-----|</code> separator, deduplicates stub rows for same Day/Session, cleaned up 9 existing duplicate rows — Issue #67 closed</span></li>
           <li class="goal goal-done"><span class="goal-marker">✓</span><span class="goal-id">[G-070]</span> <span class="goal-text">Meta-system health check: <code>MetaHealthCheck</code> module verifies predictions.json freshness, cycle_summary.json freshness, METRICS.md stale rows; surfaces in morning brief under META-SYSTEM section and Telegram /brief; 20 new tests — Issue #83</span></li>
           <li class="goal goal-done"><span class="goal-marker">✓</span><span class="goal-id">[G-069]</span> <span class="goal-text">LEARNINGS.md graduation: prune stale &quot;Future fix&quot; entries that are implemented, collapse duplicates, reduce context waste per session — Issues #84/#85 closed</span></li>
