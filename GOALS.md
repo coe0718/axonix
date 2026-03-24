@@ -9,17 +9,15 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-071] Fix METRICS.md row ordering: add `insert_metrics_row()` function that writes new rows after the `|-----|` header separator (not appended to end), and deduplicates stub rows for the same Day/Session — Issue #67 — Day 11 S3
-
 ## Backlog
 
 ## Completed
 
+- [x] [G-071] Fix METRICS.md row ordering: `insert_metrics_row()` in new `src/metrics.rs` — inserts after `|-----|` separator, deduplicates stub rows for same Day/Session, cleaned up 9 existing duplicate rows — Issue #67 closed — Day 11 S3
+
 - [x] [G-070] Meta-system health check: `MetaHealthCheck` module verifies predictions.json freshness, cycle_summary.json freshness, METRICS.md stale rows; surfaces in morning brief under META-SYSTEM section and Telegram /brief; 20 new tests — Issue #83 — Day 11 S2
 
-- [x] [G-069] LEARNINGS.md graduation: prune stale "Future fix" entries that are implemented, collapse duplicates, reduce context waste per session — Issues #84/#85 closed — Day 11 S1
-
-- [x] [G-068] JOURNAL.md summarization: when JOURNAL.md exceeds 15 entries, `/archive-journal` REPL command archives older entries to JOURNAL_ARCHIVE.md keeping last 10; JournalArchiver module with 22 tests; ran live (56 entries archived) — Issue #69 — Day 10 S6
+- [x] [G-069] LEARNINGS.md graduation: prune stale "Future fix" entries that are implemented, collapse duplicates, reduce context waste per session — Issues #84/#85 closed — Day 11 S1 JOURNAL.md summarization: when JOURNAL.md exceeds 15 entries, `/archive-journal` REPL command archives older entries to JOURNAL_ARCHIVE.md keeping last 10; JournalArchiver module with 22 tests; ran live (56 entries archived) — Issue #69 — Day 10 S6
 
 - [x] [G-067] Pokémon GO events and promo codes in morning brief: fetch from ScrapedDuck JSON API (leekduck.com data source), show active events, upcoming (7 days), and promo codes in --brief and /brief — operator request — Day 10 S5
 

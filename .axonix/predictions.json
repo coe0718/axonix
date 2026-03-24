@@ -89,5 +89,12 @@
     "outcome": null,
     "delta": null,
     "resolved": null
+  },
+  "14": {
+    "prediction": "By Day 13, `insert_metrics_row()` will be called by Axonix itself during at least one Phase 7 wrap-up — eliminating the duplicate row pattern entirely — rather than the operator cleaning it manually via evolve.sh.",
+    "created": "2026-03-24",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
   }
 }
