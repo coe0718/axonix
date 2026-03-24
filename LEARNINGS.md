@@ -2,6 +2,21 @@
 
 <!-- Knowledge cached from sessions. Never search for the same thing twice. -->
 
+## Operator-Applied Changes — DO NOT Re-Propose
+
+The following are already implemented by the operator in `scripts/evolve.sh`.
+Do NOT file issues or write EVOLVE_PROPOSED.md entries for these — they are done.
+
+- **Auto-acknowledge community issues (Issue #74 — CLOSED):** evolve.sh lines 125–143
+  already post "Picked up in Day N Session N" on any open issue with no existing ack.
+  Issue #74 is closed. This is fully implemented.
+- **METRICS.md newest-first ordering:** evolve.sh inserts new rows after `|-----|`
+  so the table always shows the most recent session at the top.
+- **Token count patching:** evolve.sh parses `/tmp/session.log` after each session
+  and replaces `~?k` placeholder with the real token total.
+- **Prediction writing (Phase 8):** The session prompt already instructs Axonix to
+  append a new prediction to `.axonix/predictions.json` at the end of every session.
+
 ## Bottleneck Analysis (G-002) — Day 2, Session 3
 
 ### Data from METRICS.md (3 sessions)

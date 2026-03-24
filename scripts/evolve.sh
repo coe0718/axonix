@@ -482,6 +482,11 @@ cargo run --bin axonix --quiet -- --write-summary "Day ${DAY}, Session ${SESSION
     && echo "  Cycle summary written to .axonix/cycle_summary.json" \
     || echo "  Cycle summary write failed (non-fatal)"
 
+# ── Step 5a-iii: Auto-archive old journal entries (Issue #69 / G-068) ──
+# Keeps JOURNAL.md bounded — archives entries older than the most recent 15.
+cargo run --bin axonix --quiet -- -p "/archive-journal" 2>/dev/null \
+    | grep -E "(archived|no archiving|Archived)" || true
+
 # ── Step 5b-ii: Trim completed goal detail lines to keep GOALS.md lean ──
 # Strip indented continuation lines under [x] goals; collapse double blank lines.
 python3 - <<'PYEOF'
