@@ -103,5 +103,12 @@
     "outcome": null,
     "delta": null,
     "resolved": null
+  },
+  "16": {
+    "prediction": "By Day 13, the morning brief will have been used (via --brief or Telegram /brief) to start at least 2 consecutive sessions without the operator needing to read JOURNAL.md first — the session display fix (G-073) plus Caddy+Pokémon GO integration make it comprehensive enough to stand alone.",
+    "created": "2026-03-24",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
   }
 }

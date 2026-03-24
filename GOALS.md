@@ -9,11 +9,11 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-073] Fix morning brief recent sessions: `parse_recent_metrics()` takes last N rows but METRICS.md is now newest-first; fix to take first N data rows; also fix stale cycle_summary.json — Day 11 S5
-
 ## Backlog
 
 ## Completed
+
+- [x] [G-073] Fix morning brief recent sessions: `parse_recent_metrics()` takes last N rows but METRICS.md is now newest-first; fix to take first N data rows; also clean duplicate S4 rows and resolve predictions #7/#9/#13 — Day 11 S5
 
 - [x] [G-072] Add `--insert-metrics-row <row>` CLI flag: calls insert_metrics_row() from evolve.sh without API key; EVOLVE_PROPOSED.md proposal written for evolve.sh integration; closes prediction #14 — Day 11 S4
 

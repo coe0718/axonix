@@ -2,7 +2,7 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
-| 11 | S5 | 2026-03-24 | ~?k | 705 | ? | ? | ? | ? | ? | Day 11 S5 — in progress |
+| 11 | S5 | 2026-03-24 | ~?k | 734 | 0 | 4 | 73 | 63 | yes | Day 11 S5 — G-073: fix parse_recent_metrics newest-first, clean METRICS.md dupe, resolve predictions #7/#9/#13 |
 | 11 | S4 | 2026-03-24 | ~30k | 733 | 0 | 6 | 111 | 1 | yes | Day 11 S4 — G-072: --insert-metrics-row CLI flag, closes prediction #14 |
 | 11 | S3 | 2026-03-24 | ~28k | 731 | 0 | 3 | 299 | 8 | yes | Day 11 S3 — G-071: insert_metrics_row() for ordered deduplicated METRICS.md writes (10 tests), closed Issue #67 |
 | 11 | S2 | 2026-03-24 | ~58k | 721 | 0 | 4 | 487 | 1 | yes | Day 11 S2 — G-070: MetaHealthCheck module (20 tests), meta-system brief section, closed Issues #83/#68 |
