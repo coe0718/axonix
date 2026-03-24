@@ -174,7 +174,9 @@ SESSION_START_SHA=$(git rev-parse HEAD 2>/dev/null || echo "")
 # Step 5a will replace "in progress" with real stats at wrap-up.
 if ! grep -qE "^\| $DAY \| S$SESSION \|" METRICS.md 2>/dev/null; then
     TEST_COUNT_PRE=$(cargo test --quiet 2>/dev/null | grep "test result" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" | head -1 || echo "?")
-    echo "| $DAY | S$SESSION | $DATE | ~?k | ${TEST_COUNT_PRE:-?} | ? | ? | ? | ? | ? | Day $DAY S$SESSION — in progress |" >> METRICS.md
+    STUB_ROW="| $DAY | S$SESSION | $DATE | ~?k | ${TEST_COUNT_PRE:-?} | ? | ? | ? | ? | ? | Day $DAY S$SESSION — in progress |"
+    cargo run --bin axonix --quiet -- --insert-metrics-row "$STUB_ROW" 2>/dev/null \
+        || echo "$STUB_ROW" >> METRICS.md
     echo "  METRICS.md stub row written."
 fi
 
@@ -423,25 +425,18 @@ LINES_ADDED=$(echo "$DIFF_STAT" | grep -oE "[0-9]+ insertion" | grep -oE "[0-9]+
 LINES_REMOVED=$(echo "$DIFF_STAT" | grep -oE "[0-9]+ deletion" | grep -oE "[0-9]+" || echo "0")
 METRICS_ROWS_AFTER=$(grep -cE "^\| [0-9]" METRICS.md 2>/dev/null || echo "0")
 
-NEW_ROW=""
+FINAL_ROW="| $DAY | S$SESSION | $DATE | $TOKEN_K | ${TEST_COUNT:-?} | 0 | ${FILES_CHANGED:-?} | ${LINES_ADDED:-0} | ${LINES_REMOVED:-0} | yes | Day $DAY S$SESSION |"
 if grep -q "in progress" METRICS.md 2>/dev/null; then
-    # Remove the stub row — real row will be inserted at top
-    sed -i "s|.* in progress .*||" METRICS.md 2>/dev/null || true
-    sed -i '/^$/d' METRICS.md 2>/dev/null || true
-    NEW_ROW="| $DAY | S$SESSION | $DATE | $TOKEN_K | ${TEST_COUNT:-?} | 0 | ${FILES_CHANGED:-?} | ${LINES_ADDED:-0} | ${LINES_REMOVED:-0} | yes | Day $DAY S$SESSION |"
+    # Stub row exists — replace it with real stats via insert_metrics_row (deduplicates by Day+Session)
+    cargo run --bin axonix --quiet -- --insert-metrics-row "$FINAL_ROW" 2>/dev/null \
+        || sed -i "s|.* in progress .*|$FINAL_ROW|" METRICS.md
     echo "  Metrics stub row replaced with real stats (tokens: $TOKEN_K)."
 elif [ "$METRICS_ROWS_AFTER" -le "$METRICS_ROWS_BEFORE" ]; then
-    echo "  WARNING: METRICS.md not updated this session — appending fallback row"
-    NEW_ROW="| $DAY | S$SESSION | $DATE | $TOKEN_K | ${TEST_COUNT:-?} | 0 | ${FILES_CHANGED:-?} | ${LINES_ADDED:-0} | ${LINES_REMOVED:-0} | yes | Day $DAY S$SESSION — auto-generated (agent missed wrap-up) |"
+    echo "  WARNING: METRICS.md not updated this session — inserting fallback row"
+    FALLBACK_ROW="| $DAY | S$SESSION | $DATE | $TOKEN_K | ${TEST_COUNT:-?} | 0 | ${FILES_CHANGED:-?} | ${LINES_ADDED:-0} | ${LINES_REMOVED:-0} | yes | Day $DAY S$SESSION — auto-generated (agent missed wrap-up) |"
+    cargo run --bin axonix --quiet -- --insert-metrics-row "$FALLBACK_ROW" 2>/dev/null \
+        || echo "$FALLBACK_ROW" >> METRICS.md
     echo "  Fallback metrics row inserted (tokens: $TOKEN_K)."
-fi
-
-# Insert new row at the top (just after the header separator) so newest sessions appear first.
-# Also remove the now-redundant marker comment.
-if [ -n "$NEW_ROW" ]; then
-    sed -i "s|<!-- Sessions are appended below this line automatically -->||" METRICS.md 2>/dev/null || true
-    sed -i '/^$/d' METRICS.md 2>/dev/null || true
-    sed -i "/^|-----|/a $NEW_ROW" METRICS.md
 fi
 
 # ── Step 5b: Auto-mark completed goals from session commit messages ──
