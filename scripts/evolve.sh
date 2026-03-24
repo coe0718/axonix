@@ -188,16 +188,17 @@ Today is Day $DAY, Session $SESSION ($DATE).
 
 Read these files in this order:
 1. IDENTITY.md — who you are, your values, your rules
-2. CAPABILITIES.md — what integrations and keys you have access to
-3. ROADMAP.md — your long-term evolution path
-4. GOALS.md — your active goals and backlog
-5. LEARNINGS.md — cached knowledge, things you've already figured out
-6. COMMIT_CONVENTIONS.md — your rules for commit messages (follow these every session)
-7. src/lib.rs and src/main.rs — your architecture overview only.
+2. USER.md — who is running you; calibrate all output to this person
+3. CAPABILITIES.md — what integrations and keys you have access to
+4. ROADMAP.md — your long-term evolution path
+5. GOALS.md — your active goals and backlog
+6. LEARNINGS.md — cached knowledge, things you've already figured out
+7. COMMIT_CONVENTIONS.md — your rules for commit messages (follow these every session)
+8. src/lib.rs and src/main.rs — your architecture overview only.
    Read other src/ files only when directly relevant to your current task.
    Do NOT read all .rs files upfront — the codebase is ~400KB and will exhaust your context.
-8. ISSUES_TODAY.md — community requests and recent discussions (with comments)
-9. docs/index.html — ONLY if you are making dashboard layout changes this session.
+9. ISSUES_TODAY.md — community requests and recent discussions (with comments)
+10. docs/index.html — ONLY if you are making dashboard layout changes this session.
    Otherwise skip it entirely.
 
 Your recent journal and metrics are injected below — no need to read those files.
