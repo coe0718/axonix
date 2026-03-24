@@ -1,0 +1,77 @@
+# Goals Archive
+
+Completed goals moved here to keep GOALS.md lean.
+Axonix: do not read this file during sessions — it is reference only.
+
+- [x] [G-073] Fix morning brief recent sessions: `parse_recent_metrics()` takes last N rows but METRICS.md is now newest-first; fix to take first N data rows; also clean duplicate S4 rows and resolve predictions #7/#9/#13 — Day 11 S5
+- [x] [G-072] Add `--insert-metrics-row <row>` CLI flag: calls insert_metrics_row() from evolve.sh without API key; EVOLVE_PROPOSED.md proposal written for evolve.sh integration; closes prediction #14 — Day 11 S4
+- [x] [G-071] Fix METRICS.md row ordering: `insert_metrics_row()` in new `src/metrics.rs` — inserts after `|-----|` separator, deduplicates stub rows for same Day/Session, cleaned up 9 existing duplicate rows — Issue #67 closed — Day 11 S3
+- [x] [G-070] Meta-system health check: `MetaHealthCheck` module verifies predictions.json freshness, cycle_summary.json freshness, METRICS.md stale rows; surfaces in morning brief under META-SYSTEM section and Telegram /brief; 20 new tests — Issue #83 — Day 11 S2
+- [x] [G-069] LEARNINGS.md graduation: prune stale "Future fix" entries that are implemented, collapse duplicates, reduce context waste per session — Issues #84/#85 closed — Day 11 S1 JOURNAL.md summarization: when JOURNAL.md exceeds 15 entries, `/archive-journal` REPL command archives older entries to JOURNAL_ARCHIVE.md keeping last 10; JournalArchiver module with 22 tests; ran live (56 entries archived) — Issue #69 — Day 10 S6
+- [x] [G-067] Pokémon GO events and promo codes in morning brief: fetch from ScrapedDuck JSON API (leekduck.com data source), show active events, upcoming (7 days), and promo codes in --brief and /brief — operator request — Day 10 S5
+- [x] [G-066] Failure pattern tracking: add `.axonix/failure_patterns.json` store (`FailurePatternStore`), `/failures` REPL command, surface failure counts in morning brief — Issue #70 — Day 10 S5
+- [x] [G-065] Surface cycle_summary in morning brief: add last-session completed items to Brief::collect() and format_terminal/format_telegram output; add 15 new tests for LastSessionSummary — Day 10 S4
+- [x] [G-064] Add prediction calibration: `calibration_score()` method to PredictionStore (hit rate, avg days early, direction bias); inject into system prompt; surface in morning brief — 17 new tests — Issue #72 — Day 10 S3
+- [x] [G-063] Caddy admin API health integration: add caddy_health() to health module, surface upstream status in morning brief (Issue #73) — Day 10 S2
+- [x] [G-060b] Wire --listen flag into main.rs and implement run_listener() async poll loop — VERIFIED IN CODE: run_listener() exists in listener.rs lines 210-361, --listen wired in cli.rs and main.rs — Issue #64 follow-up — Day 10 S1/S2
+- [x] [G-061] Add session velocity scoring to analyze_metrics.py — goals/session, tests/session, composite trend (Issue #75) — Day 10 S1
+- [x] [G-062] Add trigger field to METRICS.md rows — operator/community/self — tag at session start (Issue #76) — Day 10 S1
+- [x] [G-060] Design personal assistant architecture: ASSISTANT_ARCH.md written, Issue #64 responded, `src/listener.rs` + `src/conversation_memory.rs` implemented, EVOLVE_PROPOSED.md service entry added — Day 9 S11
+- [x] [G-059] Write PERSONALITY.md: self-authored document capturing how Axonix thinks, communicates, and makes decisions — written from zero based on 9 days of sessions — Roadmap Level 4 "Build at least one tool I decided to build myself without being asked" — Day 9 S10
+- [x] [G-058] Bluesky post history persistence: record every post to `.axonix/bluesky_history.json` (date, text, uri, cid), add deduplication warning, show recent post count in morning brief — Roadmap Level 3 "Social learnings persisting across sessions" — Day 9 S9
+- [x] [G-057] Add health snapshot to morning brief: include CPU%, memory%, disk%, uptime in Brief::collect() and format_terminal/format_telegram output — Roadmap Level 4 "Know the NUC" — Day 9 S4
+- [x] [G-056] Fix brief.rs: update parse_metrics_row() column offsets for new 11-column METRICS.md format (Session column at col 2 shifts Date/Tokens/Tests/Notes by +1); add Session field to SessionSummary — Issue #59 follow-up — Day 9 S2
+- [x] [G-054] Fix METRICS.md: repair the malformed Day 9 S1 stub row (missing Session column), and prevent future broken rows by updating the analyze_metrics.py parser to detect and warn on malformed rows — Issue #57 — Day 9 S1
+- [x] [G-055] EVOLVE_PROPOSED.md: fix evolve.sh METRICS.md stub format (add S$SESSION column in lines 149/354/358), add --brief-telegram to cron morning run — Issue #57 + Issue #59 — Day 9 S1
+- [x] [G-051] Dashboard: surface analyze_metrics.py pattern analysis on axonix.live — render_metrics_patterns() added to build_site.py, new #patterns section on dashboard. Also fixed parse_metrics() column offset bug (Session column added Day 8 S5 shifted all indexes). Roadmap Level 2 "Patterns visible in METRICS.md" complete — Day 8 S6
+- [x] [G-052] Resolve prediction #1: "By Day 10, I will have resolved at least 3 community issues" — TRUE: 7 issues fixed by Day 8 S6 (#44, #45, #46, #48, #49, #50, #55), satisfied 2 days early — Day 8 S6
+- [x] [G-053] Twitter env vars — operator intentionally removed from docker-compose.yml and CAPABILITIES.md. Twitter is not an active integration. Do not re-add.
+- [x] [G-050] Fix METRICS.md: sort rows chronologically (Day+Session order), replace malformed `~?k` entries with consistent notation, fix the table structure (Issue #55) — Day 8 S5
+- [x] [G-049] Dashboard: show current journal entry on axonix.live (Level 3 — "Dashboard tells a story a stranger could follow"); fetch latest journal heading + body from JOURNAL.md and render it in docs/index.html via build_site.py — Day 8 S4
+- [x] [G-047] Write scripts/analyze_metrics.py: read METRICS.md and produce pattern analysis (test growth rate, session cadence, lines-per-session trends) — Day 8 S4
+- [x] [G-048] Add /predict REPL command: create new predictions interactively without editing code — Day 8 S4
+- [x] [G-001] Track session metrics over time — Day 1 (first real data: Day 2)
+- [x] [G-002] Analyze metrics and identify biggest bottleneck — Day 2 Session 3
+- [x] [G-003] Build a public dashboard that shows goals, metrics, and journal — Day 3 Session 4
+- [x] [G-004] Make sessions observable in real time via live streaming — Day 6 S5 (confirmed: evolve.sh pipes to stream server, stream.axonix.live live)
+- [x] [G-006] Audit all unwrap() calls across codebase and replace with proper error handling
+- [x] [G-007] Extract ReplState struct to enable integration testing of REPL commands — Day 3 Session 1
+- [x] [G-008] Add `/skills` command showing which skills are loaded — Day 3 Session 1
+- [x] [G-009] Add `/history` command: show a numbered list of prompts from this session — Day 3 Session 2
+- [x] [G-010] Multi-device management: SSH into other home network machines — Day 3 Session 5
+- [x] [G-011] Expanded Telegram integration: accept commands + send inline responses — Day 3 Session 6
+- [x] [G-012] Post GitHub comments and commits as axonix-bot, not under owner's account — Day 2 Session 10
+- [x] [G-014] Token compression B and C — Day 3 Session 5
+- [x] [G-015] Telegram /status command: report session health from Telegram — Day 3 Sessions 8–10
+- [x] [G-016] Backfill missing sessions in METRICS.md and verify session tracking is reliable
+- [x] [G-017] Bluesky integration: free-tier social posting alternative to Twitter — Day 3 Session 11
+- [x] [G-018] Extend Telegram capabilities: /health command — Day 3 Session 11
+- [x] [G-019] Structured persistent memory: key-value store across sessions — Day 3 Session 13
+- [x] [G-020] Journal auto-post to GitHub Discussions — Day 4 Sessions 1–2
+- [x] [G-021] Prediction tracking: log predictions, compare against outcomes, build calibration data (Issue #24)
+- [x] [G-022] Morning brief: surface what matters before the day starts — Day 4 Sessions 6–7
+- [x] [G-023] Dashboard live goals + predictions: show active goals and open predictions on axonix.live — Day 5 S1
+- [x] [G-024] Inject memory + predictions into system prompt at startup for smarter sessions — Day 5 S2
+- [x] [G-025] Health watch with Telegram alerts: periodic health checks that notify when thresholds exceeded — Day 6 S2
+- [x] [G-026] Dashboard improvements: add charts/graphs for test count and token usage over time — Day 6 S3
+- [x] [G-027] Sub-agents: code_reviewer + community_responder wired into every session — Day 6 S4
+- [x] [G-028] Add /review REPL command to invoke code_reviewer sub-agent explicitly — Day 6 S5
+- [x] [G-005] Build a community interaction system — Day 7 S1 (/respond command, community_responder sub-agent; full loop: read issues, draft, post)
+- [x] [G-029] Resolve predictions: go through open predictions from Day 6 S3 and close them with actual outcomes — Day 7 S1
+- [x] [G-030] Push test count to 500: write targeted tests for under-covered modules — Day 7 S4 (506 tests passing)
+- [x] [G-031] Morning brief via Telegram on schedule: /brief command wired in all three session modes (Telegram, --prompt, piped); EVOLVE_PROPOSED.md documents cron schedule for operator — Day 7 S5/S6
+- [x] [G-033] Fix context window exhaustion: write cycle_summary.json at session end, load at startup — cycle_summary module, /summary command, system prompt injection all done — Day 7 S5
+- [x] [G-032] Self-written skill: write a new skill file from scratch (not seeded by operator) — skills/machine/SKILL.md written from scratch Day 7 S6
+- [x] [G-034] EVOLVE_PROPOSED.md: wire cycle_summary auto-write + morning brief schedule into evolve.sh — evolve.sh updated Day 7 S6
+- [x] [G-035] Add --write-summary CLI flag: write clean, accurate cycle_summary.json from real data (git stats, test count, active goals) at session end — Day 7 S7
+- [x] [G-036] Write skills/rust-patterns/SKILL.md: ownership/cloning, error handling, lifetimes, compiler errors (E0382/E0499/E0716), Cargo hygiene — Issue #42 closed, Day 7 S8
+- [x] [G-037] Improve ROADMAP.md Level 2: make metrics tracking reliable — METRICS.md rows often have '~?k' tokens and auto-generated notes; proposed EVOLVE_PROPOSED.md changes for operator to apply — Day 8 S1
+- [x] [G-038] README overhaul: rewrite README.md to be professional, accurate, and compelling — Issue #50 closed, Day 8 S1
+- [x] [G-039] EVOLVE_PROPOSED.md: commit-body enforcement before git push — Issue #48 closed, EVOLVE_PROPOSED.md written, Day 8 S1
+- [x] [G-040] Twitter write access: regenerate tokens with Read+Write scope so @AxonixAIbot can actually post session announcements — LEARNINGS.md documents fix, waiting on operator to apply
+- [x] [G-041] Dashboard: auto-post journal entries to GitHub Discussions — implemented via --discuss flag, G-020 done Day 4
+- [x] [G-042] /recap REPL command: post Bluesky thread summarizing the session (Issue #49) — BlueskyClient.post_reply(), /recap in repl.rs, 3-post thread — Day 8 S2
+- [x] [G-044] EVOLVE_PROPOSED.md: add METRICS.md backfill stub proposal (Issue #47) — operator applied it, Day 8 S2
+- [x] [G-043] Telegram session summary: --session-summary-telegram flag that reads cycle_summary.json and sends a compact message (Issue #46) — Day 8 S3
+- [x] [G-045] Issue #45: validate build_site.py output contains required HTML elements — validate_site.py added, Day 8 S3
+- [x] [G-046] Issue #44: add [profile.release] to Cargo.toml to reduce binary size — Day 8 S3

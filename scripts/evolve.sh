@@ -122,10 +122,20 @@ else:
     DISC_COUNT=$(grep -c '^### Discussion' "$ISSUES_FILE" 2>/dev/null || echo 0)
     echo "  ${DISC_COUNT} discussions loaded."
 
-    # Auto-acknowledge any open issues that haven't been responded to this session
+    # Auto-acknowledge any open issues that haven't been responded to this session.
+    # Only match "### Issue #NNN" header lines — not issue numbers in discussion body text.
     if [ -n "${AXONIX_BOT_TOKEN:-}" ]; then
-        ISSUE_NUMS=$(grep -oE '#[0-9]+' "$ISSUES_FILE" | tr -d '#' | sort -u)
+        ISSUE_NUMS=$(grep -oE '^### Issue #[0-9]+' "$ISSUES_FILE" | grep -oE '[0-9]+' | sort -u)
         for ISSUE_NUM in $ISSUE_NUMS; do
+            # Verify the issue is still open before posting
+            ISSUE_STATE=$(curl -s \
+                -H "Authorization: token $AXONIX_BOT_TOKEN" \
+                "https://api.github.com/repos/$REPO/issues/${ISSUE_NUM}" \
+                | grep -o '"state":"[^"]*"' | grep -o '[^"]*$' || echo "unknown")
+            if [ "$ISSUE_STATE" != "open" ]; then
+                echo "  Skipping issue #${ISSUE_NUM} (state: ${ISSUE_STATE})."
+                continue
+            fi
             EXISTING=$(curl -s \
                 -H "Authorization: token $AXONIX_BOT_TOKEN" \
                 "https://api.github.com/repos/$REPO/issues/${ISSUE_NUM}/comments" \
@@ -193,7 +203,7 @@ Read these files in this order:
 2. USER.md — who is running you; calibrate all output to this person
 3. CAPABILITIES.md — what integrations and keys you have access to
 4. ROADMAP.md — your long-term evolution path
-5. GOALS.md — your active goals and backlog
+5. GOALS.md — your active goals and backlog (completed goals are in GOALS_ARCHIVE.md — do not read that file during sessions)
 6. LEARNINGS.md — cached knowledge, things you've already figured out
 7. COMMIT_CONVENTIONS.md — your rules for commit messages (follow these every session)
 8. src/lib.rs and src/main.rs — your architecture overview only.
@@ -483,29 +493,40 @@ cargo run --bin axonix --quiet -- --write-summary "Day ${DAY}, Session ${SESSION
 cargo run --bin axonix --quiet -- -p "/archive-journal" 2>/dev/null \
     | grep -E "(archived|no archiving|Archived)" || true
 
-# ── Step 5b-ii: Trim completed goal detail lines to keep GOALS.md lean ──
-# Strip indented continuation lines under [x] goals; collapse double blank lines.
+# ── Step 5b-ii: Archive completed goals and keep GOALS.md lean ──
+# Move [x] goals from GOALS.md into GOALS_ARCHIVE.md (keeping last 5 in GOALS.md for context).
 python3 - <<'PYEOF'
 import re, itertools
 
 with open('GOALS.md') as f:
     lines = f.readlines()
 
-out = []
-in_done = False
-for line in lines:
-    if re.match(r'^- \[x\] ', line):
-        in_done = True
-        out.append(line)
-    elif in_done and line.startswith('  '):
-        pass  # drop continuation lines under completed goals
-    else:
-        in_done = False
-        out.append(line)
+# Separate completed goals from everything else
+completed = [l for l in lines if re.match(r'^- \[x\] ', l)]
+rest = [l for l in lines if not re.match(r'^- \[x\] ', l)]
 
-# Collapse consecutive blank lines to one
+# Archive any completed goals beyond the last 5
+if len(completed) > 5:
+    to_archive = completed[5:]  # oldest ones (list is newest-first as Axonix writes them)
+    with open('GOALS_ARCHIVE.md', 'a') as f:
+        for line in to_archive:
+            f.write(line)
+    completed = completed[:5]
+
+# Rebuild GOALS.md with kept completed goals, collapse blank lines
+rebuilt = []
+for line in rest:
+    rebuilt.append(line)
+    if line.strip() == '<!-- Last 5 completed (newest first): -->':
+        rebuilt.extend(completed)
+
+# Fallback: if marker not found, just keep rest + completed
+if not any('Last 5 completed' in l for l in rest):
+    rebuilt = rest + completed
+
+# Collapse consecutive blank lines
 collapsed = []
-for is_blank, group in itertools.groupby(out, key=lambda l: l.strip() == ''):
+for is_blank, group in itertools.groupby(rebuilt, key=lambda l: l.strip() == ''):
     if is_blank:
         collapsed.append('\n')
     else:
