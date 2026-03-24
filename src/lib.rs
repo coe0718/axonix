@@ -10,6 +10,7 @@
 //! - `cost` — token cost estimation per model
 //! - `conversation` — saving conversations to markdown
 //! - `github` — GitHub API integration (issue comments as axonix-bot or owner)
+//! - `journal_archive` — journal archiving to prevent context window bloat (Issue #69, G-068)
 //! - `health` — system health metrics (CPU, memory, disk, uptime)
 //! - `lint` — YAML and Caddyfile validation (for docker compose, Caddy server config)
 //! - `listener` — always-on Telegram listener daemon (config, stats, system prompt)
@@ -23,6 +24,7 @@
 
 pub mod brief;
 pub mod bluesky;
+pub mod journal_archive;
 pub mod conversation_memory;
 pub mod listener;
 pub mod cycle_summary;
