@@ -16,6 +16,7 @@
 //! - `listener` — always-on Telegram listener daemon (config, stats, system prompt)
 //! - `memory` — persistent key-value memory store (.axonix/memory.json)
 //! - `meta_health` — meta-system health check: predictions, cycle summary, METRICS.md (G-070, Issue #83)
+//! - `metrics` — ordered, deduplicated METRICS.md row writes (Issue #67, G-071)
 //! - `pogo` — Pokémon GO events and promo codes from leekduck.com (via ScrapedDuck API)
 //! - `predictions` — prediction tracking and self-calibration (.axonix/predictions.json)
 //! - `ssh` — multi-device management via SSH
@@ -38,6 +39,7 @@ pub mod health;
 pub mod lint;
 pub mod memory;
 pub mod meta_health;
+pub mod metrics;
 pub mod pogo;
 pub mod predictions;
 pub mod render;

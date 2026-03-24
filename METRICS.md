@@ -3,19 +3,12 @@ A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
 | 11 | S3 | 2026-03-24 | ~?k | 721 | 0 | ? | ? | ? | yes | Day 11 S3 — in progress |
-| 11 | S2 | 2026-03-24 | ~58k | 693 | 0 | 7 | 499 | 1 | yes | Day 11 S2 |
 | 11 | S2 | 2026-03-24 | ~58k | 721 | 0 | 4 | 487 | 1 | yes | Day 11 S2 — G-070: MetaHealthCheck module (20 tests), meta-system brief section, closed Issues #83/#68 |
-| 11 | S1 | 2026-03-24 | ~22k | 672 | 0 | 5 | 33 | 27 | yes | Day 11 S1 |
 | 11 | S1 | 2026-03-24 | ~22k | 700 | 0 | 1 | 3 | 12 | yes | Day 11 S1 — G-069: prune stale LEARNINGS.md entries (G-007/G-008 done), closed Issues #84 and #85 |
-| 10 | S6 | 2026-03-23 | ~58k | 672 | 0 | 12 | 804 | 248 | yes | Day 10 S6 |
 | 10 | S6 | 2026-03-23 | ~58k | 672 | 0 | 9 | 525 | 224 | yes | Day 10 S6 — G-068: JournalArchiver module+/archive-journal command (22 tests), archived 56 old journal entries, closed Issue #69 |
-| 10 | S5 | 2026-03-23 | ~75k | 650 | 0 | 10 | 1292 | 2 | yes | Day 10 S5 |
 | 10 | S5 | 2026-03-23 | ~75k | 678 | 0 | 9 | 1281 | 0 | yes | Day 10 S5 — G-066 failure pattern tracking (Issue #70), Pokémon GO events+promo codes in brief (operator request) |
-| 10 | S4 | 2026-03-23 | ~82k | 612 | 0 | 6 | 479 | 25 | yes | Day 10 S4 |
 | 10 | S4 | 2026-03-23 | ~82k | 639 | 0 | 2 | 456 | 25 | yes | Day 10 S4 — G-065: LastSessionSummary in morning brief, 15 new tests (624→639), Issues #71 closed, #74 updated |
-| 10 | S3 | 2026-03-23 | ~56k | 597 | 0 | 9 | 537 | 2 | yes | Day 10 S3 |
 | 10 | S3 | 2026-03-23 | ~56k | 624 | 0 | 7 | 444 | 2 | yes | Day 10 S3 — G-064 prediction calibration (Issue #72): CalibrationScore, hit rate, system prompt injection, morning brief; EVOLVE_PROPOSED.md auto-ack for Issue #74 |
-| 10 | S2 | 2026-03-23 | ~65k | 580 | 0 | 9 | 304 | 15 | yes | Day 10 S2 |
 | 10 | S2 | 2026-03-23 | ~65k | 607 | 0 | 5 | 279 | 5 | yes | Day 10 S2 — G-063 Caddy health integration (Issue #73), Issue #74 auto-ack proposal, G-060b verified complete |
 | 10 | S1 | 2026-03-23 | ~78k | 574 | 0 | 6 | 294 | 2 | yes | Day 10 S1 |
 | 9 | S11 | 2026-03-22 | ~55k | 596 | 0 | 9  | 1031 | 0   | yes | Day 9 S11: personal assistant architecture — ASSISTANT_ARCH.md, conversation_memory.rs (18 tests), listener.rs (15 tests), EVOLVE_PROPOSED.md, Issue #64 responded (G-060) |
@@ -73,4 +66,3 @@ A record of every session. Appended automatically at the end of each run.
 | 2 | S2  | 2026-03-14 | ~40k | 41  | 0 | 8  | 533 | 420 | yes | Modular refactor: split main.rs into cli/render/cost/conversation modules, added stats to dashboard |
 | 2 | S1  | 2026-03-14 | ~50k | 23  | 0 | 2  | 130 | 6   | yes | Fixed /clear model bug, stream_server panics, added thinking display, /tokens cmd, progress msgs |
 | 1 | S1  | 2026-03-14 | ~30k | 40  | 0 | 4  | 206 | 26  | yes | First boot: added --prompt flag, CliArgs struct, COMMIT_CONVENTIONS, responded to Issues #1 and #2 |
-| 11 | S3 | 2026-03-24 | ~?k | 693 | ? | ? | ? | ? | ? | Day 11 S3 — in progress |
