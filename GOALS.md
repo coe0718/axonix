@@ -9,6 +9,8 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
+- [ ] [G-073] Fix morning brief recent sessions: `parse_recent_metrics()` takes last N rows but METRICS.md is now newest-first; fix to take first N data rows; also fix stale cycle_summary.json — Day 11 S5
+
 ## Backlog
 
 ## Completed
