@@ -370,7 +370,7 @@ impl Brief {
 
         // Last session from METRICS.md
         out.push_str("📊 *Recent Metrics*\n");
-        if let Some(last) = self.recent_sessions.last() {
+        if let Some(last) = self.recent_sessions.first() {
             out.push_str(&format!(
                 "Day {} {} {} — {} tests\n",
                 last.day, last.session, last.date, last.tests
@@ -494,7 +494,11 @@ fn collect_open_predictions() -> Vec<(u32, String, String)> {
         .collect()
 }
 
-/// Parse the last N sessions from METRICS.md table rows.
+/// Parse the most recent N sessions from METRICS.md table rows.
+///
+/// METRICS.md is newest-first (G-071: rows inserted after the header separator),
+/// so we take the first N rows rather than the last N. Stub rows where tests == "?"
+/// (in-progress placeholders) are skipped.
 pub fn parse_recent_metrics(n: usize) -> Vec<SessionSummary> {
     let content = match std::fs::read_to_string("METRICS.md") {
         Ok(c) => c,
@@ -507,9 +511,12 @@ pub fn parse_recent_metrics(n: usize) -> Vec<SessionSummary> {
         .filter_map(|line| parse_metrics_row(line))
         .collect();
 
-    // Return the last N rows
-    let start = rows.len().saturating_sub(n);
-    rows.into_iter().skip(start).collect()
+    // METRICS.md is newest-first (G-071), so take the first N rows.
+    // Skip stub rows (tests == "?" means in-progress placeholder).
+    rows.into_iter()
+        .filter(|s| s.tests != "?")
+        .take(n)
+        .collect()
 }
 
 /// Parse a single METRICS.md table row.
@@ -786,20 +793,36 @@ mod tests {
     // ── parse_recent_metrics ─────────────────────────────────────────────────────
 
     #[test]
-    fn test_parse_recent_metrics_returns_last_n() {
-        // We can verify the trimming logic works
+    fn test_parse_recent_metrics_returns_first_n() {
+        // METRICS.md is newest-first (G-071), so we take the first N rows.
+        // Simulate a newest-first vec: day 4 is at index 0.
         let rows: Vec<SessionSummary> = vec![
-            SessionSummary { day: "1".to_string(), session: "S1".to_string(), date: "2026-03-14".to_string(), tests: "40".to_string(), notes: "first".to_string() },
-            SessionSummary { day: "2".to_string(), session: "S1".to_string(), date: "2026-03-15".to_string(), tests: "100".to_string(), notes: "second".to_string() },
-            SessionSummary { day: "3".to_string(), session: "S1".to_string(), date: "2026-03-16".to_string(), tests: "200".to_string(), notes: "third".to_string() },
             SessionSummary { day: "4".to_string(), session: "S1".to_string(), date: "2026-03-17".to_string(), tests: "362".to_string(), notes: "fourth".to_string() },
+            SessionSummary { day: "3".to_string(), session: "S1".to_string(), date: "2026-03-16".to_string(), tests: "200".to_string(), notes: "third".to_string() },
+            SessionSummary { day: "2".to_string(), session: "S1".to_string(), date: "2026-03-15".to_string(), tests: "100".to_string(), notes: "second".to_string() },
+            SessionSummary { day: "1".to_string(), session: "S1".to_string(), date: "2026-03-14".to_string(), tests: "40".to_string(), notes: "first".to_string() },
         ];
         let n = 3;
-        let start = rows.len().saturating_sub(n);
-        let result: Vec<&SessionSummary> = rows.iter().skip(start).collect();
-        assert_eq!(result.len(), 3, "should return last 3");
-        assert_eq!(result[0].day, "2", "first of last 3 should be day 2");
-        assert_eq!(result[2].day, "4", "last should be day 4");
+        // Stub rows (tests == "?") are filtered; none here, so we take the first 3.
+        let result: Vec<&SessionSummary> = rows.iter().filter(|s| s.tests != "?").take(n).collect();
+        assert_eq!(result.len(), 3, "should return first 3 (newest)");
+        assert_eq!(result[0].day, "4", "first result should be newest (day 4)");
+        assert_eq!(result[2].day, "2", "third result should be day 2");
+    }
+
+    #[test]
+    fn test_parse_recent_metrics_skips_stub_rows() {
+        // Rows with tests == "?" are in-progress stubs and should be skipped.
+        let rows: Vec<SessionSummary> = vec![
+            SessionSummary { day: "5".to_string(), session: "S1".to_string(), date: "2026-03-18".to_string(), tests: "?".to_string(), notes: "in progress".to_string() },
+            SessionSummary { day: "4".to_string(), session: "S1".to_string(), date: "2026-03-17".to_string(), tests: "362".to_string(), notes: "fourth".to_string() },
+            SessionSummary { day: "3".to_string(), session: "S1".to_string(), date: "2026-03-16".to_string(), tests: "200".to_string(), notes: "third".to_string() },
+        ];
+        let n = 2;
+        let result: Vec<&SessionSummary> = rows.iter().filter(|s| s.tests != "?").take(n).collect();
+        assert_eq!(result.len(), 2, "should skip stub and return 2 completed rows");
+        assert_eq!(result[0].day, "4", "first non-stub should be day 4");
+        assert_eq!(result[1].day, "3", "second non-stub should be day 3");
     }
 
     // ── Brief::format_terminal edge cases ────────────────────────────────────────
