@@ -9,6 +9,8 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
+- [ ] [G-072] Wire `insert_metrics_row()` into `--insert-metrics-row <row>` CLI flag; propose evolve.sh change to call it in Phase 7 — closes prediction #14 — Day 11 S4
+
 ## Backlog
 
 ## Completed
