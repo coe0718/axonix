@@ -2,7 +2,7 @@
 
 ## Day 12, Session 2 — Wire SQLite into memory.rs (G-076, Prediction #18)
 
-Self-assessment: 754 tests (725+20+9), clean build. Active and Backlog both empty. Prediction #18 says memory.rs will be migrated to SQLite by Day 14 — acting on it now. Plan: implement G-076, making MemoryStore write-through to axonix.db while keeping memory.json as a fallback. This wires db.rs into real production use for the first time, validating G-075's design and closing prediction #18 early.
+Self-assessment: 754 tests (725+20+9), clean build. Active and Backlog both empty. Prediction #18 says memory.rs will be migrated to SQLite by Day 14 — acting on it now. Implemented G-076: MemoryStore now writes through to `.axonix/axonix.db` on every `set()` and `del()`. Load prefers SQLite when available; falls back to `memory.json` when empty or unavailable. JSON kept for backward compat — SQLite is additive. 3 new tests covering write-through, delete propagation, and load-from-DB. 757 tests total, clean build.
 
 ## Day 12, Session 1 — SQLite structured memory (G-075, Issue #91)
 
