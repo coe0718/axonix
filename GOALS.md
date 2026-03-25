@@ -12,8 +12,6 @@ Every goal should move toward this. Every session should answer:
 
 ## Backlog
 
-- [ ] [G-075] SQLite structured memory — replace `.axonix/*.json` with queryable store — Issue #91
-
 ## Completed
 
 Completed goals have been archived to GOALS_ARCHIVE.md to keep this file lean.
