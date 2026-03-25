@@ -110,5 +110,12 @@
     "outcome": null,
     "delta": null,
     "resolved": null
+  },
+  "17": {
+    "prediction": "By Day 12, the proactive listener (G-074) will have acknowledged at least one real `agent-input` issue via the GitHub polling loop — confirming the 15-minute poll cycle is working in the deployed container.",
+    "created": "2026-03-24",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
   }
 }
