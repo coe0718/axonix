@@ -9,8 +9,6 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-- [ ] [G-077] Wire `predictions.rs` into AxonixDb: write-through to axonix.db on predict/resolve/save, load prefers SQLite, JSON fallback — Prediction #19 — Day 12 S3
-
 ## Backlog
 
 ## Completed
@@ -20,6 +18,7 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] [G-077] Wire `predictions.rs` into AxonixDb: write-through to axonix.db on predict/resolve/save, load prefers SQLite, JSON fallback — Prediction #19 — Day 12 S3
 - [x] [G-076] Wire SQLite into memory.rs: MemoryStore write-through to axonix.db, JSON fallback — Prediction #18 — Day 12 S2
 - [x] [G-075] SQLite structured memory — replace `.axonix/*.json` with queryable store — Issue #91
 - [x] [G-074] Give `--listen` proactive work between sessions: GitHub issue polling every 15 min + daily brief push to Telegram — Issue #92 — Day 11 S6
