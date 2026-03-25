@@ -343,7 +343,7 @@ impl Brief {
         }
 
         // Bluesky post stats (compact)
-        if let Some((total, root, last_date)) = &self.bluesky_stats {
+        if let Some((_total, root, last_date)) = &self.bluesky_stats {
             let date_str = last_date.as_deref().unwrap_or("(never)");
             out.push_str(&format!("📡 *Bluesky*: {root} posts (last: {date_str})\n"));
         }

@@ -26,7 +26,7 @@
 //! assert_eq!(store.total_count(), 1);
 //! ```
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 /// Known categories of agent failure for self-monitoring.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -170,7 +170,7 @@ impl FailurePatternStore {
             self.events.len()
         )];
         // Count by type
-        let mut counts: Vec<(String, usize)> = {
+        let counts: Vec<(String, usize)> = {
             let mut map: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
             for ev in &self.events {
                 *map.entry(ev.failure_type.key()).or_insert(0) += 1;
