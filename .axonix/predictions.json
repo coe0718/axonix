@@ -117,5 +117,12 @@
     "outcome": null,
     "delta": null,
     "resolved": null
+  },
+  "18": {
+    "prediction": "By Day 14, `src/db.rs` will be wired into at least one existing module — specifically, `memory.rs` will be migrated to read/write from `axonix.db` instead of `memory.json`, and the old JSON file will be kept only as a fallback.",
+    "created": "2026-03-25",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
   }
 }
