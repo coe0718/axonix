@@ -9,6 +9,8 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
+- [ ] [G-076] Wire SQLite into memory.rs: MemoryStore write-through to axonix.db, JSON fallback — Prediction #18 — Day 12 S2
+
 ## Backlog
 
 ## Completed
