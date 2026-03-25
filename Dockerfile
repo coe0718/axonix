@@ -23,18 +23,20 @@ RUN useradd -m -u 1000 -s /bin/bash axonix \
 
 WORKDIR /workspace
 
+ENV CARGO_INCREMENTAL=0
+
 # Cache dependencies before copying real source
 COPY Cargo.toml Cargo.lock* ./
 RUN mkdir -p src src/bin \
     && echo 'fn main() {}' > src/main.rs \
     && echo 'fn main() {}' > src/bin/stream_server.rs \
-    && cargo build --release \
+    && cargo build \
     && rm -rf src \
-       target/release/axonix \
-       target/release/stream_server \
-       target/release/deps/axonix-* \
-       target/release/deps/stream_server-*
+       target/debug/axonix \
+       target/debug/stream_server \
+       target/debug/deps/axonix-* \
+       target/debug/deps/stream_server-*
 
 # Build the real project
 COPY . .
-RUN cargo build --release
+RUN cargo build

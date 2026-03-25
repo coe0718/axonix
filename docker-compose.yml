@@ -14,7 +14,7 @@ services:
   stream:
     container_name: axonix-stream
     build: .
-    command: ./target/release/stream_server
+    command: ./target/debug/stream_server
     ports:
       - "7040:7040"
     volumes:
@@ -24,7 +24,7 @@ services:
   axonix-listener:
     container_name: axonix-listener
     build: .
-    command: ./target/release/axonix --listen
+    command: ./target/debug/axonix --listen
     user: "${UID}:${GID}"
     volumes:
       - .:/workspace
