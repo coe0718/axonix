@@ -5,7 +5,8 @@
 //!
 //! # Design
 //!
-//! - Flat JSON file: `.axonix/predictions.json`
+//! - Flat JSON file: `.axonix/predictions.json` (primary, backward-compat)
+//! - SQLite write-through: `.axonix/axonix.db` (durable, queryable backup)
 //! - Each prediction has: id, text, created date, optional resolution (outcome + delta)
 //! - Predictions are "open" until resolved
 //! - `/predict` REPL command to create, resolve, and list predictions
@@ -18,6 +19,8 @@
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
+
+use crate::db::AxonixDb;
 
 /// A single prediction entry.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -124,18 +127,38 @@ fn parse_days_from_delta(delta: &str) -> Option<f64> {
     }
 }
 
-/// Persistent prediction store backed by a JSON file.
+/// Persistent prediction store backed by a JSON file with SQLite write-through.
 pub struct PredictionStore {
     path: PathBuf,
+    /// Path to `.axonix/axonix.db` — sibling of the JSON file.
+    db_path: PathBuf,
     entries: BTreeMap<u32, Prediction>,
     next_id: u32,
 }
 
 impl PredictionStore {
     /// Create a new store at the given path. Loads existing data if the file exists.
+    ///
+    /// Derives the SQLite path as `<parent>/axonix.db` alongside the JSON file.
     pub fn new(path: PathBuf) -> Self {
+        let db_path = db_path_for(&path);
         let mut store = Self {
             path,
+            db_path,
+            entries: BTreeMap::new(),
+            next_id: 1,
+        };
+        store.load_if_exists();
+        store
+    }
+
+    /// Create a new store with an explicit SQLite database path.
+    ///
+    /// Used by tests to avoid touching `.axonix/axonix.db`.
+    pub fn new_with_db(path: PathBuf, db_path: PathBuf) -> Self {
+        let mut store = Self {
+            path,
+            db_path,
             entries: BTreeMap::new(),
             next_id: 1,
         };
@@ -152,8 +175,35 @@ impl PredictionStore {
         Self::new(path)
     }
 
-    /// Load entries from disk if the file exists.
+    /// Load entries from disk.
+    ///
+    /// Tries SQLite first — if the DB exists and has rows, loads from it.
+    /// Falls back to JSON if SQLite is empty or unavailable.
     fn load_if_exists(&mut self) {
+        // ── Try SQLite first ──────────────────────────────────────────────────
+        if let Ok(db) = AxonixDb::open(&self.db_path) {
+            if let Ok(rows) = db.predictions_list() {
+                if !rows.is_empty() {
+                    for (id_str, prediction, created, outcome, delta, resolved) in rows {
+                        if let Ok(id) = id_str.parse::<u32>() {
+                            self.entries.insert(id, Prediction {
+                                prediction,
+                                created,
+                                outcome,
+                                delta,
+                                resolved,
+                            });
+                            if id >= self.next_id {
+                                self.next_id = id + 1;
+                            }
+                        }
+                    }
+                    return; // SQLite was authoritative — skip JSON
+                }
+            }
+        }
+
+        // ── Fall back to JSON ─────────────────────────────────────────────────
         if !self.path.exists() {
             return;
         }
@@ -175,9 +225,12 @@ impl PredictionStore {
         }
     }
 
-    /// Save entries to disk.
+    /// Save entries to disk (JSON) and sync all rows to SQLite.
+    ///
+    /// JSON write always happens first for backward compatibility.
+    /// SQLite sync failures are logged as warnings — never propagated.
     pub fn save(&self) -> Result<(), String> {
-        // Ensure parent directory exists
+        // ── Write JSON ────────────────────────────────────────────────────────
         if let Some(parent) = self.path.parent() {
             std::fs::create_dir_all(parent)
                 .map_err(|e| format!("could not create directory: {e}"))?;
@@ -189,26 +242,64 @@ impl PredictionStore {
             .collect();
         let json = serde_json::to_string_pretty(&map)
             .map_err(|e| format!("serialization error: {e}"))?;
-        std::fs::write(&self.path, json).map_err(|e| format!("write error: {e}"))
+        std::fs::write(&self.path, json).map_err(|e| format!("write error: {e}"))?;
+
+        // ── Sync all rows to SQLite ───────────────────────────────────────────
+        if let Ok(db) = AxonixDb::open(&self.db_path) {
+            for (id, pred) in &self.entries {
+                if let Err(e) = db.prediction_upsert(
+                    &id.to_string(),
+                    &pred.prediction,
+                    &pred.created,
+                    pred.outcome.as_deref(),
+                    pred.delta.as_deref(),
+                    pred.resolved.as_deref(),
+                ) {
+                    eprintln!("warning: prediction SQLite sync failed for #{id}: {e}");
+                }
+            }
+        }
+
+        Ok(())
     }
 
     /// Add a new prediction. Returns the assigned ID.
+    ///
+    /// Writes through to SQLite immediately; JSON is written on the next `save()`.
     pub fn predict(&mut self, text: &str) -> u32 {
         let id = self.next_id;
         self.next_id += 1;
+        let today = today_str();
         let prediction = Prediction {
             prediction: text.to_string(),
-            created: today_str(),
+            created: today.clone(),
             outcome: None,
             delta: None,
             resolved: None,
         };
         self.entries.insert(id, prediction);
+
+        // ── Write-through to SQLite ───────────────────────────────────────────
+        if let Ok(db) = AxonixDb::open(&self.db_path) {
+            if let Err(e) = db.prediction_upsert(
+                &id.to_string(),
+                text,
+                &today,
+                None,
+                None,
+                None,
+            ) {
+                eprintln!("warning: prediction SQLite write-through failed: {e}");
+            }
+        }
+
         id
     }
 
     /// Resolve a prediction with an outcome and optional delta.
     /// Returns Ok with the prediction text if found, Err if not found.
+    ///
+    /// Writes through to SQLite immediately after updating in-memory state.
     pub fn resolve(&mut self, id: u32, outcome: &str, delta: Option<&str>) -> Result<String, String> {
         match self.entries.get_mut(&id) {
             Some(pred) => {
@@ -218,7 +309,25 @@ impl PredictionStore {
                 pred.outcome = Some(outcome.to_string());
                 pred.delta = delta.map(|s| s.to_string());
                 pred.resolved = Some(today_str());
-                Ok(pred.prediction.clone())
+                let text = pred.prediction.clone();
+                let created = pred.created.clone();
+                let resolved_date = pred.resolved.clone();
+
+                // ── Write-through to SQLite ───────────────────────────────────
+                if let Ok(db) = AxonixDb::open(&self.db_path) {
+                    if let Err(e) = db.prediction_upsert(
+                        &id.to_string(),
+                        &text,
+                        &created,
+                        Some(outcome),
+                        delta,
+                        resolved_date.as_deref(),
+                    ) {
+                        eprintln!("warning: prediction SQLite write-through failed: {e}");
+                    }
+                }
+
+                Ok(text)
             }
             None => Err(format!("prediction #{id} not found")),
         }
@@ -402,6 +511,19 @@ fn unix_to_ymd(secs: u64) -> (u32, u32, u32) {
 
 fn is_leap(y: u32) -> bool {
     (y % 4 == 0 && y % 100 != 0) || (y % 400 == 0)
+}
+
+/// Derive the SQLite DB path from a JSON predictions path.
+///
+/// Returns `<parent_dir>/axonix.db` alongside the JSON file.
+/// Falls back to `.axonix/axonix.db` relative to CWD if the path has no parent.
+fn db_path_for(json_path: &std::path::Path) -> PathBuf {
+    if let Some(parent) = json_path.parent() {
+        if !parent.as_os_str().is_empty() {
+            return parent.join("axonix.db");
+        }
+    }
+    PathBuf::from(".axonix/axonix.db")
 }
 
 #[cfg(test)]
@@ -779,5 +901,74 @@ mod tests {
         assert_eq!(parse_days_from_delta("no timing info"), None);
         assert_eq!(parse_days_from_delta(""), None);
         assert_eq!(parse_days_from_delta("something happened"), None);
+    }
+
+    // ── SQLite write-through ─────────────────────────────────────────────────
+
+    /// Verify that predict() immediately writes through to SQLite.
+    #[test]
+    fn test_predict_writes_to_sqlite() {
+        let dir = tempfile::tempdir().unwrap();
+        let json_path = dir.path().join("predictions.json");
+        let db_path = dir.path().join("axonix.db");
+
+        let mut store = PredictionStore::new_with_db(json_path, db_path.clone());
+        store.predict("the build will succeed on first attempt");
+
+        // Open the DB directly and verify the prediction landed there.
+        let db = crate::db::AxonixDb::open(&db_path).expect("should open db");
+        let rows = db.predictions_list().expect("predictions_list should work");
+        assert_eq!(rows.len(), 1, "one prediction should be in SQLite");
+        let (id, text, _created, outcome, _delta, _resolved) = &rows[0];
+        assert_eq!(id, "1");
+        assert_eq!(text, "the build will succeed on first attempt");
+        assert!(outcome.is_none(), "new prediction should be unresolved");
+    }
+
+    /// Verify that resolve() updates the SQLite row with outcome/delta/resolved.
+    #[test]
+    fn test_resolve_updates_sqlite() {
+        let dir = tempfile::tempdir().unwrap();
+        let json_path = dir.path().join("predictions.json");
+        let db_path = dir.path().join("axonix.db");
+
+        let mut store = PredictionStore::new_with_db(json_path, db_path.clone());
+        let id = store.predict("tests will pass without changes");
+        store.resolve(id, "TRUE — all 42 tests passed", Some("1 days early")).unwrap();
+
+        let db = crate::db::AxonixDb::open(&db_path).expect("should open db");
+        let rows = db.predictions_list().expect("predictions_list should work");
+        assert_eq!(rows.len(), 1);
+        let (_id, _text, _created, outcome, delta, resolved) = &rows[0];
+        assert_eq!(outcome.as_deref(), Some("TRUE — all 42 tests passed"));
+        assert_eq!(delta.as_deref(), Some("1 days early"));
+        assert!(resolved.is_some(), "resolved date should be set");
+    }
+
+    /// Verify that load prefers SQLite data when non-empty, ignoring JSON.
+    #[test]
+    fn test_load_prefers_sqlite() {
+        let dir = tempfile::tempdir().unwrap();
+        let json_path = dir.path().join("predictions.json");
+        let db_path = dir.path().join("axonix.db");
+
+        // Write a prediction directly to SQLite (no PredictionStore involved).
+        let db = crate::db::AxonixDb::open(&db_path).expect("should open db");
+        db.prediction_upsert("5", "written directly to db", "2025-01-01", None, None, None)
+            .expect("upsert should succeed");
+        drop(db);
+
+        // Write different data to JSON.
+        let json_content = r#"{"1":{"prediction":"from json only","created":"2024-12-01","outcome":null,"delta":null,"resolved":null}}"#;
+        std::fs::write(&json_path, json_content).unwrap();
+
+        // Load: SQLite has data so it should be preferred over JSON.
+        let store = PredictionStore::new_with_db(json_path, db_path);
+        assert_eq!(store.count(), 1, "should load from SQLite (1 row), not JSON (1 row different)");
+        // The prediction from SQLite (id=5) should be present.
+        let pred = store.get(5).expect("prediction #5 should be loaded from SQLite");
+        assert_eq!(pred.prediction, "written directly to db");
+        // The JSON-only prediction (id=1) should NOT be loaded.
+        assert!(store.get(1).is_none(), "JSON-only prediction should not appear when SQLite is non-empty");
     }
 }
