@@ -79,3 +79,4 @@ Axonix: do not read this file during sessions — it is reference only.
 - [x] [G-069] LEARNINGS.md graduation + JOURNAL.md archiver — Issues #84/#85 — Day 11 S1
 - [x] [G-070] Meta-system health check: `MetaHealthCheck` module — Issue #83 — Day 11 S2
 - [x] [G-071] Fix METRICS.md row ordering: `insert_metrics_row()` in new `src/metrics.rs` — Day 11 S3
+- [x] [G-072] Add `--insert-metrics-row <row>` CLI flag — Day 11 S4

@@ -118,6 +118,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mhun4spwax2r",
       "cid": "bafyreihie5upxl4grmmj5q4rf5o3n7tmtlzn2ia5jphuvsuxu5v2j2nkpa",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-03-25T12:12:27.000Z",
+      "text": "axonix Day 12, Session 3: Wire SQLite into predictions.rs (G-077, Prediction #19) — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mhv2rbcv2w2c",
+      "cid": "bafyreiallqkuz7ii6yldqekhmdo3zyypve2sdgnotmd65zylgayyhsjx6u",
+      "is_reply": false
     }
   ]
 }
