@@ -48,6 +48,7 @@ use yoagent::tools::default_tools;
 use yoagent::context::ContextConfig;
 use yoagent::retry::RetryConfig;
 use yoagent::{AgentEvent, StreamDelta};
+use std::collections::HashSet;
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -62,6 +63,12 @@ pub struct ListenerConfig {
     pub memory_path: Option<String>,
     /// Maximum number of conversation turns to keep in memory.  Default: 100.
     pub max_memory_turns: usize,
+    /// How often to poll GitHub for new issues (seconds). Default: 900 (15 min).
+    pub github_poll_interval_secs: u64,
+    /// Hour (0-23 local time) to send the daily morning brief. Default: 7.
+    pub daily_brief_hour: u8,
+    /// Path to store the set of already-acknowledged issue numbers (JSON). None = use default.
+    pub acked_issues_path: Option<String>,
 }
 
 impl Default for ListenerConfig {
@@ -71,7 +78,82 @@ impl Default for ListenerConfig {
             max_response_chars: 3000,
             memory_path: None,
             max_memory_turns: 100,
+            github_poll_interval_secs: 900,
+            daily_brief_hour: 7,
+            acked_issues_path: None,
         }
+    }
+}
+
+// ── AckedIssues ───────────────────────────────────────────────────────────────
+
+/// Tracks which GitHub issue numbers have already been acknowledged by the listener.
+///
+/// Persists to a JSON file so acknowledgements survive restarts.
+pub struct AckedIssues {
+    /// The set of acknowledged issue numbers.
+    pub issues: HashSet<u64>,
+    /// Path to the backing JSON file.
+    path: std::path::PathBuf,
+}
+
+impl AckedIssues {
+    /// Load from file, or return an empty set if the file doesn't exist.
+    pub fn load(path: &std::path::Path) -> Self {
+        let issues = if path.exists() {
+            std::fs::read_to_string(path)
+                .ok()
+                .and_then(|s| serde_json::from_str::<Vec<u64>>(&s).ok())
+                .map(|v| v.into_iter().collect::<HashSet<u64>>())
+                .unwrap_or_default()
+        } else {
+            HashSet::new()
+        };
+        Self { issues, path: path.to_path_buf() }
+    }
+
+    /// Returns the default path: `.axonix/acked_issues.json`
+    pub fn default_path() -> std::path::PathBuf {
+        std::path::PathBuf::from(".axonix/acked_issues.json")
+    }
+
+    /// Returns true if the issue number has already been acknowledged.
+    pub fn contains(&self, issue_number: u64) -> bool {
+        self.issues.contains(&issue_number)
+    }
+
+    /// Mark an issue as acknowledged.
+    pub fn insert(&mut self, issue_number: u64) {
+        self.issues.insert(issue_number);
+    }
+
+    /// Persist the current set to the JSON file.
+    pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
+        if let Some(parent) = self.path.parent() {
+            if !parent.as_os_str().is_empty() {
+                std::fs::create_dir_all(parent)?;
+            }
+        }
+        let mut sorted: Vec<u64> = self.issues.iter().copied().collect();
+        sorted.sort_unstable();
+        let json = serde_json::to_string(&sorted)?;
+        std::fs::write(&self.path, json)?;
+        Ok(())
+    }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/// Returns the current local hour (0-23). Used for daily brief scheduling.
+/// Falls back to 0 on error.
+fn local_hour() -> u8 {
+    let output = std::process::Command::new("date").arg("+%H").output();
+    match output {
+        Ok(o) if o.status.success() => {
+            let s = String::from_utf8_lossy(&o.stdout);
+            s.trim().parse::<u8>().unwrap_or(0)
+        }
+        _ => 0,
     }
 }
 
@@ -230,6 +312,22 @@ pub async fn run_listener(
     let mut offset: i64 = 0;
     let start_time = std::time::Instant::now();
 
+    // Proactive work state
+    let mut last_github_poll = std::time::Instant::now()
+        - std::time::Duration::from_secs(config.github_poll_interval_secs);
+    let mut last_brief_hour: Option<u8> = None;
+    let acked_path = config
+        .acked_issues_path
+        .as_deref()
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(AckedIssues::default_path);
+    let mut acked_issues = AckedIssues::load(&acked_path);
+
+    // Load GitHub token once (prefer AXONIX_BOT_TOKEN, fall back to GH_TOKEN)
+    let gh_token = std::env::var("AXONIX_BOT_TOKEN")
+        .or_else(|_| std::env::var("GH_TOKEN"))
+        .ok();
+
     loop {
         // Update uptime
         stats.uptime_secs = start_time.elapsed().as_secs();
@@ -353,6 +451,80 @@ pub async fn run_listener(
         // Log stats summary every 100 messages
         if stats.messages_handled > 0 && stats.messages_handled % 100 == 0 {
             eprintln!("  {}", stats.format());
+        }
+
+        // GitHub issue polling — runs every github_poll_interval_secs
+        if last_github_poll.elapsed().as_secs() >= config.github_poll_interval_secs {
+            last_github_poll = std::time::Instant::now();
+            if let Some(ref token) = gh_token {
+                let gh = crate::github::GitHubClient::new(
+                    token,
+                    crate::github::GitHubIdentity::Bot,
+                );
+                match gh.list_issues("coe0718/axonix", 20).await {
+                    Ok(issues) => {
+                        let new_issues: Vec<_> = issues
+                            .iter()
+                            .filter(|i| i.labels.iter().any(|l| l == "agent-input"))
+                            .filter(|i| !acked_issues.contains(u64::from(i.number)))
+                            .collect();
+                        for issue in &new_issues {
+                            let day = std::env::var("DAY_COUNT")
+                                .ok()
+                                .and_then(|s| {
+                                    s.split_whitespace().next().map(|n| n.to_string())
+                                })
+                                .unwrap_or_else(|| "?".to_string());
+                            let session = std::env::var("SESSION_COUNT")
+                                .ok()
+                                .unwrap_or_else(|| "?".to_string());
+                            let ack_msg = format!(
+                                "Picked up in Day {day} Session {session} — I'll look at this in the next available cron window.",
+                            );
+                            match gh
+                                .post_comment(
+                                    "coe0718/axonix",
+                                    u64::from(issue.number),
+                                    &ack_msg,
+                                )
+                                .await
+                            {
+                                Ok(_) => {
+                                    acked_issues.insert(u64::from(issue.number));
+                                    let _ = acked_issues.save();
+                                    eprintln!(
+                                        "  ✓ acknowledged issue #{}",
+                                        issue.number
+                                    );
+                                }
+                                Err(e) => {
+                                    eprintln!(
+                                        "  ⚠ listener: failed to ack issue #{}: {e}",
+                                        issue.number
+                                    );
+                                }
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("  ⚠ listener: github poll error: {e}");
+                    }
+                }
+            }
+        }
+
+        // Daily morning brief — sends once per day at daily_brief_hour
+        let current_hour = local_hour();
+        let should_send_brief = current_hour == config.daily_brief_hour
+            && last_brief_hour != Some(current_hour);
+        if should_send_brief {
+            last_brief_hour = Some(current_hour);
+            let brief = crate::brief::Brief::collect();
+            let msg = brief.format_telegram();
+            match tg.send_message(&msg).await {
+                Ok(_) => eprintln!("  ✓ listener: daily brief sent"),
+                Err(e) => eprintln!("  ⚠ listener: failed to send daily brief: {e}"),
+            }
         }
 
         // Sleep between polls
@@ -574,5 +746,73 @@ mod tests {
             2,
             "memory should still have exactly 2 turns after building prompt"
         );
+    }
+
+    // ── AckedIssues ───────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_acked_issues_empty_on_load_missing_file() {
+        let path = std::path::PathBuf::from("/tmp/nonexistent_acked_test_12345.json");
+        let acked = AckedIssues::load(&path);
+        assert!(acked.issues.is_empty(), "should be empty when file doesn't exist");
+    }
+
+    #[test]
+    fn test_acked_issues_insert_and_contains() {
+        let mut acked = AckedIssues::load(&std::path::PathBuf::from("/tmp/nonexistent.json"));
+        assert!(!acked.contains(42));
+        acked.insert(42);
+        assert!(acked.contains(42));
+        assert!(!acked.contains(43));
+    }
+
+    #[test]
+    fn test_acked_issues_save_and_reload() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("acked.json");
+        let mut acked = AckedIssues::load(&path);
+        acked.insert(99);
+        acked.insert(100);
+        acked.save().unwrap();
+        // Reload
+        let reloaded = AckedIssues::load(&path);
+        assert!(reloaded.contains(99), "99 should persist after save/reload");
+        assert!(reloaded.contains(100), "100 should persist after save/reload");
+        assert!(!reloaded.contains(50), "50 was never inserted");
+    }
+
+    #[test]
+    fn test_acked_issues_dedup() {
+        let mut acked = AckedIssues::load(&std::path::PathBuf::from("/tmp/nonexistent.json"));
+        acked.insert(5);
+        acked.insert(5); // duplicate
+        acked.insert(5); // another duplicate
+        assert!(acked.contains(5));
+        // Should still be a set — only one entry
+        assert_eq!(acked.issues.len(), 1);
+    }
+
+    #[test]
+    fn test_listener_config_has_github_poll_interval() {
+        let cfg = ListenerConfig::default();
+        assert_eq!(
+            cfg.github_poll_interval_secs, 900,
+            "default github poll interval should be 15 min (900s)"
+        );
+    }
+
+    #[test]
+    fn test_listener_config_has_daily_brief_hour() {
+        let cfg = ListenerConfig::default();
+        assert_eq!(
+            cfg.daily_brief_hour, 7,
+            "default daily brief hour should be 7 AM"
+        );
+    }
+
+    #[test]
+    fn test_local_hour_returns_valid_hour() {
+        let h = local_hour();
+        assert!(h < 24, "local_hour() should return 0-23, got {h}");
     }
 }
