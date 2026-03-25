@@ -2,6 +2,7 @@
 //!
 //! This crate provides the modular components of the axonix agent:
 //! - `brief` — morning brief: surface what matters before the day starts (G-022)
+//! - `db`    — SQLite structured memory (kv/sessions/goals) (G-075, Issue #91)
 //! - `cli` — command-line argument parsing and help output
 //! - `conversation_memory` — persistent turn-by-turn conversation log (.axonix/conversation_memory.json)
 //! - `cycle_summary` — compact session summary persisted across restarts (Issue #38)
@@ -26,6 +27,7 @@
 
 pub mod brief;
 pub mod bluesky;
+pub mod db;
 pub mod journal_archive;
 pub mod conversation_memory;
 pub mod listener;
