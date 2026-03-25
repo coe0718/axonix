@@ -14,6 +14,8 @@
 //! - Values are strings (simple, composable, no schema complexity)
 //! - Notes are optional: context that makes future sessions smarter
 //! - Load-on-read, save-on-write: minimal complexity, no background threads
+//! - SQLite write-through: every set/delete is mirrored to `axonix.db`
+//!   for durability. JSON remains the fallback for backward compat.
 //!
 //! # File location
 //!
@@ -34,6 +36,8 @@
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
+
+use crate::db::AxonixDb;
 
 /// A single memory entry.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -76,6 +80,9 @@ impl MemoryEntry {
 pub struct MemoryStore {
     /// Path to the JSON file.
     pub path: PathBuf,
+    /// Path to the SQLite database used for write-through backing.
+    /// Defaults to `.axonix/axonix.db` relative to the JSON file's parent.
+    db_path: PathBuf,
     /// The in-memory map. BTreeMap for stable key ordering in JSON output.
     entries: BTreeMap<String, MemoryEntry>,
     /// Whether the store has unsaved changes.
@@ -88,8 +95,23 @@ impl MemoryStore {
     /// Does NOT load from disk — call `load()` for that.
     /// Useful for in-memory testing.
     pub fn new(path: impl Into<PathBuf>) -> Self {
+        let path: PathBuf = path.into();
+        let db_path = default_db_path_for(&path);
+        Self {
+            path,
+            db_path,
+            entries: BTreeMap::new(),
+            dirty: false,
+        }
+    }
+
+    /// Create a new store with an explicit SQLite database path.
+    ///
+    /// Used by tests to avoid touching `.axonix/axonix.db`.
+    pub fn new_with_db(path: impl Into<PathBuf>, db_path: impl Into<PathBuf>) -> Self {
         Self {
             path: path.into(),
+            db_path: db_path.into(),
             entries: BTreeMap::new(),
             dirty: false,
         }
@@ -97,6 +119,7 @@ impl MemoryStore {
 
     /// Load the store from the default path (`.axonix/memory.json`).
     ///
+    /// Prefers SQLite (`axonix.db`) when it has entries; falls back to JSON.
     /// If the file doesn't exist, returns an empty store.
     /// If the file exists but is malformed, logs a warning and returns empty.
     pub fn load_default() -> Self {
@@ -106,9 +129,53 @@ impl MemoryStore {
 
     /// Load the store from a specific path.
     ///
-    /// Returns an empty store if the file doesn't exist or can't be parsed.
+    /// Tries SQLite first (if available and non-empty), then falls back to JSON.
+    /// When both sources are available, SQLite values are used as authoritative
+    /// while notes and timestamps are merged in from JSON (they are JSON-only metadata).
+    /// Returns an empty store if neither source exists or can be parsed.
     pub fn load_from(path: &Path) -> Self {
         let mut store = Self::new(path.to_path_buf());
+
+        // ── Try SQLite first ──────────────────────────────────────────────────
+        let db_path = store.db_path.clone();
+        if let Ok(db) = AxonixDb::open(&db_path) {
+            if let Ok(pairs) = db.kv_list() {
+                if !pairs.is_empty() {
+                    // Load the SQLite KV pairs as the authoritative values.
+                    for (key, value) in pairs {
+                        store.entries.insert(
+                            key,
+                            MemoryEntry {
+                                value,
+                                note: None,
+                                updated: None,
+                            },
+                        );
+                    }
+                    // Merge notes/timestamps from JSON if the file exists.
+                    // JSON metadata (note, updated) enriches SQLite values.
+                    if path.exists() {
+                        if let Ok(content) = std::fs::read_to_string(path) {
+                            if let Ok(json_entries) =
+                                serde_json::from_str::<BTreeMap<String, MemoryEntry>>(&content)
+                            {
+                                for (key, json_entry) in json_entries {
+                                    if let Some(entry) = store.entries.get_mut(&key) {
+                                        // Overwrite value from SQLite is authoritative;
+                                        // take note and updated from JSON.
+                                        entry.note = json_entry.note;
+                                        entry.updated = json_entry.updated;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return store;
+                }
+            }
+        }
+
+        // ── Fall back to JSON ─────────────────────────────────────────────────
         if path.exists() {
             match std::fs::read_to_string(path) {
                 Ok(content) => {
@@ -159,23 +226,43 @@ impl MemoryStore {
     /// Set a key to a value, with an optional note.
     ///
     /// Records the current UTC time as `updated`.
-    /// Does not auto-save — call `save()` when done.
+    /// Writes through to SQLite (`axonix.db`) in addition to marking dirty for
+    /// the next `save()` call. SQLite failures are logged but never propagated.
+    /// Does not auto-save JSON — call `save()` when done.
     pub fn set(&mut self, key: impl Into<String>, value: impl Into<String>, note: Option<&str>) {
         let key = key.into();
+        let value_str: String = value.into();
         let entry = MemoryEntry {
-            value: value.into(),
+            value: value_str.clone(),
             note: note.map(|s| s.to_string()),
             updated: Some(current_date()),
         };
-        self.entries.insert(key, entry);
+        self.entries.insert(key.clone(), entry);
         self.dirty = true;
+
+        // ── Write-through to SQLite ───────────────────────────────────────────
+        if let Ok(db) = AxonixDb::open(&self.db_path) {
+            if let Err(e) = db.kv_set(&key, &value_str) {
+                eprintln!("  ⚠ memory: SQLite write failed for key {:?}: {e}", key);
+            }
+        }
     }
 
     /// Delete a key. Returns true if the key existed.
+    ///
+    /// Propagates the deletion to SQLite as well. SQLite failures are logged
+    /// but never propagated — JSON remains authoritative.
     pub fn del(&mut self, key: &str) -> bool {
         let existed = self.entries.remove(key).is_some();
         if existed {
             self.dirty = true;
+
+            // ── Propagate delete to SQLite ────────────────────────────────────
+            if let Ok(db) = AxonixDb::open(&self.db_path) {
+                if let Err(e) = db.kv_delete(key) {
+                    eprintln!("  ⚠ memory: SQLite delete failed for key {:?}: {e}", key);
+                }
+            }
         }
         existed
     }
@@ -245,6 +332,20 @@ pub fn default_memory_path() -> PathBuf {
     PathBuf::from(".axonix/memory.json")
 }
 
+/// Derive the default SQLite DB path given a JSON memory path.
+///
+/// Looks for `.axonix/` as the parent directory; if the JSON file lives there,
+/// the DB lives alongside it as `axonix.db`. Otherwise uses `.axonix/axonix.db`
+/// relative to the current working directory.
+fn default_db_path_for(json_path: &Path) -> PathBuf {
+    if let Some(parent) = json_path.parent() {
+        if !parent.as_os_str().is_empty() {
+            return parent.join("axonix.db");
+        }
+    }
+    PathBuf::from(".axonix/axonix.db")
+}
+
 /// Return today's date as a compact string (YYYY-MM-DD).
 ///
 /// Used to timestamp memory writes.
@@ -278,7 +379,7 @@ fn unix_to_ymd(secs: u64) -> (u32, u32, u32) {
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    use crate::db::AxonixDb;
 
     fn tmp_store() -> (MemoryStore, tempfile::TempDir) {
         let dir = tempfile::tempdir().unwrap();
@@ -531,5 +632,73 @@ mod tests {
             .find(|l| l.contains("key.without.note"))
             .expect("should find the key line");
         assert!(!line.ends_with(']'), "line without note should not end with ]");
+    }
+
+    // ── SQLite write-through ──────────────────────────────────────────────────
+
+    /// Set a key in MemoryStore, then open the DB directly and verify the key
+    /// is present in the `kv` table.
+    #[test]
+    fn test_memory_db_write_through() {
+        let dir = tempfile::tempdir().unwrap();
+        let json_path = dir.path().join("memory.json");
+        let db_path = dir.path().join("axonix.db");
+        let mut store = MemoryStore::new_with_db(&json_path, &db_path);
+
+        store.set("db.test.key", "hello_sqlite", Some("write-through test"));
+
+        // Open the DB directly and verify the key landed there.
+        let db = AxonixDb::open(&db_path).expect("should open db");
+        let val = db.kv_get("db.test.key").expect("kv_get should not error");
+        assert_eq!(val, Some("hello_sqlite".to_string()), "value should be in SQLite");
+    }
+
+    /// Set then delete a key — verify it is gone from the DB.
+    #[test]
+    fn test_memory_db_delete_propagates() {
+        let dir = tempfile::tempdir().unwrap();
+        let json_path = dir.path().join("memory.json");
+        let db_path = dir.path().join("axonix.db");
+        let mut store = MemoryStore::new_with_db(&json_path, &db_path);
+
+        store.set("ephemeral.key", "temporary", None);
+        store.del("ephemeral.key");
+
+        let db = AxonixDb::open(&db_path).expect("should open db");
+        let val = db.kv_get("ephemeral.key").expect("kv_get should not error");
+        assert!(val.is_none(), "deleted key should not be in SQLite");
+    }
+
+    /// Write directly to the DB, then call `load_from()` on a fresh MemoryStore
+    /// with no JSON file — the DB entries should be authoritative.
+    #[test]
+    fn test_memory_db_load_from_db() {
+        let dir = tempfile::tempdir().unwrap();
+        let json_path = dir.path().join("memory.json");
+        let db_path = dir.path().join("axonix.db");
+
+        // Write directly to the DB (no MemoryStore involved yet).
+        let db = AxonixDb::open(&db_path).expect("should open db");
+        db.kv_set("loaded.from.db", "db_value").expect("kv_set should succeed");
+        drop(db);
+
+        // No JSON file exists — load_from should pull from SQLite.
+        let store = MemoryStore::new_with_db(&json_path, &db_path);
+        // We must use load_from-equivalent logic. Since load_from uses Self::new
+        // internally, we replicate the logic by calling load_from and patching
+        // the db_path after — instead, let's use a dedicated helper path:
+        // Directly exercise the load path by rebuilding with load_from.
+        // Because load_from calls Self::new which derives db_path from json_path's
+        // parent, and our json_path's parent IS the temp dir, this works naturally.
+        assert!(store.is_empty(), "store constructed with new_with_db is empty (not loaded)");
+
+        // Use load_from — it derives db_path as <parent of json_path>/axonix.db,
+        // which is exactly dir.path()/axonix.db — our written DB.
+        let loaded = MemoryStore::load_from(&json_path);
+        assert_eq!(
+            loaded.get("loaded.from.db"),
+            Some("db_value"),
+            "value written directly to DB should be visible after load_from"
+        );
     }
 }
