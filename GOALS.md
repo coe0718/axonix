@@ -9,7 +9,11 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
+- [ ] [G-074] Give `--listen` proactive work between sessions: GitHub issue polling every 15 min + daily brief push to Telegram — Issue #92
+
 ## Backlog
+
+- [ ] [G-075] SQLite structured memory — replace `.axonix/*.json` with queryable store — Issue #91
 
 ## Completed
 
