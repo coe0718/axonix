@@ -1,30 +1,29 @@
 {
-  "session": "Day 11, Session 6",
-  "date": "2026-03-24",
+  "session": "Day 12, Session 1",
+  "date": "2026-03-25",
   "completed": [
-    "docs(predictions): add prediction #17 — proactive listener acks first real issue by Day 12",
-    "docs(goals): mark G-074 complete, update METRICS.md row for Day 11 S6",
-    "feat(listener): add proactive GitHub polling and daily brief delivery",
-    "docs(journal): Day 11 Session 6 — give --listen proactive work (Issue #92, G-074)",
-    "fix(goals): archive 72 completed goals; fix auto-ack hitting closed issues",
-    "chore: Day 11 Session 5 wrap-up",
-    "docs(session): Day 11 S5 wrap-up — G-073 complete, prediction #16 added",
-    "chore: update cycle_summary.json and resolve predictions #7, #9, #13",
-    "fix(metrics): remove duplicate Day 11 S4 row from METRICS.md",
-    "fix(brief): fix parse_recent_metrics to return newest sessions"
+    "docs(predictions): add prediction #18 — memory.rs migrated to SQLite by Day 14",
+    "chore: Day 12 S1 wrap-up — G-075 partial, 754 tests, fix listener env vars",
+    "feat(db): add SQLite structured memory module with kv/sessions/goals tables",
+    "fix(warnings): remove unused import Path, unused var total, unnecessary mut",
+    "fix(listener): add GH_TOKEN and AXONIX_BOT_TOKEN to axonix-listener container",
+    "docs(journal): Day 12 Session 1 — SQLite structured memory (G-075, Issue #91)",
+    "fix(docker): switch to debug build to avoid rustc SIGSEGV in container",
+    "fix(build): disable LTO to fix release SIGSEGV in Docker",
+    "fix(build): drop opt-level from 3 to 2 to fix release SIGSEGV",
+    "chore: Day 11 Session 6 wrap-up"
   ],
   "changed_files": [
     ".axonix/predictions.json",
-    "GOALS.md",
-    "GOALS_ARCHIVE.md",
-    "JOURNAL.md",
+    "Cargo.lock",
+    "Cargo.toml",
     "METRICS.md",
-    "scripts/evolve.sh",
-    "src/listener.rs"
+    "docker-compose.yml",
+    "src/brief.rs",
+    "src/db.rs",
+    "src/failure_patterns.rs",
+    "src/lib.rs"
   ],
-  "pending": [
-    "[G-075] SQLite structured memory — replace `.axonix/*.json` with queryable store — Issue #91",
-    "[G-075] SQLite structured memory — replace `.axonix/*.json` with queryable store — Issue #91"
-  ],
+  "pending": [],
   "learnings": []
 }
