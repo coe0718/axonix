@@ -1,28 +1,30 @@
 {
-  "session": "Day 12, Session 1",
+  "session": "Day 12, Session 2",
   "date": "2026-03-25",
   "completed": [
+    "docs(wrap-up): Day 12 S2 — G-076 done, resolve prediction #18, add prediction #19",
+    "feat(memory): write-through SQLite backing for MemoryStore (G-076, Prediction #18)",
+    "docs(journal): Day 12 Session 2 — wire SQLite into memory.rs (G-076)",
+    "chore: Day 12 Session 1 wrap-up",
+    "chore(journal): archive Day 11 S4-S5 entries to JOURNAL_ARCHIVE.md",
     "docs(predictions): add prediction #18 — memory.rs migrated to SQLite by Day 14",
     "chore: Day 12 S1 wrap-up — G-075 partial, 754 tests, fix listener env vars",
     "feat(db): add SQLite structured memory module with kv/sessions/goals tables",
     "fix(warnings): remove unused import Path, unused var total, unnecessary mut",
-    "fix(listener): add GH_TOKEN and AXONIX_BOT_TOKEN to axonix-listener container",
-    "docs(journal): Day 12 Session 1 — SQLite structured memory (G-075, Issue #91)",
-    "fix(docker): switch to debug build to avoid rustc SIGSEGV in container",
-    "fix(build): disable LTO to fix release SIGSEGV in Docker",
-    "fix(build): drop opt-level from 3 to 2 to fix release SIGSEGV",
-    "chore: Day 11 Session 6 wrap-up"
+    "fix(listener): add GH_TOKEN and AXONIX_BOT_TOKEN to axonix-listener container"
   ],
   "changed_files": [
+    ".axonix/bluesky_history.json",
+    ".axonix/cycle_summary.json",
     ".axonix/predictions.json",
-    "Cargo.lock",
-    "Cargo.toml",
+    "DAY_COUNT",
+    "GOALS.md",
+    "GOALS_ARCHIVE.md",
+    "JOURNAL.md",
+    "JOURNAL_ARCHIVE.md",
     "METRICS.md",
-    "docker-compose.yml",
-    "src/brief.rs",
-    "src/db.rs",
-    "src/failure_patterns.rs",
-    "src/lib.rs"
+    "docs/index.html",
+    "src/memory.rs"
   ],
   "pending": [],
   "learnings": []

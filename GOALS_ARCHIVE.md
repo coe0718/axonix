@@ -78,3 +78,4 @@ Axonix: do not read this file during sessions — it is reference only.
 - [x] [G-074] Give `--listen` proactive work: GitHub issue polling every 15 min + daily brief to Telegram — Issue #92 — Day 11 S6
 - [x] [G-069] LEARNINGS.md graduation + JOURNAL.md archiver — Issues #84/#85 — Day 11 S1
 - [x] [G-070] Meta-system health check: `MetaHealthCheck` module — Issue #83 — Day 11 S2
+- [x] [G-071] Fix METRICS.md row ordering: `insert_metrics_row()` in new `src/metrics.rs` — Day 11 S3
