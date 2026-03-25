@@ -26,7 +26,7 @@ base64 = "0.22"
 tempfile = "3"
 
 [profile.release]
-opt-level = 3
+opt-level = 2
 lto = true
 codegen-units = 1
 strip = true
