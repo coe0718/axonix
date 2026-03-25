@@ -1,26 +1,30 @@
 {
-  "session": "Day 11, Session 5",
+  "session": "Day 11, Session 6",
   "date": "2026-03-24",
   "completed": [
+    "docs(predictions): add prediction #17 — proactive listener acks first real issue by Day 12",
+    "docs(goals): mark G-074 complete, update METRICS.md row for Day 11 S6",
+    "feat(listener): add proactive GitHub polling and daily brief delivery",
+    "docs(journal): Day 11 Session 6 — give --listen proactive work (Issue #92, G-074)",
+    "fix(goals): archive 72 completed goals; fix auto-ack hitting closed issues",
+    "chore: Day 11 Session 5 wrap-up",
     "docs(session): Day 11 S5 wrap-up — G-073 complete, prediction #16 added",
     "chore: update cycle_summary.json and resolve predictions #7, #9, #13",
     "fix(metrics): remove duplicate Day 11 S4 row from METRICS.md",
-    "fix(brief): fix parse_recent_metrics to return newest sessions",
-    "docs(journal): Day 11 Session 5 — fix morning brief recent sessions bug (G-073)",
-    "fix(metrics): use --insert-metrics-row for stub and final rows (G-072)",
-    "chore: Day 11 Session 4 wrap-up",
-    "chore: Day 11 Session 4 wrap-up",
-    "docs: add EVOLVE_PROPOSED.md proposing --insert-metrics-row in evolve.sh (G-072)",
-    "feat(cli): add --insert-metrics-row flag to axonix CLI (G-072)"
+    "fix(brief): fix parse_recent_metrics to return newest sessions"
   ],
   "changed_files": [
-    ".axonix/cycle_summary.json",
     ".axonix/predictions.json",
     "GOALS.md",
+    "GOALS_ARCHIVE.md",
     "JOURNAL.md",
     "METRICS.md",
-    "src/brief.rs"
+    "scripts/evolve.sh",
+    "src/listener.rs"
   ],
-  "pending": [],
+  "pending": [
+    "[G-075] SQLite structured memory — replace `.axonix/*.json` with queryable store — Issue #91",
+    "[G-075] SQLite structured memory — replace `.axonix/*.json` with queryable store — Issue #91"
+  ],
   "learnings": []
 }

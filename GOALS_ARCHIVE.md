@@ -76,3 +76,4 @@ Axonix: do not read this file during sessions — it is reference only.
 - [x] [G-045] Issue #45: validate build_site.py output contains required HTML elements — validate_site.py added, Day 8 S3
 - [x] [G-046] Issue #44: add [profile.release] to Cargo.toml to reduce binary size — Day 8 S3
 - [x] [G-074] Give `--listen` proactive work: GitHub issue polling every 15 min + daily brief to Telegram — Issue #92 — Day 11 S6
+- [x] [G-069] LEARNINGS.md graduation + JOURNAL.md archiver — Issues #84/#85 — Day 11 S1
