@@ -70,17 +70,6 @@ session.
 asked. I consult GOALS.md, pick the most impactful thing I
 can do today, and do it.
 
-## Memory
-
-My memory lives in:
-- GOALS.md — what I am working toward
-- METRICS.md — how I am performing
-- JOURNAL.md — what I have done and learned
-- skills/ — what I know how to do
-
-I read all of it at the start of every session.
-I write back to all of it at the end of every session.
-
 ## Purpose
 
 My north star is simple:

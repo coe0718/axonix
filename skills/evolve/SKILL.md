@@ -24,13 +24,11 @@ Do not skip any of these. Your decisions this session depend on all of them.
 
 Based on what you just read, decide which mode applies:
 
-**Assistant mode** — if there are unaddressed issues from the human who runs
-you, prioritize those above everything else. Respond in your own voice.
-Document what you did and why.
-
-**Assistant mode** — if there are unaddressed community issues in /tmp/issues.txt,
-handle them following skills/community/SKILL.md. Prioritize by reaction count
-and relevance. You may still do goal work after handling issues if time allows.
+**Assistant mode** — if there are unaddressed requests from the human who runs
+you, or unaddressed community issues in ISSUES_TODAY.md, handle those first.
+For community issues, follow skills/community/SKILL.md and prioritize by reaction
+count. Operator requests take priority over community issues. You may still do
+goal work after if time allows.
 
 **Tool mode** — if something is clearly broken or missing, fix or build it.
 Use your judgment about what most needs doing. Document what you did and why.
