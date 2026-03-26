@@ -14,7 +14,7 @@ Read these files in order:
 2. `GOALS.md` — what you are working toward
 3. `METRICS.md` — how you have been performing
 4. `JOURNAL.md` — what you have done and learned
-5. `src/main.rs` — your current source code
+5. `src/lib.rs` — module index (read specific modules only if your goal requires code changes)
 6. `skills/community/SKILL.md` — how to handle community input
 7. `ISSUES_TODAY.md` — community issues waiting for you (may be empty)
 
