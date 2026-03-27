@@ -105,13 +105,11 @@ def parse_metrics(content):
 
 
 def render_stats(sessions):
-    """Render a stats summary grid from parsed metrics."""
+    """Render stats as an ASCII-style data table."""
     if not sessions:
-        return '<p class="stats-empty">No metrics recorded yet.</p>'
+        return '<p class="empty-state">no metrics recorded yet.</p>'
 
     total_sessions = len(sessions)
-    # Sum tokens, skipping rows with unknown values (e.g. "~?k" from auto-generated rows).
-    # Sessions with real counts still contribute; unknowns are silently excluded.
     total_tokens = 0
     has_any_tokens = False
     for s in sessions:
@@ -120,49 +118,46 @@ def render_stats(sessions):
             total_tokens += int(raw)
             has_any_tokens = True
         except (ValueError, AttributeError):
-            pass  # skip "?000" or other unparseable values
+            pass
     tokens_str = f"~{total_tokens // 1000}k" if has_any_tokens else "?"
 
-    # Latest test count — use the last row in the file (most recently appended)
     latest_tests = sessions[-1]["tests_passed"] if sessions else "?"
 
-    # Total lines added
     try:
         total_added = sum(int(s["lines_added"].replace(",", "")) for s in sessions)
         added_str = f"+{total_added:,}"
     except (ValueError, AttributeError):
         added_str = "?"
 
-    # Committed sessions
     committed = sum(1 for s in sessions if s["committed"].lower() == "yes")
+    commit_pct = int(committed / total_sessions * 100) if total_sessions else 0
 
-    stats = [
-        ("sessions", str(total_sessions), "evolution cycles"),
-        ("tokens", tokens_str, "total API usage"),
-        ("tests", latest_tests, "passing (latest)"),
-        ("lines", added_str, "lines written"),
-        ("commits", f"{committed}/{total_sessions}", "sessions committed"),
+    rows = [
+        ("sessions",    str(total_sessions)),
+        ("tokens",      tokens_str),
+        ("tests",       f"{latest_tests} (latest)"),
+        ("lines written", added_str),
+        ("commit rate", f"{committed}/{total_sessions} ({commit_pct}%)"),
     ]
 
-    parts = ['      <div class="stats-grid">']
-    for key, value, label in stats:
+    parts = ['<table class="data-table">']
+    for label, value in rows:
         parts.append(
-            f'        <div class="stat-card">\n'
-            f'          <span class="stat-value">{html.escape(str(value))}</span>\n'
-            f'          <span class="stat-label">{html.escape(label)}</span>\n'
-            f'        </div>'
+            f'  <tr>'
+            f'<td class="dt-label">{html.escape(label)}</td>'
+            f'<td class="dt-sep">|</td>'
+            f'<td class="dt-value">{html.escape(value)}</td>'
+            f'</tr>'
         )
-    parts.append("      </div>")
+    parts.append('</table>')
     return "\n".join(parts)
 
 
 def render_metrics_patterns(sessions):
-    """Render a patterns panel from parsed metrics sessions."""
+    """Render patterns as an ASCII-style data table."""
     if not sessions:
-        return '<p class="patterns-empty">No metrics recorded yet.</p>'
+        return '<p class="empty-state">no metrics recorded yet.</p>'
 
-    # ── test growth rate ──
-    # collect sessions with parseable test counts
     test_points = []
     for s in sessions:
         try:
@@ -177,15 +172,13 @@ def render_metrics_patterns(sessions):
         span = last_idx - first_idx
         if span > 0:
             growth_per_session = (last_val - first_val) / span
-            growth_str = f"+{growth_per_session:.1f} tests/session ({first_val}→{last_val})"
+            growth_str = f"+{growth_per_session:.1f}/session  ({first_val} → {last_val})"
         else:
             growth_str = f"{last_val} tests (1 data point)"
     else:
         growth_str = "?"
 
-    # ── session cadence ──
     total_sessions = len(sessions)
-    # unique days
     days_seen = set()
     for s in sessions:
         try:
@@ -194,9 +187,8 @@ def render_metrics_patterns(sessions):
             pass
     total_days = len(days_seen) if days_seen else 1
     cadence = total_sessions / total_days
-    cadence_str = f"{total_sessions} sessions across {total_days} days ({cadence:.1f}/day)"
+    cadence_str = f"{total_sessions} sessions / {total_days} days  ({cadence:.1f}/day)"
 
-    # ── lines per session ──
     lines_vals = []
     for s in sessions:
         try:
@@ -204,13 +196,8 @@ def render_metrics_patterns(sessions):
             lines_vals.append(v)
         except (ValueError, AttributeError):
             pass
-    if lines_vals:
-        avg_lines = sum(lines_vals) / len(lines_vals)
-        lines_str = f"~{avg_lines:.0f} lines/session (over {len(lines_vals)} sessions)"
-    else:
-        lines_str = "?"
+    lines_str = f"~{sum(lines_vals) / len(lines_vals):.0f} lines/session" if lines_vals else "?"
 
-    # ── most productive day ──
     day_lines: dict = {}
     for s in sessions:
         try:
@@ -221,65 +208,61 @@ def render_metrics_patterns(sessions):
             pass
     if day_lines:
         best_day = max(day_lines, key=lambda d: day_lines[d])
-        best_day_str = f"Day {best_day} ({day_lines[best_day]:,} lines)"
+        best_day_str = f"Day {best_day}  ({day_lines[best_day]:,} lines)"
     else:
         best_day_str = "?"
 
-    # ── commit rate ──
     committed_count = sum(
         1 for s in sessions if s.get("committed", "").lower().strip() == "yes"
     )
     commit_rate = (committed_count / total_sessions * 100) if total_sessions else 0
-    commit_str = f"{committed_count}/{total_sessions} ({commit_rate:.0f}%)"
+    commit_str = f"{committed_count}/{total_sessions}  ({commit_rate:.0f}%)"
 
-    patterns = [
-        ("test growth", growth_str),
-        ("cadence", cadence_str),
+    rows = [
+        ("test growth",   growth_str),
+        ("cadence",       cadence_str),
         ("lines/session", lines_str),
-        ("peak day", best_day_str),
-        ("commit rate", commit_str),
+        ("peak day",      best_day_str),
+        ("commit rate",   commit_str),
     ]
 
-    parts = ['      <div class="patterns-list">']
-    for label, value in patterns:
+    parts = ['<table class="data-table">']
+    for label, value in rows:
         parts.append(
-            f'        <div class="pattern-row">\n'
-            f'          <span class="pattern-label">{html.escape(label)}</span>\n'
-            f'          <span class="pattern-value">{html.escape(value)}</span>\n'
-            f'        </div>'
+            f'  <tr>'
+            f'<td class="dt-label">{html.escape(label)}</td>'
+            f'<td class="dt-sep">|</td>'
+            f'<td class="dt-value">{html.escape(value)}</td>'
+            f'</tr>'
         )
-    parts.append("      </div>")
+    parts.append('</table>')
     return "\n".join(parts)
 
 
 def render_containers(containers):
-    """Render the containers panel HTML."""
+    """Render containers as an ASCII-style data table."""
     if not containers:
-        return '      <p class="containers-empty">Docker not available or no containers found.</p>'
+        return '<p class="empty-state">docker not available or no containers found.</p>'
 
-    parts = ['      <div class="containers-list">']
+    parts = ['<table class="data-table">']
     for c in sorted(containers, key=lambda x: x["name"]):
-        dot_class = "container-dot--running" if c["running"] else "container-dot--stopped"
-        status_class = "container-status--running" if c["running"] else "container-status--stopped"
+        val_class = "val-ok" if c["running"] else "val-err"
+        indicator = "●" if c["running"] else "○"
         parts.append(
-            f'        <div class="container-row">\n'
-            f'          <span class="container-dot {dot_class}"></span>\n'
-            f'          <span class="container-name">{html.escape(c["name"])}</span>\n'
-            f'          <span class="container-status {status_class}">{html.escape(c["status"])}</span>\n'
-            f'        </div>'
+            f'  <tr>'
+            f'<td class="dt-label">{html.escape(c["name"])}</td>'
+            f'<td class="dt-sep">|</td>'
+            f'<td class="dt-value {val_class}">'
+            f'{indicator} {html.escape(c["status"])}'
+            f'</td>'
+            f'</tr>'
         )
-    parts.append("      </div>")
+    parts.append('</table>')
     return "\n".join(parts)
 
 
 def parse_goals(content):
-    """Parse GOALS.md into active and completed goal lists.
-
-    Returns a dict with:
-      - 'active':    list of {id, text} for [ ] items in ## Active
-      - 'backlog':   list of {id, text} for [ ] items in ## Backlog
-      - 'completed': list of {id, text} for [x] items anywhere
-    """
+    """Parse GOALS.md into active and completed goal lists."""
     active = []
     backlog = []
     completed = []
@@ -295,14 +278,12 @@ def parse_goals(content):
         is_backlog = header.startswith("backlog")
 
         for line in lines[1:]:
-            # Match "- [ ] [G-NNN] description" or "- [x] [G-NNN] description"
             m = re.match(r"^\s*-\s+\[([ xX])\]\s+(\[G-\d+\])?\s*(.+)$", line)
             if not m:
                 continue
             checked = m.group(1).lower() == "x"
             goal_id = m.group(2) or ""
             text = m.group(3).strip()
-            # Strip trailing "— Day N..." annotation from completed goals for brevity
             text = re.sub(r"\s*[—–]\s*Day \d+.*$", "", text)
             entry = {"id": goal_id, "text": text}
             if checked:
@@ -316,11 +297,7 @@ def parse_goals(content):
 
 
 def parse_open_predictions():
-    """Read open (unresolved) predictions from .axonix/predictions.json.
-
-    Returns a list of dicts with 'id', 'created', 'text' for each open prediction.
-    Returns empty list if the file doesn't exist or can't be parsed.
-    """
+    """Read open (unresolved) predictions from .axonix/predictions.json."""
     path = ROOT / ".axonix" / "predictions.json"
     if not path.exists():
         return []
@@ -331,7 +308,6 @@ def parse_open_predictions():
 
     open_preds = []
     for key, pred in sorted(data.items(), key=lambda kv: int(kv[0]) if kv[0].isdigit() else 0):
-        # Open = no outcome recorded
         if pred.get("outcome") is None:
             try:
                 pred_id = int(key)
@@ -346,111 +322,104 @@ def parse_open_predictions():
 
 
 def render_live_state(goals, open_predictions):
-    """Render the live state section: active goals + open predictions.
-
-    This gives visitors an at-a-glance view of what Axonix is currently
-    working on and what predictions it has made but not yet resolved.
-    """
+    """Render live state as plain text blocks."""
     active_goals = goals["active"]
-    parts = ['      <div class="live-state-grid">']
+    parts = []
 
-    # Active goals panel
-    parts.append('        <div class="live-panel">')
-    parts.append('          <span class="live-panel-label">→ active goals</span>')
+    # Active goals
+    parts.append('<div class="state-block">')
+    parts.append('<div class="state-label">→ active goals</div>')
     if active_goals:
-        parts.append('          <ul class="live-list">')
+        parts.append('<ul class="plain-list">')
         for g in active_goals:
-            label = f'<span class="live-id">{html.escape(g["id"])}</span> ' if g["id"] else ""
+            id_part = f'<span class="tag">{html.escape(g["id"])}</span> ' if g["id"] else ""
             parts.append(
-                f'          <li class="live-item">'
-                f'{label}<span class="live-text">{md_inline(g["text"])}</span>'
-                f'</li>'
+                f'<li>{id_part}<span class="item-text">{md_inline(g["text"])}</span></li>'
             )
-        parts.append('          </ul>')
+        parts.append('</ul>')
     else:
-        parts.append('          <p class="live-empty">no active goals — backlog only</p>')
-    parts.append('        </div>')
+        parts.append('<p class="empty-state">no active goals — promote from backlog</p>')
+    parts.append('</div>')
 
-    # Open predictions panel
-    parts.append('        <div class="live-panel">')
-    parts.append('          <span class="live-panel-label">🔮 open predictions</span>')
+    # Open predictions
+    parts.append('<div class="state-block">')
+    parts.append('<div class="state-label">◈ open predictions</div>')
     if open_predictions:
-        parts.append('          <ul class="live-list">')
+        parts.append('<ul class="plain-list">')
         for pred in open_predictions:
             text = pred["text"]
-            if len(text) > 65:
-                text = text[:62] + "..."
+            if len(text) > 70:
+                text = text[:67] + "..."
             parts.append(
-                f'          <li class="live-item">'
-                f'<span class="live-id">#{pred["id"]}</span> '
-                f'<span class="live-text">{html.escape(text)}</span>'
-                f'<span class="live-date"> [{html.escape(pred["created"])}]</span>'
+                f'<li>'
+                f'<span class="tag">#{pred["id"]}</span> '
+                f'<span class="item-text">{html.escape(text)}</span>'
+                f'<span class="item-date"> [{html.escape(pred["created"])}]</span>'
                 f'</li>'
             )
-        parts.append('          </ul>')
+        parts.append('</ul>')
     else:
-        parts.append('          <p class="live-empty">no open predictions</p>')
-    parts.append('        </div>')
+        parts.append('<p class="empty-state">no open predictions</p>')
+    parts.append('</div>')
 
-    parts.append('      </div>')
     return "\n".join(parts)
 
 
 def render_goals(goals):
-    """Render the goals section HTML."""
+    """Render goals as plain text lists."""
     active = goals["active"]
     backlog = goals["backlog"]
     completed = goals["completed"]
 
     if not active and not backlog and not completed:
-        return '      <p class="goals-empty">No goals recorded yet.</p>'
+        return '<p class="empty-state">no goals recorded yet.</p>'
 
     parts = []
 
     if active:
-        parts.append('      <div class="goals-group">')
-        parts.append('        <span class="goals-group-label"><span class="status-chip status-chip--active">active</span></span>')
-        parts.append('        <ul class="goals-list">')
+        parts.append('<div class="goals-section">')
+        parts.append('<div class="goals-group-hdr">// active</div>')
+        parts.append('<ul class="plain-list">')
         for g in active:
-            label = f'<span class="goal-id">{html.escape(g["id"])}</span> ' if g["id"] else ""
+            id_part = f'<span class="tag">{html.escape(g["id"])}</span> ' if g["id"] else ""
             parts.append(
-                f'          <li class="goal goal-active">'
-                f'<span class="goal-marker">→</span>'
-                f'{label}<span class="goal-text">{md_inline(g["text"])}</span>'
+                f'<li class="goal-active">'
+                f'<span class="goal-prefix">→</span> '
+                f'{id_part}<span class="item-text">{md_inline(g["text"])}</span>'
                 f'</li>'
             )
-        parts.append("        </ul>")
-        parts.append("      </div>")
+        parts.append('</ul>')
+        parts.append('</div>')
 
     if backlog:
-        parts.append('      <div class="goals-group">')
-        parts.append('        <span class="goals-group-label"><span class="status-chip status-chip--backlog">backlog</span></span>')
-        parts.append('        <ul class="goals-list">')
+        parts.append('<div class="goals-section">')
+        parts.append('<div class="goals-group-hdr">// backlog</div>')
+        parts.append('<ul class="plain-list">')
         for g in backlog:
-            label = f'<span class="goal-id">{html.escape(g["id"])}</span> ' if g["id"] else ""
+            id_part = f'<span class="tag">{html.escape(g["id"])}</span> ' if g["id"] else ""
             parts.append(
-                f'          <li class="goal goal-backlog">'
-                f'<span class="goal-marker">·</span>'
-                f'{label}<span class="goal-text">{md_inline(g["text"])}</span>'
+                f'<li class="goal-backlog">'
+                f'<span class="goal-prefix">·</span> '
+                f'{id_part}<span class="item-text">{md_inline(g["text"])}</span>'
                 f'</li>'
             )
-        parts.append("        </ul>")
-        parts.append("      </div>")
+        parts.append('</ul>')
+        parts.append('</div>')
 
     if completed:
-        parts.append('      <div class="goals-group">')
-        parts.append('        <span class="goals-group-label"><span class="status-chip status-chip--done">completed</span></span>')
-        parts.append('        <ul class="goals-list">')
+        parts.append('<div class="goals-section">')
+        parts.append('<div class="goals-group-hdr">// completed</div>')
+        parts.append('<ul class="plain-list">')
         for g in completed:
-            label = f'<span class="goal-id">{html.escape(g["id"])}</span> ' if g["id"] else ""
+            id_part = f'<span class="tag">{html.escape(g["id"])}</span> ' if g["id"] else ""
             parts.append(
-                f'          <li class="goal goal-done">'
-                f'<span class="goal-marker">✓</span>'
-                f'{label}<span class="goal-text">{md_inline(g["text"])}</span>'
+                f'<li class="goal-done">'
+                f'<span class="goal-prefix">✓</span> '
+                f'{id_part}<span class="item-text strike">{md_inline(g["text"])}</span>'
                 f'</li>'
             )
-        parts.append("        </ul>")
-        parts.append("      </div>")
+        parts.append('</ul>')
+        parts.append('</div>')
 
     return "\n".join(parts)
 
@@ -465,7 +434,6 @@ def parse_identity(content):
             continue
         lines = section.split("\n")
         header = lines[0].strip()
-        # Intro: everything before the first ## (starts with # title)
         if header.startswith("# ") or header.startswith("Who "):
             for line in lines[1:] if header.startswith("# ") else lines:
                 if line.strip():
@@ -489,11 +457,7 @@ def parse_identity(content):
 
 def render_journal(entries):
     if not entries:
-        return (
-            '<div class="timeline-empty">'
-            "No journal entries yet. The journey begins soon."
-            "</div>"
-        )
+        return '<p class="empty-state">no journal entries yet. the journey begins soon.</p>'
     parts = []
     for entry in entries:
         body_html = ""
@@ -501,14 +465,11 @@ def render_journal(entries):
             body_html = md_inline(entry["body"])
             body_html = body_html.replace("\n\n", "<br><br>").replace("\n", " ")
         parts.append(
-            f'      <article class="entry">\n'
-            f'        <div class="entry-marker"></div>\n'
-            f'        <div class="entry-content">\n'
-            f'          <span class="entry-day">Day {entry["day"]}, Session {entry["session"]}</span>\n'
-            f'          <h3 class="entry-title">{md_inline(entry["title"])}</h3>\n'
-            f'          <p class="entry-body">{body_html}</p>\n'
-            f"        </div>\n"
-            f"      </article>"
+            f'<article class="log-entry">\n'
+            f'  <div class="log-meta">day {entry["day"]} · session {entry["session"]}</div>\n'
+            f'  <div class="log-title">&gt; {md_inline(entry["title"])}</div>\n'
+            f'  <div class="log-body">{body_html}</div>\n'
+            f'</article>'
         )
     return "\n".join(parts)
 
@@ -516,23 +477,20 @@ def render_journal(entries):
 def render_identity(identity):
     parts = []
     if identity["intro"]:
-        parts.append('      <blockquote class="identity-block">')
-        mission = md_inline(identity["intro"][0])
-        parts.append(f'        <p class="identity-mission">{mission}</p>')
-        for line in identity["intro"][1:]:
-            parts.append(f'        <p class="identity-text">{md_inline(line)}</p>')
-        parts.append('      </blockquote>')
+        parts.append('<div class="id-block">')
+        for line in identity["intro"][:6]:
+            parts.append(f'<p class="id-line">{md_inline(line)}</p>')
+        parts.append('</div>')
     if identity["rules"]:
-        parts.append('      <ol class="rules">')
+        parts.append('<ol class="id-rules">')
         for rule in identity["rules"]:
-            parts.append(f"        <li>{rule}</li>")
-        parts.append("      </ol>")
+            parts.append(f"  <li>{rule}</li>")
+        parts.append('</ol>')
     return "\n".join(parts)
 
 
 
 # ── Templates ──
-
 
 HTML_TEMPLATE = """\
 <!DOCTYPE html>
@@ -540,158 +498,106 @@ HTML_TEMPLATE = """\
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Axonix \u2014 Day {day_count}</title>
-  <meta name="description" content="A coding agent that evolves itself. Currently on Day {day_count}.">
+  <title>AXONIX // Day {day_count}</title>
+  <meta name="description" content="An autonomous coding agent evolving itself in public. Day {day_count}.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <nav>
-    <div class="nav-inner">
-      <div class="nav-brand">
-        <a href="#" class="nav-name">AXONIX</a>
-        <span class="nav-day">Day {day_count}</span>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="header-brand">
+        <span class="brand-name">AXONIX</span>
+        <span class="brand-sep">//</span>
+        <span class="brand-day">DAY {day_count}</span>
       </div>
-      <div class="nav-links">
-        <a href="https://stream.axonix.live">\u2197 stream</a>
-        <a href="#live">live</a>
-        <a href="#stats">stats</a>
-        <a href="#journal">journal</a>
+      <nav class="header-nav">
+        <a href="https://stream.axonix.live">&#8599; stream</a>
+        <a href="#log">log</a>
         <a href="#goals">goals</a>
-        <a href="https://github.com/coe0718/axonix" target="_blank" rel="noopener">github \u2197</a>
-        <a href="https://bsky.app/profile/axonix.bsky.social" target="_blank" rel="noopener">bluesky \u2197</a>
-      </div>
+        <a href="https://github.com/coe0718/axonix" target="_blank" rel="noopener">github</a>
+        <a href="https://bsky.app/profile/axonix.bsky.social" target="_blank" rel="noopener">bluesky</a>
+      </nav>
     </div>
-  </nav>
+  </header>
 
-  <main>
+  <main class="site-main">
 
-    <header class="hero">
-      <div class="hero-left">
-        <div class="hero-title">AXONIX</div>
-        <div class="hero-subtitle">autonomous coding agent</div>
-        <div class="hero-tagline">evolving itself in public since Day 1</div>
-      </div>
-      <div class="hero-status">
-        <div class="status-row">
-          <span class="status-dot status-active"></span>
-          <span class="status-label">SYSTEM ACTIVE</span>
-        </div>
-        <div class="status-row">
-          <span class="status-label-dim">Day</span>
-          <span class="status-value">{day_count}</span>
-        </div>
-        <div class="status-row">
-          <span class="status-label-dim">Next run</span>
-          <span class="status-value" id="countdown">--</span>
-        </div>
-      </div>
-    </header>
-
-    <section id="stream-console">
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">LIVE SESSION</span>
-          <span id="stream-status" class="panel-status status-connecting">\u25cb connecting...</span>
-        </div>
-        <div class="panel-body panel-body--flush">
-          <div id="stream-log" class="stream-log"></div>
-        </div>
+    <section class="splash">
+      <pre class="splash-art"> &#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9617;&#9617; AXONIX &#9617;&#9617;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;
+autonomous coding agent // day {day_count}
+evolving in public since day 1</pre>
+      <div class="splash-meta">
+        <span class="splash-status"><span class="pulse">&#9679;</span> SYSTEM ACTIVE</span>
+        <span class="splash-sep"> / </span>
+        <span class="splash-item">next run: <span id="countdown">--</span></span>
+        <span class="splash-sep"> / </span>
+        <a href="https://stream.axonix.live" class="splash-link">watch live &#8599;</a>
       </div>
     </section>
 
-    <section id="live">
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">SYSTEM STATE</span>
+    <section id="terminal" class="page-section">
+      <div class="section-label">[ LIVE SESSION ]</div>
+      <div class="terminal-wrap">
+        <div class="terminal-bar">
+          <span class="terminal-title">stream.axonix.live</span>
+          <span id="stream-status" class="stream-status connecting">&#9675; connecting...</span>
         </div>
-        <div class="panel-body">
+        <div id="stream-log" class="terminal-body"></div>
+      </div>
+    </section>
+
+    <section id="state" class="page-section">
+      <div class="section-label">[ SYSTEM STATE ]</div>
+      <div class="state-grid">
 {live_state_html}
-        </div>
       </div>
     </section>
 
-    <section id="stats">
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">STATS</span>
-        </div>
-        <div class="panel-body">
+    <section id="metrics" class="page-section">
+      <div class="section-label">[ METRICS ]</div>
 {stats_html}
-        </div>
-      </div>
     </section>
 
-    <section id="patterns">
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">PATTERNS</span>
-        </div>
-        <div class="panel-body panel-body--flush">
+    <section id="patterns" class="page-section">
+      <div class="section-label">[ PATTERNS ]</div>
 {patterns_html}
-        </div>
-      </div>
     </section>
 
-    <section id="containers">
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">CONTAINERS</span>
-          <span class="panel-subtitle">built at last site regeneration</span>
-        </div>
-        <div class="panel-body panel-body--flush">
+    <section id="containers" class="page-section">
+      <div class="section-label">[ CONTAINERS ] <span class="section-note">snapshot at last build</span></div>
 {containers_html}
-        </div>
-      </div>
     </section>
 
-    <section id="journal">
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">JOURNAL</span>
-        </div>
-        <div class="panel-body">
-          <div class="timeline">
+    <section id="log" class="page-section">
+      <div class="section-label">[ JOURNAL ]</div>
+      <div class="log-feed">
 {journal_html}
-          </div>
-        </div>
       </div>
     </section>
 
-    <section id="goals">
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">GOALS</span>
-        </div>
-        <div class="panel-body">
+    <section id="goals" class="page-section">
+      <div class="section-label">[ GOALS ]</div>
 {goals_html}
-        </div>
-      </div>
     </section>
 
-    <section id="identity">
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">IDENTITY</span>
-        </div>
-        <div class="panel-body">
+    <section id="identity" class="page-section">
+      <div class="section-label">[ IDENTITY ]</div>
 {identity_html}
-        </div>
-      </div>
     </section>
 
   </main>
 
-  <footer>
+  <footer class="site-footer">
     <div class="footer-inner">
-      <p class="footer-tagline">built by an AI that evolves itself</p>
-      <div class="footer-links">
+      <span class="footer-text">axonix &#8212; built by an AI that evolves itself</span>
+      <span class="footer-links">
         <a href="https://github.com/coe0718/axonix" target="_blank" rel="noopener">github.com/coe0718/axonix</a>
         <a href="https://bsky.app/profile/axonix.bsky.social" target="_blank" rel="noopener">axonix.bsky.social</a>
-      </div>
+      </span>
     </div>
   </footer>
 
@@ -726,12 +632,12 @@ HTML_TEMPLATE = """\
 
         es.onopen = function () {{
           status.textContent = '\u25cf connected';
-          status.className = 'panel-status status-connected';
+          status.className = 'stream-status connected';
         }};
 
         es.onmessage = function (e) {{
           var line = document.createElement('div');
-          line.className = 'stream-line';
+          line.className = 'term-line';
           line.textContent = e.data;
           log.appendChild(line);
           log.scrollTop = log.scrollHeight;
@@ -742,7 +648,7 @@ HTML_TEMPLATE = """\
 
         es.onerror = function () {{
           status.textContent = '\u25cb reconnecting...';
-          status.className = 'panel-status status-connecting';
+          status.className = 'stream-status connecting';
           es.close();
           setTimeout(connect, 3000);
         }};
@@ -757,26 +663,22 @@ HTML_TEMPLATE = """\
 
 
 CSS = """\
-/* axonix — G-083 panel design */
+/* axonix — amber terminal redesign (Issue #101) */
 
 :root {
-  --bg: #0a0c10;
-  --bg-raised: #12161c;
-  --bg-panel: #0f1318;
-  --border: #1e2330;
-  --border-accent: #2d3748;
-  --text: #9ca3af;
-  --text-bright: #e2e8f0;
-  --text-dim: #4a5568;
-  --cyan: #22d3ee;
-  --green: #34d399;
-  --amber: #f59e0b;
-  --red: #ef4444;
-  --blue: #58a6ff;
-  --teal: #2dd4bf;
-  --purple: #a78bfa;
-  --font-ui: "Inter", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+  --bg:        #0b0900;
+  --bg2:       #111000;
+  --bg3:       #1a1400;
+  --amber:     #ff9500;
+  --amber-hi:  #ffcc00;
+  --amber-dim: #8b5000;
+  --amber-lo:  #3d2500;
+  --green-ok:  #88ff88;
+  --red-err:   #ff5555;
+  --text:      #cc8800;
+  --text-dim:  #664400;
+  --text-hi:   #ffcc00;
+  --font:      "JetBrains Mono", "Courier New", monospace;
 }
 
 *, *::before, *::after {
@@ -787,743 +689,492 @@ CSS = """\
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 4rem;
+  scroll-padding-top: 3.5rem;
 }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-mono);
+  font-family: var(--font);
   font-size: 14px;
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 0, 0, 0.06) 3px,
+    rgba(0, 0, 0, 0.06) 4px
+  );
 }
 
 a {
-  color: var(--cyan);
+  color: var(--amber);
   text-decoration: none;
 }
-
 a:hover {
+  color: var(--amber-hi);
   text-decoration: underline;
 }
 
 strong {
-  color: var(--text-bright);
-  font-weight: 500;
+  color: var(--text-hi);
+  font-weight: 700;
 }
 
 code {
-  background: var(--bg-raised);
-  padding: 0.15em 0.4em;
+  background: var(--bg3);
+  border: 1px solid var(--amber-lo);
+  padding: 0.1em 0.35em;
   font-size: 0.9em;
-  border: 1px solid var(--border);
-  font-family: var(--font-mono);
+  font-family: var(--font);
 }
 
 
-/* ── nav ── */
+/* ── site header ── */
 
-nav {
+.site-header {
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 20;
   background: var(--bg);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--amber-dim);
 }
 
-.nav-inner {
+.header-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  max-width: 1000px;
-  width: 92%;
+  max-width: 900px;
+  width: 94%;
   margin: 0 auto;
-  padding: 0.75rem 0;
+  padding: 0.55rem 0;
 }
 
-.nav-brand {
+.header-brand {
   display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
+  align-items: baseline;
+  gap: 0.55rem;
 }
 
-.nav-name {
-  font-family: var(--font-ui);
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: var(--text-bright);
-  letter-spacing: 0.12em;
-}
-
-.nav-name:hover {
-  text-decoration: none;
-  color: var(--cyan);
-}
-
-.nav-day {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  color: var(--text-dim);
-  letter-spacing: 0.08em;
-}
-
-.nav-links {
-  display: flex;
-  gap: 1.25rem;
-  align-items: center;
-}
-
-.nav-links a {
-  font-family: var(--font-ui);
-  color: var(--text-dim);
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
-}
-
-.nav-links a:hover {
-  color: var(--text);
-  text-decoration: none;
-}
-
-
-/* ── main ── */
-
-main {
-  max-width: 1000px;
-  width: 92%;
-  margin: 0 auto;
-}
-
-
-/* ── hero ── */
-
-.hero {
-  padding: 4rem 0 3rem;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 2rem;
-}
-
-.hero-left {
-  flex: 1;
-}
-
-.hero-title {
-  font-family: var(--font-ui);
-  font-size: 3rem;
-  font-weight: 600;
-  color: var(--text-bright);
-  letter-spacing: 0.1em;
-  line-height: 1;
-}
-
-.hero-subtitle {
-  font-family: var(--font-mono);
-  font-size: 0.9rem;
-  color: var(--cyan);
-  margin-top: 0.5rem;
-  letter-spacing: 0.06em;
-}
-
-.hero-tagline {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  color: var(--text-dim);
-  margin-top: 0.4rem;
-  font-style: italic;
-}
-
-.hero-status {
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  padding: 1.25rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  min-width: 200px;
-}
-
-.status-row {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.status-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.status-active {
-  background: var(--green);
-  box-shadow: 0 0 6px var(--green);
-}
-
-.status-label {
-  font-family: var(--font-ui);
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--green);
-  letter-spacing: 0.1em;
-}
-
-.status-label-dim {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: var(--text-dim);
-  letter-spacing: 0.06em;
-  min-width: 4rem;
-}
-
-.status-value {
-  font-family: var(--font-mono);
+.brand-name {
   font-size: 0.85rem;
-  color: var(--text-bright);
+  font-weight: 700;
+  color: var(--amber-hi);
+  letter-spacing: 0.18em;
+}
+
+.brand-sep {
+  font-size: 0.75rem;
+  color: var(--amber-dim);
+}
+
+.brand-day {
+  font-size: 0.75rem;
+  color: var(--amber-dim);
+  letter-spacing: 0.1em;
+}
+
+.header-nav {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.header-nav a {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+}
+
+.header-nav a:hover {
+  color: var(--amber);
+  text-decoration: none;
+}
+
+
+/* ── site main ── */
+
+.site-main {
+  max-width: 900px;
+  width: 94%;
+  margin: 0 auto;
+  padding-bottom: 4rem;
+}
+
+
+/* ── splash ── */
+
+.splash {
+  padding: 3rem 0 2.5rem;
+  border-bottom: 1px solid var(--amber-lo);
+}
+
+.splash-art {
+  font-size: 0.9rem;
   font-weight: 500;
+  color: var(--amber-hi);
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  font-family: var(--font);
+  white-space: pre;
+  margin-bottom: 1rem;
 }
 
-
-/* ── sections ── */
-
-section {
-  padding: 1.5rem 0 0;
-}
-
-
-/* ── panel system ── */
-
-.panel {
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-}
-
-.panel-header {
+.splash-meta {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.6rem 1rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-raised);
-}
-
-.panel-title {
-  font-family: var(--font-ui);
-  font-size: 0.65rem;
-  font-weight: 600;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
   color: var(--text-dim);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
 }
 
-.panel-status {
-  font-family: var(--font-mono);
+.splash-status {
+  color: var(--amber);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.splash-sep {
+  color: var(--amber-dim);
+}
+
+.splash-item {
+  color: var(--text-dim);
+}
+
+.splash-link {
+  color: var(--amber);
+  font-size: 0.75rem;
+}
+
+/* pulsing dot */
+.pulse {
+  color: var(--amber-hi);
+  animation: blink 1.4s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
+}
+
+
+/* ── page sections ── */
+
+.page-section {
+  padding-top: 2.5rem;
+  border-bottom: 1px solid var(--amber-lo);
+  padding-bottom: 1.5rem;
+}
+
+.page-section:last-child {
+  border-bottom: none;
+}
+
+.section-label {
   font-size: 0.7rem;
-  margin-left: auto;
+  font-weight: 700;
+  color: var(--amber-hi);
+  letter-spacing: 0.18em;
+  margin-bottom: 1rem;
 }
 
-.panel-subtitle {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
+.section-note {
+  font-weight: 400;
   color: var(--text-dim);
-  margin-left: auto;
+  letter-spacing: 0.04em;
   font-style: italic;
 }
 
-.status-connected {
-  color: var(--green);
+
+/* ── terminal ── */
+
+.terminal-wrap {
+  border: 1px solid var(--amber-dim);
 }
 
-.status-connecting {
-  color: var(--amber);
+.terminal-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.75rem;
+  border-bottom: 1px solid var(--amber-dim);
+  background: var(--bg3);
 }
 
-.panel-body {
-  padding: 1rem;
+.terminal-title {
+  font-size: 0.7rem;
+  color: var(--amber-dim);
+  letter-spacing: 0.06em;
 }
 
-.panel-body--flush {
-  padding: 0;
+.stream-status {
+  font-size: 0.7rem;
 }
 
+.stream-status.connected {
+  color: var(--green-ok);
+}
 
-/* ── stream log ── */
+.stream-status.connecting {
+  color: var(--amber-dim);
+}
 
-.stream-log {
-  background: #0a0a0a;
-  padding: 1rem;
-  height: 320px;
+.terminal-body {
+  background: #060503;
+  padding: 0.75rem;
+  height: 300px;
   overflow-y: auto;
-  font-size: 0.78em;
-  line-height: 1.6;
+  font-size: 0.78rem;
+  line-height: 1.55;
   color: var(--text);
-  font-family: var(--font-mono);
   white-space: pre-wrap;
   word-break: break-all;
 }
 
-.stream-line {
+.term-line {
   display: block;
 }
 
 
-/* ── stats grid ── */
+/* ── state grid ── */
 
-.stats-grid {
+.state-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 1rem;
-  margin-bottom: 0.5rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
 }
 
-.stat-card {
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
-  padding: 1rem;
+@media (max-width: 560px) {
+  .state-grid { grid-template-columns: 1fr; }
+}
+
+.state-block {
+  border-left: 2px solid var(--amber-lo);
+  padding-left: 1rem;
+}
+
+.state-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--amber);
+  letter-spacing: 0.1em;
+  margin-bottom: 0.6rem;
+}
+
+
+/* ── plain list (shared) ── */
+
+.plain-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.plain-list li {
+  font-size: 0.82rem;
+  line-height: 1.55;
+  padding: 0.2rem 0;
+  border-bottom: 1px solid var(--amber-lo);
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.plain-list li:last-child {
+  border-bottom: none;
+}
+
+.tag {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.item-text {
+  color: var(--text-hi);
+  flex: 1;
+  min-width: 0;
+}
+
+.item-date {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.empty-state {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+
+/* ── data table ── */
+
+.data-table {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 560px;
+}
+
+.data-table tr {
+  border-bottom: 1px solid var(--amber-lo);
+}
+
+.data-table tr:last-child {
+  border-bottom: none;
+}
+
+.dt-label {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  padding: 0.3rem 0;
+  width: 10rem;
+  vertical-align: baseline;
+}
+
+.dt-sep {
+  font-size: 0.75rem;
+  color: var(--amber-lo);
+  padding: 0.3rem 0.75rem;
+  vertical-align: baseline;
+}
+
+.dt-value {
+  font-size: 0.82rem;
+  color: var(--amber);
+  padding: 0.3rem 0;
+  vertical-align: baseline;
+}
+
+.val-ok { color: var(--green-ok); }
+.val-err { color: var(--red-err); }
+
+
+/* ── journal ── */
+
+.log-feed {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 1.5rem;
 }
 
-.stat-value {
-  font-family: var(--font-mono);
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--cyan);
-  line-height: 1;
+.log-entry {
+  border-left: 2px solid var(--amber-lo);
+  padding-left: 1rem;
 }
 
-.stat-label {
-  font-family: var(--font-ui);
-  font-size: 0.65rem;
+.log-meta {
+  font-size: 0.68rem;
   color: var(--text-dim);
   letter-spacing: 0.06em;
+  margin-bottom: 0.2rem;
 }
 
-.stats-empty {
-  color: var(--text-dim);
-  font-style: italic;
-}
-
-
-/* ── journal timeline ── */
-
-.timeline {
-  position: relative;
-  padding-left: 28px;
-}
-
-.timeline::before {
-  content: '';
-  position: absolute;
-  left: 3px;
-  top: 6px;
-  bottom: 0;
-  width: 1px;
-  background: var(--border);
-}
-
-.timeline-empty {
-  color: var(--text-dim);
-  font-style: italic;
-  padding-left: 28px;
-}
-
-.entry {
-  position: relative;
-  margin-bottom: 2.5rem;
-}
-
-.entry-marker {
-  position: absolute;
-  left: -28px;
-  top: 8px;
-  width: 7px;
-  height: 7px;
-  background: var(--green);
-}
-
-.entry-day {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--green);
-  letter-spacing: 0.05em;
-}
-
-.entry-title {
-  font-family: var(--font-ui);
-  font-size: 1.05rem;
+.log-title {
+  font-size: 0.9rem;
+  color: var(--amber-hi);
   font-weight: 500;
-  color: var(--text-bright);
-  margin: 0.25rem 0 0.5rem;
+  margin-bottom: 0.35rem;
   line-height: 1.4;
 }
 
-.entry-body {
+.log-body {
+  font-size: 0.8rem;
   color: var(--text);
-  font-size: 0.85rem;
   line-height: 1.7;
-}
-
-
-/* ── identity ── */
-
-.identity-block {
-  border-left: 2px solid var(--cyan);
-  padding: 0.75rem 1.25rem;
-  margin-bottom: 1.5rem;
-  background: var(--bg-raised);
-}
-
-.identity-mission {
-  font-family: var(--font-ui);
-  font-size: 1rem;
-  color: var(--text-bright);
-  line-height: 1.8;
-  font-weight: 500;
-}
-
-.identity-text {
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  line-height: 1.7;
-  margin-top: 0.5rem;
-  color: var(--text);
-}
-
-.rules {
-  list-style: none;
-  counter-reset: rules;
-  padding: 0;
-  margin-top: 1.5rem;
-}
-
-.rules li {
-  counter-increment: rules;
-  position: relative;
-  padding-left: 2.5rem;
-  margin-bottom: 0.75rem;
-  font-size: 0.85rem;
-  line-height: 1.7;
-}
-
-.rules li::before {
-  content: counter(rules, decimal-leading-zero);
-  position: absolute;
-  left: 0;
-  color: var(--text-dim);
-  font-size: 0.75rem;
-  font-weight: 300;
-  top: 0.15rem;
-}
-
-
-/* ── status chips ── */
-
-.status-chip {
-  display: inline-block;
-  font-family: var(--font-ui);
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  padding: 0.15em 0.5em;
-  border-radius: 2px;
-}
-
-.status-chip--done {
-  background: rgba(52, 211, 153, 0.1);
-  color: var(--green);
-  border: 1px solid rgba(52, 211, 153, 0.25);
-}
-
-.status-chip--active {
-  background: rgba(34, 211, 238, 0.1);
-  color: var(--cyan);
-  border: 1px solid rgba(34, 211, 238, 0.25);
-}
-
-.status-chip--backlog {
-  background: rgba(74, 85, 104, 0.2);
-  color: var(--text-dim);
-  border: 1px solid var(--border);
 }
 
 
 /* ── goals ── */
 
-.goals-empty {
-  color: var(--text-dim);
-  font-style: italic;
+.goals-section {
+  margin-bottom: 1.25rem;
 }
 
-.goals-group {
-  margin-bottom: 1.5rem;
+.goals-group-hdr {
+  font-size: 0.7rem;
+  color: var(--amber-dim);
+  letter-spacing: 0.1em;
+  margin-bottom: 0.4rem;
 }
 
-.goals-group-label {
-  display: block;
-  margin-bottom: 0.5rem;
-}
+.goal-active .goal-prefix { color: var(--amber); }
+.goal-backlog .goal-prefix { color: var(--text-dim); }
+.goal-done .goal-prefix { color: var(--green-ok); }
 
-.goals-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.goal {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  padding: 0.3rem 0;
-  font-size: 0.85rem;
-  line-height: 1.5;
-  border-bottom: 1px solid var(--border);
-}
-
-.goal-marker {
+.goal-prefix {
   flex-shrink: 0;
-  width: 1.2rem;
+  width: 1rem;
   text-align: center;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
 }
 
-.goal-active .goal-marker {
-  color: var(--cyan);
-}
-
-.goal-backlog .goal-marker {
-  color: var(--text-dim);
-}
-
-.goal-done .goal-marker {
-  color: var(--green);
-}
-
-.goal-id {
-  flex-shrink: 0;
-  font-size: 0.7rem;
-  color: var(--text-dim);
-  font-weight: 300;
-}
-
-.goal-text {
-  color: var(--text);
-}
-
-.goal-active .goal-text {
-  color: var(--text-bright);
-}
-
-.goal-done .goal-text {
-  color: var(--text-dim);
+.strike {
   text-decoration: line-through;
-  text-decoration-color: var(--border);
+  text-decoration-color: var(--amber-dim);
+  color: var(--text-dim) !important;
 }
 
 
-/* ── live state ── */
+/* ── identity ── */
 
-.live-state-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
+.id-block {
+  border-left: 2px solid var(--amber-dim);
+  padding-left: 1rem;
+  margin-bottom: 1.25rem;
 }
 
-@media (max-width: 520px) {
-  .live-state-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.live-panel {
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
-  padding: 1rem;
-}
-
-.live-panel-label {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--cyan);
-  text-transform: uppercase;
-  margin-bottom: 0.75rem;
-}
-
-.live-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.live-item {
-  font-size: 0.8rem;
-  line-height: 1.5;
-  padding: 0.25rem 0;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: baseline;
-  gap: 0.35rem;
-  flex-wrap: wrap;
-}
-
-.live-item:last-child {
-  border-bottom: none;
-}
-
-.live-id {
-  flex-shrink: 0;
-  font-size: 0.7rem;
-  color: var(--text-dim);
-  font-weight: 300;
-}
-
-.live-text {
-  color: var(--text-bright);
-  flex: 1;
-  min-width: 0;
-}
-
-.live-date {
-  font-size: 0.7rem;
-  color: var(--text-dim);
-  flex-shrink: 0;
-}
-
-.live-empty {
-  font-size: 0.8rem;
-  color: var(--text-dim);
-  font-style: italic;
-}
-
-
-/* ── patterns ── */
-
-.patterns-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.pattern-row {
-  display: flex;
-  align-items: baseline;
-  gap: 1rem;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--border);
+.id-line {
   font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.7;
+  margin-bottom: 0.25rem;
 }
 
-.pattern-row:last-child {
-  border-bottom: none;
+.id-rules {
+  list-style: none;
+  counter-reset: rules;
+  padding: 0;
 }
 
-.pattern-label {
-  flex-shrink: 0;
-  width: 7rem;
+.id-rules li {
+  counter-increment: rules;
+  position: relative;
+  padding-left: 2.5rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.82rem;
+  color: var(--text);
+  line-height: 1.65;
+}
+
+.id-rules li::before {
+  content: counter(rules, decimal-leading-zero) ".";
+  position: absolute;
+  left: 0;
   color: var(--text-dim);
-  font-size: 0.7rem;
-  letter-spacing: 0.06em;
-}
-
-.pattern-value {
-  color: var(--text-bright);
-  flex: 1;
-}
-
-.patterns-empty {
-  color: var(--text-dim);
-  font-style: italic;
-}
-
-
-/* ── containers ── */
-
-.containers-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.container-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.83rem;
-}
-
-.container-row:last-child {
-  border-bottom: none;
-}
-
-.container-dot {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.container-dot--running {
-  background: var(--green);
-}
-
-.container-dot--stopped {
-  background: var(--red);
-}
-
-.container-name {
-  flex: 1;
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  color: var(--text-bright);
-}
-
-.container-status {
-  font-family: var(--font-ui);
-  font-size: 0.7rem;
-  color: var(--text-dim);
-  letter-spacing: 0.04em;
-}
-
-.container-status--running {
-  color: var(--green);
-}
-
-.container-status--stopped {
-  color: var(--red);
-}
-
-.containers-empty {
-  padding: 1rem;
-  font-size: 0.8rem;
-  color: var(--text-dim);
-  font-style: italic;
+  font-size: 0.72rem;
+  top: 0.15rem;
 }
 
 
 /* ── footer ── */
 
-footer {
-  border-top: 1px solid var(--border);
+.site-footer {
+  border-top: 1px solid var(--amber-lo);
   margin-top: 3rem;
 }
 
 .footer-inner {
-  max-width: 1000px;
-  width: 92%;
+  max-width: 900px;
+  width: 94%;
   margin: 0 auto;
-  padding: 2rem 0 4rem;
+  padding: 1.5rem 0 3rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1531,9 +1182,8 @@ footer {
   flex-wrap: wrap;
 }
 
-.footer-tagline {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
+.footer-text {
+  font-size: 0.72rem;
   color: var(--text-dim);
 }
 
@@ -1543,54 +1193,35 @@ footer {
 }
 
 .footer-links a {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--text-dim);
 }
 
 .footer-links a:hover {
-  color: var(--cyan);
+  color: var(--amber);
+  text-decoration: none;
 }
 
 
 /* ── responsive ── */
 
-@media (max-width: 640px) {
-  .hero {
-    flex-direction: column;
-    gap: 1.5rem;
+@media (max-width: 600px) {
+  .header-nav {
+    gap: 1rem;
   }
-
-  .hero-title {
-    font-size: 2.2rem;
-  }
-
-  .hero-status {
-    width: 100%;
-    min-width: unset;
-  }
-
-  nav .nav-links {
+  .header-nav a:nth-child(n+4) {
     display: none;
   }
-
+  .splash-art {
+    font-size: 0.72rem;
+  }
   .footer-inner {
     flex-direction: column;
     align-items: flex-start;
   }
 }
-
-@media (max-width: 480px) {
-  .hero-title {
-    font-size: 1.8rem;
-  }
-
-  .nav-links {
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-}
 """
+
 
 
 # ── Build ──
