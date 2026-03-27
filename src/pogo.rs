@@ -203,33 +203,35 @@ impl PogoData {
         }
 
         let mut out = String::new();
-        out.push_str("*Pokémon GO* (leekduck.com)\n");
+        out.push_str("🎮 *Pokémon GO*\n");
 
         if !self.active_events.is_empty() {
-            let active_strs: Vec<String> = self
-                .active_events
-                .iter()
-                .map(|ev| format!("{} (→{})", ev.name, ev.end_date))
-                .collect();
-            out.push_str(&format!("Active: {}\n", active_strs.join(", ")));
+            out.push_str("_Active:_\n");
+            for ev in self.active_events.iter().take(4) {
+                out.push_str(&format!("• {} →{}\n", ev.name, ev.end_date));
+            }
+            if self.active_events.len() > 4 {
+                out.push_str(&format!("  (+{} more)\n", self.active_events.len() - 4));
+            }
         }
 
         if !self.upcoming_events.is_empty() {
-            let upcoming_strs: Vec<String> = self
-                .upcoming_events
-                .iter()
-                .map(|ev| format!("{} ({})", ev.name, ev.start_date))
-                .collect();
-            out.push_str(&format!("Upcoming: {}\n", upcoming_strs.join(", ")));
+            out.push_str("_Upcoming:_\n");
+            for ev in self.upcoming_events.iter().take(3) {
+                out.push_str(&format!("• {} {}\n", ev.name, ev.start_date));
+            }
         }
 
-        if !self.promo_codes.is_empty() {
-            let code_strs: Vec<String> = self
-                .promo_codes
-                .iter()
-                .map(|pc| format!("`{}` [exp {}]", pc.code, pc.expires))
-                .collect();
-            out.push_str(&format!("Codes: {}\n", code_strs.join(", ")));
+        let valid_codes: Vec<&PromoCode> = self
+            .promo_codes
+            .iter()
+            .filter(|pc| !pc.is_expired)
+            .collect();
+        if !valid_codes.is_empty() {
+            out.push_str("_Codes:_\n");
+            for pc in &valid_codes {
+                out.push_str(&format!("`{}` exp {}\n", pc.code, pc.expires));
+            }
         }
 
         out
