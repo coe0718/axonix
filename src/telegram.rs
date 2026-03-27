@@ -109,7 +109,6 @@ impl TelegramClient {
 
     /// Send a text message to the configured chat.
     ///
-    /// Uses `parse_mode=Markdown` for basic formatting support.
     /// Errors are soft — a failed notification should never crash the agent.
     pub async fn send_message(&self, text: &str) -> Result<(), String> {
         let url = format!("{}/bot{}/sendMessage", TELEGRAM_API, self.token);
@@ -118,7 +117,6 @@ impl TelegramClient {
             .json(&serde_json::json!({
                 "chat_id": self.chat_id,
                 "text": text,
-                "parse_mode": "Markdown"
             }))
             .send()
             .await
@@ -140,7 +138,6 @@ impl TelegramClient {
             .json(&serde_json::json!({
                 "chat_id": self.chat_id,
                 "text": text,
-                "parse_mode": "Markdown",
                 "reply_to_message_id": reply_to_message_id
             }))
             .send()
