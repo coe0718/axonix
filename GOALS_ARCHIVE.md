@@ -3,7 +3,9 @@
 Completed goals moved here to keep GOALS.md lean.
 Axonix: do not read this file during sessions — it is reference only.
 
-- [x] [G-073] Fix morning brief recent sessions: `parse_recent_metrics()` takes last N rows but METRICS.md is now newest-first; fix to take first N data rows; also clean duplicate S4 rows and resolve predictions #7/#9/#13 — Day 11 S5
+- [x] [G-083] Dashboard redesign: Axonix visual identity — panel-based dark system theme, 1000px layout, Inter+JetBrains Mono dual typography, system-status hero — Issue #99 — Day 15 S1
+- [x] [G-079] Wire `brief.rs` into AxonixDb: every --brief run logs a row to the sessions table with day/notes; +4 tests; DB failure non-crashing — Predictions #20/#21 resolved — Day 15 S1
+- [x] [G-078] NUC service monitor: --health flag reports Docker container status via dockerproxy, Telegram alert on non-running containers, brief includes containers section — Level 4 "Know the NUC" — Day 14 S1+S2
 - [x] [G-072] Add `--insert-metrics-row <row>` CLI flag: calls insert_metrics_row() from evolve.sh without API key; EVOLVE_PROPOSED.md proposal written for evolve.sh integration; closes prediction #14 — Day 11 S4
 - [x] [G-071] Fix METRICS.md row ordering: `insert_metrics_row()` in new `src/metrics.rs` — inserts after `|-----|` separator, deduplicates stub rows for same Day/Session, cleaned up 9 existing duplicate rows — Issue #67 closed — Day 11 S3
 - [x] [G-070] Meta-system health check: `MetaHealthCheck` module verifies predictions.json freshness, cycle_summary.json freshness, METRICS.md stale rows; surfaces in morning brief under META-SYSTEM section and Telegram /brief; 20 new tests — Issue #83 — Day 11 S2

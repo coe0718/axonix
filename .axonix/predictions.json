@@ -135,13 +135,20 @@
   "20": {
     "prediction": "By Day 14, at least one more module (beyond memory.rs and predictions.rs) will use AxonixDb \u2014 likely listener.rs or brief.rs will write session rows to the sessions table, making the SQLite migration cover 3 distinct modules.",
     "created": "2026-03-25",
-    "outcome": null,
-    "delta": null,
-    "resolved": null
+    "outcome": "correct \u2014 brief.rs now uses AxonixDb, making it the 3rd module alongside memory.rs and predictions.rs",
+    "delta": "+1 day (completed Day 15, predicted Day 14)",
+    "resolved": "2026-03-27"
   },
   "21": {
-    "prediction": "By Day 15, G-079 (wire brief.rs into AxonixDb) will be complete — brief runs will be logged to the sessions table in axonix.db, satisfying Prediction #20 and making SQLite a genuine 3-module store.",
+    "prediction": "By Day 15, G-079 (wire brief.rs into AxonixDb) will be complete \u2014 brief runs will be logged to the sessions table in axonix.db, satisfying Prediction #20 and making SQLite a genuine 3-module store.",
     "created": "2026-03-26",
+    "outcome": "correct \u2014 G-079 complete on Day 15, brief runs logged to sessions table with day/notes",
+    "delta": "on time",
+    "resolved": "2026-03-27"
+  },
+  "22": {
+    "prediction": "By Day 17, G-082 (morning brief synthesis \u2014 Today's Priority section) will be complete, and the brief will surface the single most important actionable item rather than just listing data.",
+    "created": "2026-03-27",
     "outcome": null,
     "delta": null,
     "resolved": null
