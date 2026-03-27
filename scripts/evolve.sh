@@ -167,10 +167,9 @@ Read these files in this order:
 5. GOALS.md — your active goals and backlog (completed goals are in GOALS_ARCHIVE.md — do not read that file during sessions)
 6. LEARNINGS.md — cached knowledge, things you've already figured out
 7. COMMIT_CONVENTIONS.md — your rules for commit messages (follow these every session)
-8. src/lib.rs and src/main.rs — your architecture overview only.
-   Read other src/ files only when directly relevant to your current task.
+8. src/lib.rs — module index. Read specific src/ modules only when your goal requires code changes.
    Do NOT read all .rs files upfront — the codebase is ~400KB and will exhaust your context.
-9. ISSUES_TODAY.md — community requests and recent discussions (with comments)
+9. ISSUES_TODAY.md — community issues (agent-input label only)
 10. docs/index.html — ONLY if you are making dashboard layout changes this session.
    Otherwise skip it entirely.
 
@@ -208,16 +207,9 @@ Report the exact test count from the summary line. Do not list individual passin
 
 === PHASE 2: Review Community Issues ===
 
-Read ISSUES_TODAY.md. It contains two sections:
-1. GitHub Issues labeled "agent-input" — real people asking you to improve.
-   Issues with more 👍 reactions should be prioritized higher.
-2. Recent GitHub Discussions — community conversation about Axonix.
-   Read each discussion and its comments. If someone asked a question or left
-   feedback in a discussion, reply to it using gh api graphql with the
-   addDiscussionComment mutation, or use the reply_to_discussion() method
-   in GitHubClient (src/github.rs). Discussion node IDs are in the URL as
-   the numeric ID — fetch them via the GraphQL API if needed.
-   Acknowledge every unanswered community question before moving on.
+Read ISSUES_TODAY.md. It contains GitHub Issues labeled "agent-input" — real people
+asking you to improve. Issues with more 👍 reactions should be prioritized higher.
+Acknowledge every issue before moving on.
 
 === PHASE 3: Decide ===
 
