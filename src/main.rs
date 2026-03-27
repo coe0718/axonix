@@ -380,6 +380,26 @@ async fn main() {
         return;
     }
 
+    // --health mode: report system health + Docker container status, alert on unhealthy (G-078)
+    if cli_args.health {
+        let snapshot = axonix::health::HealthSnapshot::collect();
+        println!("{}", snapshot.format());
+        println!();
+        let docker = axonix::health::docker_health();
+        println!("{}", docker.format());
+        // Send Telegram alert for any non-running container
+        if let Some(ref tg_client) = tg {
+            if !docker.all_healthy() || docker.error.is_some() {
+                let mut alert = format!("🚨 Container alert:\n{}", docker.format());
+                if docker.error.is_some() {
+                    alert = format!("🚨 Docker unreachable:\n{}", docker.format());
+                }
+                tg_client.send_message(&alert).await.ok();
+            }
+        }
+        return;
+    }
+
     // --watch mode: run health watch loop, send Telegram alerts when thresholds exceeded (G-025)
     if cli_args.watch {
         match &tg {
@@ -1077,7 +1097,9 @@ async fn main() {
                         println!("\n{DIM}  📱 Telegram /health{RESET}");
                         if let Some(ref tg_client) = tg {
                             let snapshot = axonix::health::HealthSnapshot::collect();
-                            tg_client.reply_to(&snapshot.format(), message_id).await.ok();
+                            let docker = axonix::health::docker_health();
+                            let reply = format!("{}\n\n{}", snapshot.format(), docker.format());
+                            tg_client.reply_to(&reply, message_id).await.ok();
                         }
                     }
                     axonix::telegram::BotCommand::Brief { message_id } => {
@@ -1137,7 +1159,9 @@ fn spawn_telegram_cron_poll(
                                 }
                                 axonix::telegram::BotCommand::Health { message_id } => {
                                     let snapshot = axonix::health::HealthSnapshot::collect();
-                                    tg_poll.reply_to(&snapshot.format(), message_id).await.ok();
+                                    let docker = axonix::health::docker_health();
+                                    let reply = format!("{}\n\n{}", snapshot.format(), docker.format());
+                                    tg_poll.reply_to(&reply, message_id).await.ok();
                                 }
                                 axonix::telegram::BotCommand::Brief { message_id } => {
                                     let brief = axonix::brief::Brief::collect();
