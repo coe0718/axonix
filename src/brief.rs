@@ -45,6 +45,8 @@ pub struct Brief {
     pub health: Option<HealthSummary>,
     pub bluesky_stats: Option<(usize, usize, Option<String>)>, // (total, root_posts, last_date)
     pub caddy: Option<crate::health::CaddyHealth>,
+    /// Docker container health summary.
+    pub docker: Option<crate::health::DockerHealth>,
     pub calibration: Option<CalibrationScore>,
     pub last_session: Option<LastSessionSummary>,
     /// Most common failure type + total count, if any failures have been logged.
@@ -90,6 +92,15 @@ impl Brief {
             None
         };
 
+        // Collect Docker container health (graceful fallback when unavailable).
+        let docker_host_configured = std::env::var("DOCKER_HOST").is_ok();
+        let docker_result = crate::health::docker_health();
+        let docker = if docker_result.error.is_none() || docker_host_configured {
+            Some(docker_result)
+        } else {
+            None
+        };
+
         // Compute calibration score from resolved predictions.
         let pred_store = PredictionStore::default_path();
         let score = pred_store.calibration_score();
@@ -126,6 +137,7 @@ impl Brief {
             health,
             bluesky_stats,
             caddy,
+            docker,
             calibration,
             last_session,
             failure_summary,
@@ -230,6 +242,13 @@ impl Brief {
             out.push('\n');
         }
 
+        // Docker container health
+        if let Some(docker) = &self.docker {
+            out.push_str(&docker.format());
+            out.push('\n');
+            out.push('\n');
+        }
+
         // Failure pattern summary (if any failures logged)
         if let Some(fs) = &self.failure_summary {
             out.push_str(&format!("{fs}\n"));
@@ -329,6 +348,11 @@ impl Brief {
         // Caddy infrastructure health (compact)
         if let Some(caddy) = &self.caddy {
             out.push_str(&format!("🔗 {}\n", caddy.format()));
+        }
+
+        // Docker container health (compact)
+        if let Some(docker) = &self.docker {
+            out.push_str(&format!("🐳 {}\n", docker.format_compact()));
         }
 
         // Failure pattern summary (compact)
@@ -705,6 +729,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -731,6 +756,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -759,6 +785,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -780,6 +807,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -837,6 +865,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -861,6 +890,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -886,6 +916,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -909,6 +940,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -931,6 +963,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -953,6 +986,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -996,6 +1030,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -1063,6 +1098,7 @@ mod tests {
             }),
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -1087,6 +1123,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -1113,6 +1150,7 @@ mod tests {
             }),
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -1170,6 +1208,7 @@ mod tests {
             health: None,
             bluesky_stats: Some((10, 7, Some("2026-03-22".to_string()))),
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -1193,6 +1232,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -1213,6 +1253,7 @@ mod tests {
             health: None,
             bluesky_stats: Some((5, 3, Some("2026-03-21".to_string()))),
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -1235,6 +1276,7 @@ mod tests {
             health: None,
             bluesky_stats: Some((2, 0, None)),
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -1260,6 +1302,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: Some(CalibrationScore {
                 total_resolved: 5,
                 correct: 5,
@@ -1289,6 +1332,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -1310,6 +1354,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: Some(CalibrationScore {
                 total_resolved: 5,
                 correct: 5,
@@ -1338,6 +1383,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -1361,6 +1407,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: Some(LastSessionSummary {
                 session: "Day 10, Session 3".to_string(),
@@ -1388,6 +1435,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -1410,6 +1458,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: Some(LastSessionSummary {
                 session: "Day 10, Session 3".to_string(),
@@ -1440,6 +1489,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: Some(LastSessionSummary {
                 session: "Day 10, Session 3".to_string(),
@@ -1474,6 +1524,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: Some(LastSessionSummary {
                 session: "Day 10, Session 3".to_string(),
@@ -1500,6 +1551,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: Some(LastSessionSummary {
                 session: "Day 10, Session 3".to_string(),
@@ -1528,6 +1580,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: Some(LastSessionSummary {
                 session: "Day 10, Session 3".to_string(),
@@ -1555,6 +1608,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -1577,6 +1631,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: Some(LastSessionSummary {
                 session: "Day 10, Session 3".to_string(),
@@ -1607,6 +1662,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: Some(LastSessionSummary {
                 session: "Day 10, Session 3".to_string(),
@@ -1633,6 +1689,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: Some(LastSessionSummary {
                 session: "Day 10, Session 3".to_string(),
@@ -1661,6 +1718,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: Some(LastSessionSummary {
                 session: "Day 10, Session 3".to_string(),
@@ -1691,6 +1749,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: Some(LastSessionSummary {
                 session: "Day 10, Session 3".to_string(),
@@ -1720,6 +1779,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -1741,6 +1801,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: Some(LastSessionSummary {
                 session: "Day 10, Session 3".to_string(),
@@ -1778,6 +1839,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -1803,6 +1865,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -1831,6 +1894,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
@@ -1855,6 +1919,7 @@ mod tests {
             health: None,
             bluesky_stats: None,
             caddy: None,
+            docker: None,
             calibration: None,
             last_session: None,
             failure_summary: None,
