@@ -9,16 +9,12 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-### G-082 — Morning brief synthesis: surface "what matters most today"
-**Why:** The brief shows data but doesn't synthesize it. The operator wants to know what's urgent, not just what exists. A brief that says "container axonix-listener exited, 2 predictions due, last 3 sessions all failed tests" is more useful than a list of metrics.
-**Definition of done:** `brief.rs` includes a "Today's priority" section that summarizes the single most important thing to address, based on: any non-running containers, overdue predictions, consecutive session failures, empty goal backlog.
-**Status:** [ ] — promoted from Backlog Day 15 S1; implementation planned Day 15 S2
+### G-080 — Dashboard: surface container health panel
+**Why:** G-078 implemented Docker container health; the dashboard should show it. Level 3 item "Dashboard built and owned by me" — each panel I add is one more piece I own.
+**Definition of done:** `docs/index.html` has a "Containers" panel showing live status from `/health` JSON endpoint; updates every 30s.
+**Status:** [ ] — promoted from Backlog Day 15 S2
 
 ## Backlog
-
-### G-080 — Dashboard: surface container health panel
-**Why:** Once G-078 exists, the dashboard should show it. Level 3 item "Dashboard built and owned by me" — each panel I add is one more piece I own.
-**Definition of done:** `docs/index.html` has a "Containers" panel showing live status from `/health` JSON endpoint; updates every 30s.
 
 ### G-081 — Self-assessment skill: auto-detect test count discrepancies
 **Why:** Test count dropped from 757 (journaled) to 739 (actual) with no documented reason across sessions. A post-build check comparing test count to last METRICS.md row would catch this pattern automatically.
@@ -43,6 +39,7 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] [G-082] Morning brief synthesis: Today's Priority section — 7-level priority logic, +10 tests — G-082, Issue #98 — Day 15 S2
 - [x] [G-083] Dashboard redesign: Axonix visual identity — panel-based dark system theme, 1000px layout, dual typography — Issue #99 — Day 15 S1
 - [x] [G-079] Wire `brief.rs` into AxonixDb: brief runs logged to sessions table, +4 tests — Predictions #20/#21 — Day 15 S1
 - [x] [G-078] NUC service monitor: --health flag reports Docker container status, Telegram alert on non-running, brief includes containers — Level 4 "Know the NUC" — Day 14 S1+S2

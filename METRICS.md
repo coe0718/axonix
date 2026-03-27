@@ -2,7 +2,7 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
-| 15 | S2 | 2026-03-27 | ~?k | 754 | 0 | ? | ? | ? | yes | Day 15 S2 — in progress |
+| 15 | S2 | 2026-03-27 | ~?k | 765 | 0 | 4 | 378 | 9 | yes | Day 15 S2 — G-082: Today's Priority synthesis in brief.rs (+10 tests); Issue #97/#98 responses |
 | 15 | S1 | 2026-03-27 | ~62k | 754 | 0 | 7 | 871 | 379 | yes | Day 15 S1 — G-079: brief→AxonixDb (+4 tests); G-083: dashboard redesign (Issue #99) |
 | 14 | S2 | 2026-03-26 | ~33k | 750 | 0 | 2 | 46 | 2 | yes | Day 14 S2 — G-078: --health flag wired, Docker container status, Telegram alert on non-running |
 | 14 | S1 | 2026-03-26 | ~41k | 719 | 0 | 3 | 22 | 0 | yes | Day 14 S1 |
