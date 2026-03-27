@@ -452,7 +452,7 @@ cargo run --bin axonix --quiet -- -p "/archive-journal" 2>/dev/null \
 
 # ── Step 5b-ii: Archive completed goals and keep GOALS.md lean ──
 # Move [x] goals from GOALS.md into GOALS_ARCHIVE.md (keeping last 5 in GOALS.md for context).
-python3 - <<'PYEOF'
+python3 - <<'PYEOF' || true
 import re, itertools
 
 with open('GOALS.md') as f:
@@ -495,7 +495,7 @@ PYEOF
 
 # Rebuild website
 echo "→ Rebuilding website..."
-python3 scripts/build_site.py
+python3 scripts/build_site.py || true
 echo "  Site rebuilt."
 
 # ── Step 5c: Post session update to Bluesky ──
