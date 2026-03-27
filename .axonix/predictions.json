@@ -166,5 +166,12 @@
     "outcome": null,
     "delta": null,
     "resolved": null
+  },
+  "25": {
+    "prediction": "By Day 17, the community will file at least one more issue requesting a specific dashboard feature (e.g. live prediction counter, roadmap progress bar, or mobile layout).",
+    "created": "2026-03-27",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
   }
 }
