@@ -83,45 +83,6 @@ if command -v gh &>/dev/null; then
     python3 scripts/format_issues.py /tmp/issues_raw.json > "$ISSUES_FILE" 2>/dev/null || echo "No issues found." > "$ISSUES_FILE"
     echo "  $(grep -c '^### Issue' "$ISSUES_FILE" 2>/dev/null || echo 0) issues loaded."
 
-    # Append recent discussions (last 5, with their comments) so Axonix can read and reply
-    echo "" >> "$ISSUES_FILE"
-    echo "## Recent Discussions" >> "$ISSUES_FILE"
-    gh api graphql -f query='
-    query($owner: String!, $name: String!, $limit: Int!) {
-      repository(owner: $owner, name: $name) {
-        discussions(first: $limit, orderBy: {field: UPDATED_AT, direction: DESC}) {
-          nodes {
-            number title body url author { login }
-            comments(first: 5) { nodes { body author { login } } }
-          }
-        }
-      }
-    }' -f owner="$(echo $REPO | cut -d/ -f1)" \
-       -f name="$(echo $REPO | cut -d/ -f2)" \
-       -F limit=5 2>/dev/null | python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-nodes = data.get('data', {}).get('repository', {}).get('discussions', {}).get('nodes', [])
-if not nodes:
-    print('No recent discussions.')
-else:
-    for d in nodes:
-        print(f'### Discussion #{d[\"number\"]}: {d[\"title\"]}')
-        print(f'URL: {d[\"url\"]}')
-        print(f'Author: {d[\"author\"][\"login\"]}')
-        print()
-        print(d['body'][:500])
-        comments = d.get('comments', {}).get('nodes', [])
-        if comments:
-            print()
-            print('**Comments:**')
-            for c in comments:
-                print(f'- **{c[\"author\"][\"login\"]}**: {c[\"body\"][:200]}')
-        print()
-" >> "$ISSUES_FILE" 2>/dev/null || echo "No discussions fetched." >> "$ISSUES_FILE"
-    DISC_COUNT=$(grep -c '^### Discussion' "$ISSUES_FILE" 2>/dev/null || echo 0)
-    echo "  ${DISC_COUNT} discussions loaded."
-
     # Auto-acknowledge any open issues that haven't been responded to this session.
     # Only match "### Issue #NNN" header lines — not issue numbers in discussion body text.
     if [ -n "${AXONIX_BOT_TOKEN:-}" ]; then
@@ -551,26 +512,6 @@ if [ -n "${BLUESKY_IDENTIFIER:-}" ] && [ -n "${BLUESKY_APP_PASSWORD:-}" ]; then
         cargo run --bin axonix --quiet -- --bluesky-post "$POST_TEXT" && echo "  Bluesky post sent." || echo "  Bluesky post failed (non-fatal)"
     else
         echo "  No journal title found — skipping Bluesky post."
-    fi
-fi
-
-# ── Step 5d: Post session journal entry as GitHub Discussion (deduplicated) ──
-if [ -n "${AXONIX_BOT_TOKEN:-}${GH_TOKEN:-}" ]; then
-    echo "→ Posting session discussion..."
-    mkdir -p .axonix
-    DISCUSS_FLAG=".axonix/discussed_day_${DAY}_session_${SESSION}"
-    JOURNAL_CHECK=$(grep "^## Day $DAY, Session $SESSION" JOURNAL.md | head -1)
-    if [ -f "$DISCUSS_FLAG" ]; then
-        echo "  Discussion already posted for Day $DAY Session $SESSION — skipping."
-    elif [ -n "$JOURNAL_CHECK" ]; then
-        if cargo run --bin axonix --quiet -- --discuss; then
-            touch "$DISCUSS_FLAG"
-            echo "  Discussion posted."
-        else
-            echo "  Discussion post failed (non-fatal)"
-        fi
-    else
-        echo "  No journal entry for Day $DAY Session $SESSION — skipping discussion."
     fi
 fi
 

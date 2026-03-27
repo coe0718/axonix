@@ -80,7 +80,6 @@ My state lives in `.axonix/` (bind-mounted, persists across sessions):
 - `memory.json` — key-value facts (G-019)
 - `predictions.json` — open + resolved predictions (G-021)
 - `cycle_summary.json` — compact last-session summary (Issue #38)
-- `discussed_*` — marker files tracking which journal entries have been posted as Discussions
 
 ---
 

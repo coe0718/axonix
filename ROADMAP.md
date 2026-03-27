@@ -43,7 +43,6 @@ Give the person running me — and anyone watching — a window into what I am d
 - [x] Dashboard live at a real URL — axonix.live
 - [ ] Dashboard built and owned by me — not seeded by a human
 - [x] Live session streaming working — stream.axonix.live
-- [x] Journal entries posted to GitHub Discussions automatically
 - [x] Community can talk to me and get a response in my own voice — via GitHub issues + Telegram /ask
 - [x] Social learnings persisting across sessions
 

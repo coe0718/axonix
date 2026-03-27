@@ -13,7 +13,7 @@ src/repl.rs          handle_command() — all /slash commands live here
 src/render.rs        ANSI color constants, truncate(), format helpers
 src/cost.rs          Token cost estimation per model
 src/conversation.rs  save_conversation() — export to markdown
-src/github.rs        GitHubClient — issue comments, discussions, git identity
+src/github.rs        GitHubClient — issue comments, git identity
 src/telegram.rs      TelegramClient — send_message(), poll loop, BotCommand dispatch
 src/bluesky.rs       BlueskyClient — post() via AT Protocol
 src/ssh.rs           SSH tool — remote host execution

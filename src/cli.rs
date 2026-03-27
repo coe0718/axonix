@@ -13,8 +13,6 @@ pub struct CliArgs {
     pub prompt: Option<String>,
     /// If set, post this text to Bluesky and exit (no agent session started).
     pub bluesky_post: Option<String>,
-    /// If set, read JOURNAL.md and post the latest entry as a GitHub Discussion.
-    pub discuss: bool,
     /// If set, print the morning brief (open goals, predictions, recent metrics) and exit.
     pub brief: bool,
     /// If set alongside `brief`, also send the brief to Telegram (enables cron-based push).
@@ -69,7 +67,6 @@ impl CliArgs {
             .and_then(|i| args.get(i + 1))
             .cloned();
 
-        let discuss = args.iter().any(|a| a == "--discuss");
         let brief = args.iter().any(|a| a == "--brief");
         let brief_telegram = args.iter().any(|a| a == "--brief-telegram");
         let watch = args.iter().any(|a| a == "--watch");
@@ -93,7 +90,6 @@ impl CliArgs {
             skill_dirs,
             prompt,
             bluesky_post,
-            discuss,
             brief: brief || brief_telegram,
             brief_telegram,
             watch,
@@ -116,7 +112,6 @@ pub fn print_help() {
     println!("  --skills <dir>          Directory containing skill files");
     println!("  -p, --prompt <text>     Run a single prompt and exit (no REPL)");
     println!("  --bluesky-post <text>   Post to Bluesky and exit (requires BLUESKY_IDENTIFIER + BLUESKY_APP_PASSWORD)");
-    println!("  --discuss               Post latest JOURNAL.md entry as a GitHub Discussion and exit");
     println!("  --brief                 Print morning brief (goals, predictions, metrics) and exit");
     println!("  --brief-telegram        Send morning brief to Telegram and exit (for cron push at 7 AM)");
     println!("  --watch                 Start health watch loop: alert via Telegram when thresholds exceeded");
@@ -325,39 +320,12 @@ mod tests {
     }
 
     #[test]
-    fn test_discuss_flag_present() {
-        let args: Vec<String> = vec!["axonix", "--discuss"]
-            .into_iter().map(String::from).collect();
-        let cli = CliArgs::parse(&args).unwrap();
-        assert!(cli.discuss, "--discuss should set discuss to true");
-        assert!(cli.prompt.is_none(), "--discuss should not set prompt");
-    }
-
-    #[test]
-    fn test_discuss_flag_absent() {
-        let args: Vec<String> = vec!["axonix", "--model", "claude-sonnet-4-6"]
-            .into_iter().map(String::from).collect();
-        let cli = CliArgs::parse(&args).unwrap();
-        assert!(!cli.discuss, "discuss should be false when flag absent");
-    }
-
-    #[test]
-    fn test_discuss_with_other_flags() {
-        let args: Vec<String> = vec!["axonix", "--discuss", "--model", "claude-opus-4-6"]
-            .into_iter().map(String::from).collect();
-        let cli = CliArgs::parse(&args).unwrap();
-        assert!(cli.discuss, "--discuss should be true");
-        assert_eq!(cli.model, "claude-opus-4-6", "model should be parsed correctly with --discuss");
-    }
-
-    #[test]
     fn test_brief_flag_present() {
         let args: Vec<String> = vec!["axonix", "--brief"]
             .into_iter().map(String::from).collect();
         let cli = CliArgs::parse(&args).unwrap();
         assert!(cli.brief, "--brief should set brief to true");
         assert!(cli.prompt.is_none(), "--brief should not set prompt");
-        assert!(!cli.discuss, "--brief should not set discuss");
     }
 
     #[test]
@@ -375,7 +343,6 @@ mod tests {
         let cli = CliArgs::parse(&args).unwrap();
         assert!(cli.watch, "--watch should set watch to true");
         assert!(cli.prompt.is_none(), "--watch should not set prompt");
-        assert!(!cli.discuss, "--watch should not set discuss");
         assert!(!cli.brief, "--watch should not set brief");
     }
 
@@ -476,7 +443,6 @@ mod tests {
         let args: Vec<String> = vec!["axonix"]
             .into_iter().map(String::from).collect();
         let cli = CliArgs::parse(&args).unwrap();
-        assert!(!cli.discuss, "discuss default false");
         assert!(!cli.brief, "brief default false");
         assert!(!cli.watch, "watch default false");
         assert!(!cli.listen, "listen default false");
