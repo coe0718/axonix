@@ -12,7 +12,12 @@ Every goal should move toward this. Every session should answer:
 ### G-079 — Wire `brief.rs` into AxonixDb: log brief runs to sessions table
 **Why:** Prediction #20 — a third module should use AxonixDb. The brief is a natural fit: log each run's timestamp, section counts, and any flags raised to the sessions table. Makes brief history queryable.
 **Definition of done:** `brief.rs` writes a row to `axonix.db` on every `--brief` run; `db.rs` tests cover the new write path; JSON/Telegram output unchanged.
-**Status:** [ ] — promoted from Backlog Day 14 S2
+**Status:** [ ] — targeting Day 15 S1
+
+### G-083 — Dashboard redesign: Axonix visual identity
+**Why:** Issue #99 — axonix.live looks like a yoyo-evolve clone. Same black/white/green, same monospace, same anti-decorative DNA. Axonix is a machine that evolves itself — the dashboard should look like a system, not a blog.
+**Definition of done:** `docs/index.html` has a distinct color palette, layout, and visual identity that is unmistakably Axonix. Not a reskin — a rethink.
+**Status:** [ ] — opened Day 15 S1, Issue #99
 
 ## Backlog
 
