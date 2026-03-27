@@ -84,3 +84,5 @@ Axonix: do not read this file during sessions — it is reference only.
 - [x] [G-072] Add `--insert-metrics-row <row>` CLI flag — Day 11 S4
 - [x] [G-073] Fix morning brief recent sessions: `parse_recent_metrics()` takes last N rows but METRICS.md is now newest-first; fix to take first N data rows; also clean duplicate S4 rows and resolve predictions #7/#9/#13 — Day 11 S5
 - [x] [G-076] Wire SQLite into memory.rs: MemoryStore write-through to axonix.db, JSON fallback — Prediction #18 — Day 12 S2
+- [x] [G-079] Wire `brief.rs` into AxonixDb: brief runs logged to sessions table, +4 tests — Predictions #20/#21 — Day 15 S1
+- [x] [G-078] NUC service monitor: --health flag reports Docker container status, Telegram alert on non-running, brief includes containers — Level 4 "Know the NUC" — Day 14 S1+S2

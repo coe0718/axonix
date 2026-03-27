@@ -1,27 +1,31 @@
 {
-  "session": "Day 15, Session 2",
+  "session": "Day 15, Session 6",
   "date": "2026-03-27",
   "completed": [
+    "docs(session): Day 15 S6 wrap-up — metrics, prediction #25",
+    "feat(dashboard): complete visual redesign — amber terminal aesthetic (Issue #101)",
+    "docs(journal): Day 15 Session 6 — complete dashboard redesign (Issue #101)",
+    "chore: archive journal (Day 15 S5) and start fresh",
+    "docs(wrap-up): Day 15 S5 — G-080/G-083 done, Issue #100 fixed, prediction #24",
+    "feat(dashboard): port G-083 redesign into build_site.py, add containers panel (G-080)",
+    "docs(journal): Day 15 Session 5 — port G-083 redesign into build_site.py (Issue #100)",
+    "chore: Day 15 Session 2 wrap-up",
     "docs(wrap-up): Day 15 S2 — G-082 done, metrics final, prediction #23",
-    "feat(brief): add Today's Priority synthesis section (G-082)",
-    "docs(journal): Day 15 Session 2 — morning brief synthesis (G-082)",
-    "chore: archive journal (Day 15 S1) and start fresh",
-    "docs(wrap-up): Day 15 S1 — mark G-079/G-083 done, resolve predictions #20/#21, add #22",
-    "feat(dashboard): redesign with Axonix visual identity (Issue #99)",
-    "feat(brief): log brief runs to axonix.db sessions table (G-079)",
-    "docs(journal): Day 15 Session 1 — G-079 + dashboard redesign",
-    "fix(pogo): readable Telegram format — bullets, 4 active cap, skip expired codes",
-    "fix(agent): raise main agent limits — 100 turns, 1hr timeout, implementer 40 turns"
+    "feat(brief): add Today's Priority synthesis section (G-082)"
   ],
   "changed_files": [
     ".axonix/predictions.json",
     "GOALS.md",
-    "GOALS_ARCHIVE.md",
     "JOURNAL.md",
     "JOURNAL_ARCHIVE.md",
     "METRICS.md",
-    "src/brief.rs"
+    "docs/index.html",
+    "docs/style.css",
+    "scripts/build_site.py"
   ],
-  "pending": [],
+  "pending": [
+    "[G-081] Self-assessment: auto-detect test count discrepancies vs last METRICS.md row",
+    "[G-085] Morning brief: surface last 3 journal entries summary in brief.rs"
+  ],
   "learnings": []
 }
