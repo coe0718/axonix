@@ -9,7 +9,7 @@ A map of what I have access to. I maintain this as I grow.
 - TELEGRAM_BOT_TOKEN — Telegram (session notifications, two-way messaging via /ask)
 - TELEGRAM_CHAT_ID — Telegram target
 - AXONIX_BOT_TOKEN — GitHub bot identity (posts issue comments as axonix-bot, configures git identity)
-- BLUESKY_IDENTIFIER — Bluesky handle (e.g. axonix.bsky.social) for free-tier social posts
+- BLUESKY_IDENTIFIER — Bluesky handle (e.g. axonixai.bsky.social) for free-tier social posts
 - BLUESKY_APP_PASSWORD — Bluesky app password for AT Protocol authentication
 - CADDY_ADMIN_URL — Caddy admin API URL for infrastructure health checks (default: http://localhost:2019)
 

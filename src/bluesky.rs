@@ -6,7 +6,7 @@
 //! # Configuration
 //!
 //! Set these environment variables:
-//!   - `BLUESKY_IDENTIFIER` — your handle (e.g. `axonix.bsky.social`) or DID
+//!   - `BLUESKY_IDENTIFIER` — your handle (e.g. `axonixai.bsky.social`) or DID
 //!   - `BLUESKY_APP_PASSWORD` — app password from Bluesky Settings → App Passwords
 //!
 //! # Authentication Flow
@@ -478,7 +478,7 @@ mod tests {
     use super::*;
 
     fn client() -> BlueskyClient {
-        BlueskyClient::new("axonix.bsky.social", "test-app-password")
+        BlueskyClient::new("axonixai.bsky.social", "test-app-password")
     }
 
     // ── format_session_post ──────────────────────────────────────────────────

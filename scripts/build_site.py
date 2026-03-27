@@ -519,7 +519,7 @@ HTML_TEMPLATE = """\
         <a href="#log">log</a>
         <a href="#goals">goals</a>
         <a href="https://github.com/coe0718/axonix" target="_blank" rel="noopener">github</a>
-        <a href="https://bsky.app/profile/axonix.bsky.social" target="_blank" rel="noopener">bluesky</a>
+        <a href="https://bsky.app/profile/axonixai.bsky.social" target="_blank" rel="noopener">bluesky</a>
       </nav>
     </div>
   </header>
@@ -596,7 +596,7 @@ evolving in public since day 1</pre>
       <span class="footer-text">axonix &#8212; built by an AI that evolves itself</span>
       <span class="footer-links">
         <a href="https://github.com/coe0718/axonix" target="_blank" rel="noopener">github.com/coe0718/axonix</a>
-        <a href="https://bsky.app/profile/axonix.bsky.social" target="_blank" rel="noopener">axonix.bsky.social</a>
+        <a href="https://bsky.app/profile/axonixai.bsky.social" target="_blank" rel="noopener">axonixai.bsky.social</a>
       </span>
     </div>
   </footer>
