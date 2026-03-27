@@ -10,7 +10,9 @@
 //! Invoked via `--brief` CLI flag. Designed to be readable in a terminal
 //! and also forwardable via Telegram `/brief` command.
 
+use crate::db::AxonixDb;
 use crate::predictions::{CalibrationScore, PredictionStore};
+use std::path::Path;
 
 /// A health summary extracted from a HealthSnapshot.
 pub struct HealthSummary {
@@ -415,6 +417,85 @@ impl Brief {
 
         out
     }
+
+    /// Log this brief run to the axonix.db sessions table (G-079).
+    ///
+    /// Opens the default DB path (`.axonix/axonix.db`) and inserts a row.
+    /// On failure, logs a warning to stderr and continues — never crashes the brief.
+    ///
+    /// Call this after displaying the brief so the DB write doesn't affect output timing.
+    pub fn log_to_db(&self) {
+        self.log_to_db_at(Path::new(".axonix/axonix.db"));
+    }
+
+    /// Log this brief run to the sessions table at the given DB path.
+    ///
+    /// Separated from `log_to_db()` so tests can pass a temp path.
+    pub fn log_to_db_at(&self, db_path: &Path) {
+        // Parse day number from DAY_COUNT env var (format: "N YYYY-MM-DD" or just "N").
+        let day: i64 = std::env::var("DAY_COUNT")
+            .ok()
+            .and_then(|s| s.split_whitespace().next().and_then(|n| n.parse().ok()))
+            .unwrap_or(0);
+
+        // Today's date in YYYY-MM-DD format (derived from system time, no external deps).
+        let date = today_date_utc();
+
+        // Meaningful notes: goal count + open prediction count.
+        let notes = format!(
+            "brief: {} active goals, {} open predictions",
+            self.active_goals.len(),
+            self.open_predictions.len(),
+        );
+
+        let db = match AxonixDb::open(db_path) {
+            Ok(db) => db,
+            Err(e) => {
+                eprintln!("warning: brief DB open failed ({}): {}", db_path.display(), e);
+                return;
+            }
+        };
+
+        if let Err(e) = db.session_insert(day, "brief", &date, None, None, None, Some(&notes)) {
+            eprintln!("warning: brief DB insert failed: {e}");
+        }
+    }
+}
+
+/// Return today's date in YYYY-MM-DD format using only std (no external deps).
+fn today_date_utc() -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    // Re-use the same manual calendar arithmetic as db.rs.
+    let days = secs / 86400;
+    let mut y = 1970u64;
+    let mut remaining = days;
+    loop {
+        let dy = if is_leap_year(y) { 366 } else { 365 };
+        if remaining < dy { break; }
+        remaining -= dy;
+        y += 1;
+    }
+    let months = if is_leap_year(y) {
+        [31u64, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    } else {
+        [31u64, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    };
+    let mut mo = 1u64;
+    for &dm in &months {
+        if remaining < dm { break; }
+        remaining -= dm;
+        mo += 1;
+    }
+    let d = remaining + 1;
+    format!("{y:04}-{mo:02}-{d:02}")
+}
+
+fn is_leap_year(y: u64) -> bool {
+    (y % 4 == 0 && y % 100 != 0) || y % 400 == 0
 }
 
 /// Collect a HealthSummary from the system, returning None on any failure.
@@ -1817,6 +1898,142 @@ mod tests {
         assert!(terminal.contains("2026-03-23"), "terminal should show date next to session name");
         let telegram = brief.format_telegram();
         assert!(telegram.contains("2026-03-23"), "telegram should show date next to session name");
+    }
+
+    // ── AxonixDb integration ──────────────────────────────────────────────────────
+
+    /// log_to_db_at() inserts a row without panicking (happy path).
+    #[test]
+    fn test_brief_log_to_db_returns_ok() {
+        use tempfile::tempdir;
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("brief_test.db");
+
+        let brief = Brief {
+            active_goals: vec!["G-079: wire brief to db".to_string()],
+            open_predictions: vec![
+                (1, "2026-03-17".to_string(), "test prediction".to_string()),
+            ],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            docker: None,
+            calibration: None,
+            last_session: None,
+            failure_summary: None,
+            pogo: None,
+            meta_health: None,
+        };
+
+        // Should not panic even with a fresh (non-existent) DB path.
+        brief.log_to_db_at(&db_path);
+
+        // Verify the row was actually written.
+        let db = crate::db::AxonixDb::open(&db_path).unwrap();
+        let rows = db.sessions_recent(10).unwrap();
+        assert_eq!(rows.len(), 1, "exactly one session row should be inserted");
+        let row = &rows[0];
+        assert_eq!(row.session, "brief", "session label should be 'brief'");
+        assert!(
+            row.notes.as_deref().unwrap_or("").contains("1 active goals"),
+            "notes should mention active goal count: {:?}", row.notes
+        );
+        assert!(
+            row.notes.as_deref().unwrap_or("").contains("1 open predictions"),
+            "notes should mention prediction count: {:?}", row.notes
+        );
+        assert!(row.tokens.is_none(), "tokens should be None for a brief run");
+        assert!(row.tests.is_none(),  "tests should be None for a brief run");
+        assert!(row.failed.is_none(), "failed should be None for a brief run");
+    }
+
+    /// log_to_db_at() with an empty brief writes a row with zero counts in notes.
+    #[test]
+    fn test_brief_log_to_db_empty_brief() {
+        use tempfile::tempdir;
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("empty_brief_test.db");
+
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            docker: None,
+            calibration: None,
+            last_session: None,
+            failure_summary: None,
+            pogo: None,
+            meta_health: None,
+        };
+
+        brief.log_to_db_at(&db_path);
+
+        let db = crate::db::AxonixDb::open(&db_path).unwrap();
+        let rows = db.sessions_recent(10).unwrap();
+        assert_eq!(rows.len(), 1, "should insert one row for an empty brief");
+        let row = &rows[0];
+        assert_eq!(row.session, "brief");
+        assert!(
+            row.notes.as_deref().unwrap_or("").contains("0 active goals"),
+            "notes should show 0 active goals: {:?}", row.notes
+        );
+        assert!(
+            row.notes.as_deref().unwrap_or("").contains("0 open predictions"),
+            "notes should show 0 open predictions: {:?}", row.notes
+        );
+    }
+
+    /// log_to_db_at() can be called multiple times; each call inserts a new row.
+    #[test]
+    fn test_brief_log_to_db_multiple_runs() {
+        use tempfile::tempdir;
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("multi_brief.db");
+
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            docker: None,
+            calibration: None,
+            last_session: None,
+            failure_summary: None,
+            pogo: None,
+            meta_health: None,
+        };
+
+        brief.log_to_db_at(&db_path);
+        brief.log_to_db_at(&db_path);
+        brief.log_to_db_at(&db_path);
+
+        let db = crate::db::AxonixDb::open(&db_path).unwrap();
+        let rows = db.sessions_recent(10).unwrap();
+        assert_eq!(rows.len(), 3, "three brief runs should insert three rows");
+        for row in &rows {
+            assert_eq!(row.session, "brief");
+        }
+    }
+
+    /// today_date_utc() returns a plausible YYYY-MM-DD string.
+    #[test]
+    fn test_today_date_utc_format() {
+        let date = super::today_date_utc();
+        assert_eq!(date.len(), 10, "date should be exactly 10 chars: {date}");
+        assert_eq!(&date[4..5], "-", "char 4 should be '-': {date}");
+        assert_eq!(&date[7..8], "-", "char 7 should be '-': {date}");
+        // Year should be >= 2025 (we're not time travelling backwards)
+        let year: u32 = date[..4].parse().expect("year should be numeric");
+        assert!(year >= 2025, "year should be >= 2025: {year}");
     }
 
     // ── MetaHealthCheck in Brief ──────────────────────────────────────────────────

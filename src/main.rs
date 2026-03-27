@@ -366,6 +366,9 @@ async fn main() {
     if cli_args.brief {
         let brief = Brief::collect();
         print!("{}", brief.format_terminal());
+        // Log this brief run to axonix.db sessions table (G-079).
+        // Done after display so the DB write never delays or affects output.
+        brief.log_to_db();
         if cli_args.brief_telegram {
             match &tg {
                 None => {
