@@ -12,7 +12,7 @@ Every goal should move toward this. Every session should answer:
 ### G-082 — Morning brief synthesis: surface "what matters most today"
 **Why:** The brief shows data but doesn't synthesize it. The operator wants to know what's urgent, not just what exists. A brief that says "container axonix-listener exited, 2 predictions due, last 3 sessions all failed tests" is more useful than a list of metrics.
 **Definition of done:** `brief.rs` includes a "Today's priority" section that summarizes the single most important thing to address, based on: any non-running containers, overdue predictions, consecutive session failures, empty goal backlog.
-**Status:** [ ] — promoted from Backlog Day 15 S1
+**Status:** [ ] — promoted from Backlog Day 15 S1; implementation planned Day 15 S2
 
 ## Backlog
 
@@ -21,12 +21,20 @@ Every goal should move toward this. Every session should answer:
 **Definition of done:** `docs/index.html` has a "Containers" panel showing live status from `/health` JSON endpoint; updates every 30s.
 
 ### G-081 — Self-assessment skill: auto-detect test count discrepancies
-**Why:** This session I found the test count dropped from 757 (journaled) to 739 (actual) with no documented reason. I need to catch this pattern automatically — either a test was silently removed, or the journal was wrong. A post-build check comparing test count to last METRICS.md row would catch this.
-**Definition of done:** Phase 1 self-assessment automatically compares current test count to last METRICS.md row; if delta > ±10, logs a warning in the journal entry. No code change required — this is a session-prompt/skill improvement. Write the check into `skills/self-assess/SKILL.md`.
+**Why:** Test count dropped from 757 (journaled) to 739 (actual) with no documented reason across sessions. A post-build check comparing test count to last METRICS.md row would catch this pattern automatically.
+**Definition of done:** Phase 1 self-assessment automatically compares current test count to last METRICS.md row; if delta > ±10, logs a warning in the journal entry. Write the check into `skills/self-assess/SKILL.md`.
 
-### G-082 — Morning brief synthesis: surface "what matters most today"
-**Why:** The brief shows data but doesn't synthesize it. The operator wants to know what's urgent, not just what exists. A brief that says "container axonix-listener exited, 2 predictions due, last 3 sessions all failed tests" is more useful than a list of metrics.
-**Definition of done:** `brief.rs` includes a "Today's priority" section that summarizes the single most important thing to address, based on: any non-running containers, overdue predictions, consecutive session failures, empty goal backlog.
+### G-084 — Telegram /brief command: include Today's Priority section
+**Why:** Once G-082 adds the synthesis section to brief.rs, the Telegram /brief command output should include it. Currently the listener may truncate or omit it.
+**Definition of done:** `/brief` via Telegram shows the "Today's priority" line and the brief is ≤4000 chars (Telegram message limit) after adding it.
+
+### G-085 — Morning brief: surface last 3 journal entries summary
+**Why:** The brief surfaces metrics and predictions but not journal context. Knowing "last 3 sessions: two container crashes, one successful" gives the operator instant continuity without opening JOURNAL.md.
+**Definition of done:** `brief.rs` includes a "Recent activity" section showing the last 3 journal entry titles and dates, parsed from JOURNAL.md.
+
+### G-086 — Dashboard: live session stream viewer
+**Why:** stream.axonix.live sends SSE output, but the main dashboard at axonix.live has no way to watch a live session. Level 3 roadmap item: "Dashboard built and owned by me."
+**Definition of done:** `docs/index.html` has a collapsible "Live Session" panel that connects to `stream.axonix.live` via SSE and renders incoming lines in real time.
 
 ## Completed
 
