@@ -30,7 +30,7 @@ use yoagent::agent::Agent;
 use yoagent::provider::AnthropicProvider;
 use yoagent::skills::SkillSet;
 use yoagent::tools::default_tools;
-use yoagent::context::ContextConfig;
+use yoagent::context::{ContextConfig, ExecutionLimits};
 use yoagent::retry::RetryConfig;
 use yoagent::SubAgentTool;
 use yoagent::*;
@@ -178,7 +178,7 @@ fn build_tools(api_key: &str, model: &str) -> Vec<Box<dyn yoagent::types::AgentT
         .with_model(model)
         .with_api_key(api_key)
         .with_tools(arc_tools.clone())
-        .with_max_turns(25);
+        .with_max_turns(40);
 
     let mut tools = default_tools();
     tools.push(Box::new(code_reviewer));
@@ -212,6 +212,11 @@ fn make_agent(api_key: &str, model: &str, skills: SkillSet, system_prompt: &str)
             initial_delay_ms: 1000,
             backoff_multiplier: 2.0,
             max_delay_ms: 30_000,
+        })
+        .with_execution_limits(ExecutionLimits {
+            max_turns: 100,
+            max_total_tokens: 2_000_000,
+            max_duration: std::time::Duration::from_secs(3600), // 1 hour
         })
 }
 
