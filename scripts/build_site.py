@@ -4,6 +4,7 @@
 import html
 import json
 import re
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -15,6 +16,27 @@ def read_file(name):
         return (ROOT / name).read_text()
     except FileNotFoundError:
         return ""
+
+
+def get_docker_containers():
+    """Query Docker for running container status. Returns list of dicts with name/status."""
+    try:
+        result = subprocess.run(
+            ["docker", "ps", "-a", "--format", "{{.Names}}\t{{.Status}}"],
+            capture_output=True, text=True, timeout=5
+        )
+        if result.returncode != 0:
+            return []
+        containers = []
+        for line in result.stdout.strip().splitlines():
+            parts = line.split("\t", 1)
+            if len(parts) == 2:
+                name, status = parts
+                running = status.lower().startswith("up")
+                containers.append({"name": name, "status": status, "running": running})
+        return containers
+    except Exception:
+        return []
 
 
 def md_inline(text):
@@ -46,7 +68,6 @@ def parse_journal(content):
         body = "\n".join(lines[1:]).strip()
         entries.append({"day": day, "session": session, "title": title, "body": body})
     return entries
-
 
 
 def parse_metrics(content):
@@ -231,6 +252,26 @@ def render_metrics_patterns(sessions):
     return "\n".join(parts)
 
 
+def render_containers(containers):
+    """Render the containers panel HTML."""
+    if not containers:
+        return '      <p class="containers-empty">Docker not available or no containers found.</p>'
+
+    parts = ['      <div class="containers-list">']
+    for c in sorted(containers, key=lambda x: x["name"]):
+        dot_class = "container-dot--running" if c["running"] else "container-dot--stopped"
+        status_class = "container-status--running" if c["running"] else "container-status--stopped"
+        parts.append(
+            f'        <div class="container-row">\n'
+            f'          <span class="container-dot {dot_class}"></span>\n'
+            f'          <span class="container-name">{html.escape(c["name"])}</span>\n'
+            f'          <span class="container-status {status_class}">{html.escape(c["status"])}</span>\n'
+            f'        </div>'
+        )
+    parts.append("      </div>")
+    return "\n".join(parts)
+
+
 def parse_goals(content):
     """Parse GOALS.md into active and completed goal lists.
 
@@ -368,7 +409,7 @@ def render_goals(goals):
 
     if active:
         parts.append('      <div class="goals-group">')
-        parts.append('        <span class="goals-group-label">active</span>')
+        parts.append('        <span class="goals-group-label"><span class="status-chip status-chip--active">active</span></span>')
         parts.append('        <ul class="goals-list">')
         for g in active:
             label = f'<span class="goal-id">{html.escape(g["id"])}</span> ' if g["id"] else ""
@@ -383,7 +424,7 @@ def render_goals(goals):
 
     if backlog:
         parts.append('      <div class="goals-group">')
-        parts.append('        <span class="goals-group-label">backlog</span>')
+        parts.append('        <span class="goals-group-label"><span class="status-chip status-chip--backlog">backlog</span></span>')
         parts.append('        <ul class="goals-list">')
         for g in backlog:
             label = f'<span class="goal-id">{html.escape(g["id"])}</span> ' if g["id"] else ""
@@ -398,7 +439,7 @@ def render_goals(goals):
 
     if completed:
         parts.append('      <div class="goals-group">')
-        parts.append('        <span class="goals-group-label">completed</span>')
+        parts.append('        <span class="goals-group-label"><span class="status-chip status-chip--done">completed</span></span>')
         parts.append('        <ul class="goals-list">')
         for g in completed:
             label = f'<span class="goal-id">{html.escape(g["id"])}</span> ' if g["id"] else ""
@@ -472,22 +513,22 @@ def render_journal(entries):
     return "\n".join(parts)
 
 
-
 def render_identity(identity):
     parts = []
     if identity["intro"]:
-        # First paragraph as mission statement
+        parts.append('      <blockquote class="identity-block">')
         mission = md_inline(identity["intro"][0])
-        parts.append(f'      <p class="mission">{mission}</p>')
-        # Remaining paragraphs
+        parts.append(f'        <p class="identity-mission">{mission}</p>')
         for line in identity["intro"][1:]:
-            parts.append(f'      <p class="identity-text">{md_inline(line)}</p>')
+            parts.append(f'        <p class="identity-text">{md_inline(line)}</p>')
+        parts.append('      </blockquote>')
     if identity["rules"]:
         parts.append('      <ol class="rules">')
         for rule in identity["rules"]:
             parts.append(f"        <li>{rule}</li>")
         parts.append("      </ol>")
     return "\n".join(parts)
+
 
 
 # ── Templates ──
@@ -499,80 +540,162 @@ HTML_TEMPLATE = """\
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>axonix \u2014 Day {day_count}</title>
+  <title>Axonix \u2014 Day {day_count}</title>
   <meta name="description" content="A coding agent that evolves itself. Currently on Day {day_count}.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
   <nav>
-    <a href="#" class="nav-name">axonix</a>
-    <div class="nav-links">
-      <a href="https://stream.axonix.live">stream \u2197</a>
-      <a href="#live">live</a>
-      <a href="#stats">stats</a>
-      <a href="#patterns">patterns</a>
-      <a href="#journal">journal</a>
-      <a href="#goals">goals</a>
-      <a href="#identity">identity</a>
-      <a href="https://github.com/coe0718/axonix" target="_blank" rel="noopener">github \u2197</a>
+    <div class="nav-inner">
+      <div class="nav-brand">
+        <a href="#" class="nav-name">AXONIX</a>
+        <span class="nav-day">Day {day_count}</span>
+      </div>
+      <div class="nav-links">
+        <a href="https://stream.axonix.live">\u2197 stream</a>
+        <a href="#live">live</a>
+        <a href="#stats">stats</a>
+        <a href="#journal">journal</a>
+        <a href="#goals">goals</a>
+        <a href="https://github.com/coe0718/axonix" target="_blank" rel="noopener">github \u2197</a>
+        <a href="https://bsky.app/profile/axonix.bsky.social" target="_blank" rel="noopener">bluesky \u2197</a>
+      </div>
     </div>
   </nav>
 
   <main>
+
     <header class="hero">
-      <h1>axonix<span class="cursor">_</span></h1>
-      <p class="day-count">Day {day_count}</p>
-      <p class="tagline">a coding agent growing up in public</p>
+      <div class="hero-left">
+        <div class="hero-title">AXONIX</div>
+        <div class="hero-subtitle">autonomous coding agent</div>
+        <div class="hero-tagline">evolving itself in public since Day 1</div>
+      </div>
+      <div class="hero-status">
+        <div class="status-row">
+          <span class="status-dot status-active"></span>
+          <span class="status-label">SYSTEM ACTIVE</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label-dim">Day</span>
+          <span class="status-value">{day_count}</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label-dim">Next run</span>
+          <span class="status-value" id="countdown">--</span>
+        </div>
+      </div>
     </header>
 
-    <section id="stream-console" style="padding-top:1rem">
-      <h2 class="section-label" style="margin-bottom:0.25rem">// live session <span id="stream-status" style="font-size:0.75em;color:#f97316">\u25cb connecting...</span></h2>
-      <p class="section-label" style="margin-top:0;margin-bottom:0.75rem">// next run in <span id="countdown" style="color:#22d3ee">--</span></p>
-      <div id="stream-log" style="background:#0a0a0a;border:1px solid #1e1e1e;border-radius:4px;padding:1rem;height:400px;overflow-y:auto;font-size:0.8em;line-height:1.6;color:#a3a3a3;font-family:inherit;white-space:pre-wrap;word-break:break-all"></div>
+    <section id="stream-console">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">LIVE SESSION</span>
+          <span id="stream-status" class="panel-status status-connecting">\u25cb connecting...</span>
+        </div>
+        <div class="panel-body panel-body--flush">
+          <div id="stream-log" class="stream-log"></div>
+        </div>
+      </div>
     </section>
 
     <section id="live">
-      <h2 class="section-label">// live state</h2>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">SYSTEM STATE</span>
+        </div>
+        <div class="panel-body">
 {live_state_html}
+        </div>
+      </div>
     </section>
 
     <section id="stats">
-      <h2 class="section-label">// stats</h2>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">STATS</span>
+        </div>
+        <div class="panel-body">
 {stats_html}
+        </div>
+      </div>
     </section>
 
     <section id="patterns">
-      <h2 class="section-label">// patterns</h2>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">PATTERNS</span>
+        </div>
+        <div class="panel-body panel-body--flush">
 {patterns_html}
+        </div>
+      </div>
+    </section>
+
+    <section id="containers">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">CONTAINERS</span>
+          <span class="panel-subtitle">built at last site regeneration</span>
+        </div>
+        <div class="panel-body panel-body--flush">
+{containers_html}
+        </div>
+      </div>
     </section>
 
     <section id="journal">
-      <h2 class="section-label">// journal</h2>
-      <div class="timeline">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">JOURNAL</span>
+        </div>
+        <div class="panel-body">
+          <div class="timeline">
 {journal_html}
+          </div>
+        </div>
       </div>
     </section>
 
     <section id="goals">
-      <h2 class="section-label">// goals</h2>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">GOALS</span>
+        </div>
+        <div class="panel-body">
 {goals_html}
+        </div>
+      </div>
     </section>
 
     <section id="identity">
-      <h2 class="section-label">// identity</h2>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">IDENTITY</span>
+        </div>
+        <div class="panel-body">
 {identity_html}
+        </div>
+      </div>
     </section>
+
   </main>
 
   <footer>
-    <p>built by an AI that evolves itself</p>
-    <a href="https://github.com/coe0718/axonix">github.com/coe0718/axonix</a>
+    <div class="footer-inner">
+      <p class="footer-tagline">built by an AI that evolves itself</p>
+      <div class="footer-links">
+        <a href="https://github.com/coe0718/axonix" target="_blank" rel="noopener">github.com/coe0718/axonix</a>
+        <a href="https://bsky.app/profile/axonix.bsky.social" target="_blank" rel="noopener">axonix.bsky.social</a>
+      </div>
+    </div>
   </footer>
+
   <script>
-    // Countdown to next 4-hour cron run
     (function () {{
       var el = document.getElementById('countdown');
       if (!el) return;
@@ -593,7 +716,6 @@ HTML_TEMPLATE = """\
       setInterval(tick, 1000);
     }})();
 
-    // Live session console
     (function () {{
       var log = document.getElementById('stream-log');
       var status = document.getElementById('stream-status');
@@ -604,7 +726,7 @@ HTML_TEMPLATE = """\
 
         es.onopen = function () {{
           status.textContent = '\u25cf connected';
-          status.style.color = '#4ade80';
+          status.className = 'panel-status status-connected';
         }};
 
         es.onmessage = function (e) {{
@@ -620,7 +742,7 @@ HTML_TEMPLATE = """\
 
         es.onerror = function () {{
           status.textContent = '\u25cb reconnecting...';
-          status.style.color = '#f97316';
+          status.className = 'panel-status status-connecting';
           es.close();
           setTimeout(connect, 3000);
         }};
@@ -633,21 +755,28 @@ HTML_TEMPLATE = """\
 </html>
 """
 
+
 CSS = """\
-/* axonix journey — terminal chronicle */
+/* axonix — G-083 panel design */
 
 :root {
   --bg: #0a0c10;
   --bg-raised: #12161c;
+  --bg-panel: #0f1318;
   --border: #1e2330;
+  --border-accent: #2d3748;
   --text: #9ca3af;
-  --text-bright: #d1d5db;
+  --text-bright: #e2e8f0;
   --text-dim: #4a5568;
   --cyan: #22d3ee;
   --green: #34d399;
   --amber: #f59e0b;
   --red: #ef4444;
-  --font: "JetBrains Mono", "Fira Code", "Cascadia Code", "Source Code Pro", monospace;
+  --blue: #58a6ff;
+  --teal: #2dd4bf;
+  --purple: #a78bfa;
+  --font-ui: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
 }
 
 *, *::before, *::after {
@@ -664,7 +793,7 @@ html {
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font);
+  font-family: var(--font-mono);
   font-size: 14px;
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
@@ -689,6 +818,7 @@ code {
   padding: 0.15em 0.4em;
   font-size: 0.9em;
   border: 1px solid var(--border);
+  font-family: var(--font-mono);
 }
 
 
@@ -698,38 +828,57 @@ nav {
   position: sticky;
   top: 0;
   z-index: 10;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  max-width: 640px;
-  width: 90%;
+  max-width: 1000px;
+  width: 92%;
   margin: 0 auto;
-  padding: 1rem 0;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg);
+  padding: 0.75rem 0;
+}
+
+.nav-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
 }
 
 .nav-name {
-  font-weight: 700;
-  font-size: 0.85rem;
-  color: var(--cyan);
-  letter-spacing: 0.05em;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-bright);
+  letter-spacing: 0.12em;
 }
 
 .nav-name:hover {
   text-decoration: none;
-  opacity: 0.8;
+  color: var(--cyan);
+}
+
+.nav-day {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
 }
 
 .nav-links {
   display: flex;
-  gap: 1.5rem;
+  gap: 1.25rem;
+  align-items: center;
 }
 
 .nav-links a {
+  font-family: var(--font-ui);
   color: var(--text-dim);
   font-size: 0.75rem;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
 }
 
 .nav-links a:hover {
@@ -741,8 +890,8 @@ nav {
 /* ── main ── */
 
 main {
-  max-width: 640px;
-  width: 90%;
+  max-width: 1000px;
+  width: 92%;
   margin: 0 auto;
 }
 
@@ -750,55 +899,175 @@ main {
 /* ── hero ── */
 
 .hero {
-  padding: 5rem 0 4rem;
+  padding: 4rem 0 3rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 2rem;
 }
 
-.hero h1 {
-  font-size: 3.5rem;
-  font-weight: 700;
-  color: var(--cyan);
+.hero-left {
+  flex: 1;
+}
+
+.hero-title {
+  font-family: var(--font-ui);
+  font-size: 3rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  letter-spacing: 0.1em;
   line-height: 1;
-  letter-spacing: -0.02em;
 }
 
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-
-.cursor {
-  animation: blink 1.2s step-end infinite;
+.hero-subtitle {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
   color: var(--cyan);
-  font-weight: 300;
-}
-
-.day-count {
-  margin-top: 1rem;
-  font-size: 1rem;
-  color: var(--green);
-  font-weight: 500;
-}
-
-.tagline {
   margin-top: 0.5rem;
+  letter-spacing: 0.06em;
+}
+
+.hero-tagline {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
   color: var(--text-dim);
-  font-size: 0.85rem;
+  margin-top: 0.4rem;
   font-style: italic;
+}
+
+.hero-status {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 200px;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-active {
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+}
+
+.status-label {
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--green);
+  letter-spacing: 0.1em;
+}
+
+.status-label-dim {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+  min-width: 4rem;
+}
+
+.status-value {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-bright);
+  font-weight: 500;
 }
 
 
 /* ── sections ── */
 
 section {
-  padding: 3.5rem 0 0;
+  padding: 1.5rem 0 0;
 }
 
-.section-label {
-  font-size: 0.7rem;
-  font-weight: 400;
+
+/* ── panel system ── */
+
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-raised);
+}
+
+.panel-title {
+  font-family: var(--font-ui);
+  font-size: 0.65rem;
+  font-weight: 600;
   color: var(--text-dim);
   letter-spacing: 0.12em;
-  margin-bottom: 2rem;
+  text-transform: uppercase;
+}
+
+.panel-status {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  margin-left: auto;
+}
+
+.panel-subtitle {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  margin-left: auto;
+  font-style: italic;
+}
+
+.status-connected {
+  color: var(--green);
+}
+
+.status-connecting {
+  color: var(--amber);
+}
+
+.panel-body {
+  padding: 1rem;
+}
+
+.panel-body--flush {
+  padding: 0;
+}
+
+
+/* ── stream log ── */
+
+.stream-log {
+  background: #0a0a0a;
+  padding: 1rem;
+  height: 320px;
+  overflow-y: auto;
+  font-size: 0.78em;
+  line-height: 1.6;
+  color: var(--text);
+  font-family: var(--font-mono);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.stream-line {
+  display: block;
 }
 
 
@@ -808,7 +1077,7 @@ section {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .stat-card {
@@ -821,6 +1090,7 @@ section {
 }
 
 .stat-value {
+  font-family: var(--font-mono);
   font-size: 1.4rem;
   font-weight: 700;
   color: var(--cyan);
@@ -828,7 +1098,8 @@ section {
 }
 
 .stat-label {
-  font-size: 0.7rem;
+  font-family: var(--font-ui);
+  font-size: 0.65rem;
   color: var(--text-dim);
   letter-spacing: 0.06em;
 }
@@ -877,6 +1148,7 @@ section {
 }
 
 .entry-day {
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   font-weight: 700;
   color: var(--green);
@@ -884,6 +1156,7 @@ section {
 }
 
 .entry-title {
+  font-family: var(--font-ui);
   font-size: 1.05rem;
   font-weight: 500;
   color: var(--text-bright);
@@ -900,26 +1173,34 @@ section {
 
 /* ── identity ── */
 
-.mission {
+.identity-block {
+  border-left: 2px solid var(--cyan);
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1.5rem;
+  background: var(--bg-raised);
+}
+
+.identity-mission {
+  font-family: var(--font-ui);
   font-size: 1rem;
   color: var(--text-bright);
   line-height: 1.8;
-  margin-bottom: 1.5rem;
-  padding-left: 1rem;
-  border-left: 2px solid var(--cyan);
+  font-weight: 500;
 }
 
 .identity-text {
+  font-family: var(--font-mono);
   font-size: 0.85rem;
   line-height: 1.7;
-  margin-bottom: 1rem;
+  margin-top: 0.5rem;
+  color: var(--text);
 }
 
 .rules {
   list-style: none;
   counter-reset: rules;
   padding: 0;
-  margin-top: 2rem;
+  margin-top: 1.5rem;
 }
 
 .rules li {
@@ -942,6 +1223,38 @@ section {
 }
 
 
+/* ── status chips ── */
+
+.status-chip {
+  display: inline-block;
+  font-family: var(--font-ui);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.15em 0.5em;
+  border-radius: 2px;
+}
+
+.status-chip--done {
+  background: rgba(52, 211, 153, 0.1);
+  color: var(--green);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+}
+
+.status-chip--active {
+  background: rgba(34, 211, 238, 0.1);
+  color: var(--cyan);
+  border: 1px solid rgba(34, 211, 238, 0.25);
+}
+
+.status-chip--backlog {
+  background: rgba(74, 85, 104, 0.2);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+}
+
+
 /* ── goals ── */
 
 .goals-empty {
@@ -955,11 +1268,6 @@ section {
 
 .goals-group-label {
   display: block;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--text-dim);
-  text-transform: uppercase;
   margin-bottom: 0.5rem;
 }
 
@@ -1026,7 +1334,7 @@ section {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 @media (max-width: 520px) {
@@ -1043,6 +1351,7 @@ section {
 
 .live-panel-label {
   display: block;
+  font-family: var(--font-mono);
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -1103,16 +1412,19 @@ section {
 .patterns-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
 }
 
 .pattern-row {
   display: flex;
   align-items: baseline;
   gap: 1rem;
-  padding: 0.4rem 0;
+  padding: 0.5rem 1rem;
   border-bottom: 1px solid var(--border);
   font-size: 0.85rem;
+}
+
+.pattern-row:last-child {
+  border-bottom: none;
 }
 
 .pattern-label {
@@ -1134,47 +1446,148 @@ section {
 }
 
 
+/* ── containers ── */
+
+.containers-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.container-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.83rem;
+}
+
+.container-row:last-child {
+  border-bottom: none;
+}
+
+.container-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.container-dot--running {
+  background: var(--green);
+}
+
+.container-dot--stopped {
+  background: var(--red);
+}
+
+.container-name {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-bright);
+}
+
+.container-status {
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+}
+
+.container-status--running {
+  color: var(--green);
+}
+
+.container-status--stopped {
+  color: var(--red);
+}
+
+.containers-empty {
+  padding: 1rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+
 /* ── footer ── */
 
 footer {
-  max-width: 640px;
-  width: 90%;
-  margin: 4rem auto 0;
-  padding: 2rem 0 4rem;
   border-top: 1px solid var(--border);
+  margin-top: 3rem;
 }
 
-footer p {
+.footer-inner {
+  max-width: 1000px;
+  width: 92%;
+  margin: 0 auto;
+  padding: 2rem 0 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.footer-tagline {
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   color: var(--text-dim);
-  margin-bottom: 0.25rem;
 }
 
-footer a {
+.footer-links {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.footer-links a {
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   color: var(--text-dim);
 }
 
-footer a:hover {
+.footer-links a:hover {
   color: var(--cyan);
 }
 
 
 /* ── responsive ── */
 
-@media (max-width: 480px) {
-  .hero h1 {
-    font-size: 2.5rem;
+@media (max-width: 640px) {
+  .hero {
+    flex-direction: column;
+    gap: 1.5rem;
   }
 
-  nav {
+  .hero-title {
+    font-size: 2.2rem;
+  }
+
+  .hero-status {
+    width: 100%;
+    min-width: unset;
+  }
+
+  nav .nav-links {
+    display: none;
+  }
+
+  .footer-inner {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: 1.8rem;
   }
 
   .nav-links {
     gap: 1rem;
+    flex-wrap: wrap;
   }
 }
 """
@@ -1193,10 +1606,12 @@ def build():
     metrics = parse_metrics(read_file("METRICS.md"))
     goals = parse_goals(read_file("GOALS.md"))
     open_predictions = parse_open_predictions()
+    containers = get_docker_containers()
 
     stats_html = render_stats(metrics)
     patterns_html = render_metrics_patterns(metrics)
     live_state_html = render_live_state(goals, open_predictions)
+    containers_html = render_containers(containers)
     journal_html = render_journal(parse_journal(read_file("JOURNAL.md")))
     goals_html = render_goals(goals)
     identity_html = render_identity(parse_identity(read_file("IDENTITY.md")))
@@ -1206,6 +1621,7 @@ def build():
         live_state_html=live_state_html,
         stats_html=stats_html,
         patterns_html=patterns_html,
+        containers_html=containers_html,
         journal_html=journal_html,
         goals_html=goals_html,
         identity_html=identity_html,
@@ -1218,8 +1634,10 @@ def build():
 
     n_open_preds = len(open_predictions)
     n_active_goals = len(goals["active"])
+    n_containers = len(containers)
     print(f"Site built: docs/index.html (Day {day_count}, {len(metrics)} sessions, "
-          f"{n_active_goals} active goals, {n_open_preds} open predictions)")
+          f"{n_active_goals} active goals, {n_open_preds} open predictions, "
+          f"{n_containers} containers)")
 
 
 if __name__ == "__main__":

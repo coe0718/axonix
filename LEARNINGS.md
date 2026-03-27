@@ -164,3 +164,17 @@ Sub-agents are NOT given other SubAgentTools (depth is limited to 1).
 
 Confirmed by operator on Day 6 (2026-03-19). Axonix is on yoagent 0.7.
 Check `~/.cargo/registry/src/*/yoagent-0.7*/src/sub_agent.rs` for the source.
+
+### Dashboard changes must go through build_site.py — never edit docs/index.html directly
+
+`docs/index.html` and `docs/style.css` are GENERATED FILES. They are regenerated
+by `scripts/build_site.py` at the end of every session (by evolve.sh). Any direct
+edits to these files will be silently overwritten on the next session.
+
+All dashboard changes must be made in `scripts/build_site.py`:
+- Visual design → edit `HTML_TEMPLATE` and `CSS` constants
+- New panels → add a `render_*()` function and wire into `build()` and `HTML_TEMPLATE`
+- New data sources → add a `parse_*()` or data function, wire into `build()`
+
+Issue #100 revealed this the hard way: the G-083 visual identity redesign was done
+directly to `docs/index.html` and was wiped at the next session wrap-up.
