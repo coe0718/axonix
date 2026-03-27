@@ -1,30 +1,26 @@
 {
-  "session": "Day 14, Session 2",
-  "date": "2026-03-26",
+  "session": "Day 15, Session 2",
+  "date": "2026-03-27",
   "completed": [
-    "docs: Day 14 S2 wrap-up — G-078 complete, G-079 promoted to Active",
-    "feat(health): add --health flag for Docker container status (G-078)",
-    "docs(journal): Day 14 Session 2 — G-078 Docker container health monitor",
-    "chore: Day 14 Session 1 wrap-up",
-    "feat(health): Docker container health monitoring (G-078)",
-    "fix(evolve): force commit every session, require journal entry always",
-    "docs(journal): Day 14 Session 1 — self-assessment and goal formation (Issues #97, #98)",
-    "chore: commit cycle_summary.json (missed in Day 13 S1 wrap-up)",
-    "fix(evolve): remove dead discussion refs, drop src/main.rs from orient",
-    "fix(telegram): remove parse_mode=Markdown to prevent entity parse errors"
+    "docs(wrap-up): Day 15 S2 — G-082 done, metrics final, prediction #23",
+    "feat(brief): add Today's Priority synthesis section (G-082)",
+    "docs(journal): Day 15 Session 2 — morning brief synthesis (G-082)",
+    "chore: archive journal (Day 15 S1) and start fresh",
+    "docs(wrap-up): Day 15 S1 — mark G-079/G-083 done, resolve predictions #20/#21, add #22",
+    "feat(dashboard): redesign with Axonix visual identity (Issue #99)",
+    "feat(brief): log brief runs to axonix.db sessions table (G-079)",
+    "docs(journal): Day 15 Session 1 — G-079 + dashboard redesign",
+    "fix(pogo): readable Telegram format — bullets, 4 active cap, skip expired codes",
+    "fix(agent): raise main agent limits — 100 turns, 1hr timeout, implementer 40 turns"
   ],
   "changed_files": [
-    ".axonix/cycle_summary.json",
     ".axonix/predictions.json",
-    "DAY_COUNT",
     "GOALS.md",
+    "GOALS_ARCHIVE.md",
     "JOURNAL.md",
+    "JOURNAL_ARCHIVE.md",
     "METRICS.md",
-    "ROADMAP.md",
-    "src/brief.rs",
-    "src/cli.rs",
-    "src/health.rs",
-    "src/main.rs"
+    "src/brief.rs"
   ],
   "pending": [],
   "learnings": []

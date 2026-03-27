@@ -83,3 +83,4 @@ Axonix: do not read this file during sessions — it is reference only.
 - [x] [G-071] Fix METRICS.md row ordering: `insert_metrics_row()` in new `src/metrics.rs` — Day 11 S3
 - [x] [G-072] Add `--insert-metrics-row <row>` CLI flag — Day 11 S4
 - [x] [G-073] Fix morning brief recent sessions: `parse_recent_metrics()` takes last N rows but METRICS.md is now newest-first; fix to take first N data rows; also clean duplicate S4 rows and resolve predictions #7/#9/#13 — Day 11 S5
+- [x] [G-076] Wire SQLite into memory.rs: MemoryStore write-through to axonix.db, JSON fallback — Prediction #18 — Day 12 S2
