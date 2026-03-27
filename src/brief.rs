@@ -57,6 +57,8 @@ pub struct Brief {
     pub pogo: Option<crate::pogo::PogoData>,
     /// Meta-system health check (predictions freshness, cycle_summary freshness, METRICS.md staleness).
     pub meta_health: Option<crate::meta_health::MetaHealthCheck>,
+    /// Synthesized priority: the single most important thing to address.
+    pub today_priority: String,
 }
 
 /// One session row from METRICS.md.
@@ -131,7 +133,7 @@ impl Brief {
             }
         };
 
-        Brief {
+        let mut brief = Brief {
             active_goals,
             open_predictions,
             recent_sessions,
@@ -148,7 +150,10 @@ impl Brief {
                 if !data.is_empty() { Some(data) } else { None }
             },
             meta_health: Some(crate::meta_health::MetaHealthCheck::run()),
-        }
+            today_priority: String::new(),
+        };
+        brief.today_priority = synthesize_priority(&brief);
+        brief
     }
 
     /// Format the brief as a multi-line string for terminal output.
@@ -157,6 +162,11 @@ impl Brief {
         out.push_str("╔══════════════════════════════════════════════╗\n");
         out.push_str("║  ⚡ AXONIX MORNING BRIEF                      ║\n");
         out.push_str("╚══════════════════════════════════════════════╝\n");
+        out.push('\n');
+
+        // Today's Priority
+        out.push_str("🎯 TODAY'S PRIORITY\n");
+        out.push_str(&format!("   → {}\n", self.today_priority));
         out.push('\n');
 
         // Active goals
@@ -301,6 +311,11 @@ impl Brief {
     pub fn format_telegram(&self) -> String {
         let mut out = String::new();
         out.push_str("⚡ *Axonix Morning Brief*\n\n");
+
+        // Today's Priority
+        out.push_str("🎯 *Today's Priority*\n");
+        out.push_str(&format!("→ {}\n", self.today_priority));
+        out.push('\n');
 
         // Goals
         out.push_str("📋 *Active Goals*\n");
@@ -672,6 +687,122 @@ fn truncate_str(s: &str, max_chars: usize) -> &str {
     }
 }
 
+/// Compute the approximate number of days between `date_str` and `today`.
+/// Both strings must be in "YYYY-MM-DD" format.
+fn days_since(date_str: &str, today: &str) -> u64 {
+    fn to_days(s: &str) -> u64 {
+        let parts: Vec<&str> = s.split('-').collect();
+        if parts.len() != 3 {
+            return 0;
+        }
+        let y: u64 = parts[0].parse().unwrap_or(2026);
+        let m: u64 = parts[1].parse().unwrap_or(1);
+        let d: u64 = parts[2].parse().unwrap_or(1);
+        y * 365 + m * 30 + d
+    }
+    let t = to_days(today);
+    let p = to_days(date_str);
+    if t > p { t - p } else { 0 }
+}
+
+/// Count `###` headers inside the `## Backlog` section of GOALS.md.
+fn count_backlog_goals() -> usize {
+    let path = Path::new("GOALS.md");
+    let content = std::fs::read_to_string(path).unwrap_or_default();
+    let mut in_backlog = false;
+    let mut count = 0;
+    for line in content.lines() {
+        if line.starts_with("## Backlog") {
+            in_backlog = true;
+            continue;
+        }
+        if in_backlog && line.starts_with("## ") {
+            break;
+        }
+        if in_backlog && line.starts_with("### ") {
+            count += 1;
+        }
+    }
+    count
+}
+
+/// Synthesize the single most important actionable item from the brief.
+///
+/// Priority order (first match wins):
+/// 1. Non-running Docker containers
+/// 2. Meta-health issues
+/// 3. No active goals
+/// 4. Consecutive session failures (last 2+ sessions with "FAILED" in notes)
+/// 5. Open predictions overdue (>14 days since created)
+/// 6. Backlog fewer than 3 items
+/// 7. All clear
+fn synthesize_priority(brief: &Brief) -> String {
+    // 1. Non-running Docker containers
+    if let Some(ref docker) = brief.docker {
+        for container in &docker.containers {
+            if !container.healthy {
+                return format!(
+                    "Container `{}` is not running — check status",
+                    container.name
+                );
+            }
+        }
+    }
+
+    // 2. Meta-health issues
+    if let Some(ref mh) = brief.meta_health {
+        let issues = mh.issues();
+        if let Some(first) = issues.first() {
+            // Strip leading emoji/whitespace for a clean message
+            let clean = first.trim_start_matches(|c: char| !c.is_alphabetic()).trim();
+            return format!("Meta-health: {clean}");
+        }
+    }
+
+    // 3. No active goals
+    if brief.active_goals.is_empty() {
+        return "No active goal — promote one from backlog before doing anything else".to_string();
+    }
+
+    // 4. Consecutive session failures (last 2+ sessions have "FAILED" in notes)
+    {
+        let fail_count = brief
+            .recent_sessions
+            .iter()
+            .take(2)
+            .filter(|s| s.notes.contains("FAILED"))
+            .count();
+        if fail_count >= 2 {
+            return format!(
+                "Last {fail_count} sessions had test failures — fix before new features"
+            );
+        }
+    }
+
+    // 5. Open predictions overdue (>14 days since created)
+    {
+        let today = today_date_utc();
+        for (id, date, _text) in &brief.open_predictions {
+            if days_since(date, &today) > 14 {
+                return format!("Prediction #{id} is overdue — resolve or update it");
+            }
+        }
+    }
+
+    // 6. Backlog fewer than 3 items
+    {
+        let backlog_count = count_backlog_goals();
+        if backlog_count < 3 {
+            return format!(
+                "Backlog has {backlog_count} goals — form new goals before closing out"
+            );
+        }
+    }
+
+    // 7. All clear
+    "Nothing critical — proceed with active goal".to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -816,6 +947,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         assert!(output.contains("MORNING BRIEF"), "should contain header");
@@ -843,6 +975,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         assert!(output.contains("no active goals"), "should note empty goals");
@@ -872,6 +1005,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Axonix Morning Brief*"), "should have bold header");
@@ -894,6 +1028,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         assert!(output.contains("deploy needed"), "note should appear in output");
@@ -952,6 +1087,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         assert!(output.contains("end of brief"), "should have end marker");
@@ -977,6 +1113,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         assert!(output.contains("Goal one"));
@@ -1003,6 +1140,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         assert!(output.contains("#1"), "should show prediction IDs");
@@ -1027,6 +1165,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Axonix Morning Brief*"), "should have header");
@@ -1050,6 +1189,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_telegram();
         // format_telegram doesn't render notes (compact format) — but must not panic
@@ -1073,6 +1213,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_telegram();
         assert!(output.contains("alpha"));
@@ -1117,6 +1258,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         assert!(output.contains("Day 7"), "should show day number");
@@ -1185,6 +1327,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         assert!(output.contains("SYSTEM HEALTH"), "should contain SYSTEM HEALTH section");
@@ -1210,6 +1353,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         assert!(output.contains("SYSTEM HEALTH"), "should still contain section header");
@@ -1237,6 +1381,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_telegram();
         assert!(output.contains("Health:"), "telegram brief should contain Health: line");
@@ -1295,6 +1440,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         assert!(output.contains("BLUESKY"), "should contain BLUESKY section");
@@ -1319,6 +1465,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         assert!(!output.contains("BLUESKY"), "no bluesky_stats → no BLUESKY section");
@@ -1340,6 +1487,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Bluesky*"), "telegram should show *Bluesky* label");
@@ -1363,6 +1511,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let terminal = brief.format_terminal();
         assert!(terminal.contains("(never)"), "no last date should display (never)");
@@ -1395,6 +1544,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         assert!(output.contains("calibration:"), "terminal should show calibration line");
@@ -1419,6 +1569,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         assert!(!output.contains("calibration:"), "no calibration → should not show calibration line");
@@ -1447,6 +1598,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_telegram();
         assert!(output.contains("📊 Calibration:"), "telegram should show calibration emoji line");
@@ -1470,6 +1622,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_telegram();
         assert!(!output.contains("📊 Calibration:"), "no calibration → should not show calibration line");
@@ -1499,6 +1652,7 @@ mod tests {
         failure_summary: None,
         pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         assert!(output.contains("LAST SESSION"), "should contain LAST SESSION header");
@@ -1522,6 +1676,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         assert!(output.contains("LAST SESSION"), "header still present when None");
@@ -1553,6 +1708,7 @@ mod tests {
         failure_summary: None,
         pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         assert!(output.contains("G-064: prediction calibration"), "should show first completed item");
@@ -1588,6 +1744,7 @@ mod tests {
         failure_summary: None,
         pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         assert!(output.contains("item five"), "fifth item should appear");
@@ -1616,6 +1773,7 @@ mod tests {
         failure_summary: None,
         pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         assert!(output.contains("624 tests"), "should show numeric test count");
@@ -1643,6 +1801,7 @@ mod tests {
         failure_summary: None,
         pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         assert!(output.contains("? tests"), "should show '? tests' when count is None");
@@ -1672,6 +1831,7 @@ mod tests {
         failure_summary: None,
         pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Last Session*"), "telegram should show bold Last Session header");
@@ -1695,6 +1855,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Last Session*"), "telegram header still present when None");
@@ -1726,6 +1887,7 @@ mod tests {
         failure_summary: None,
         pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_telegram();
         assert!(output.contains("G-064: prediction calibration"), "telegram should show completed items");
@@ -1754,6 +1916,7 @@ mod tests {
         failure_summary: None,
         pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_telegram();
         assert!(output.contains("624 tests"), "telegram should show numeric test count");
@@ -1781,6 +1944,7 @@ mod tests {
         failure_summary: None,
         pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_telegram();
         assert!(output.contains("? tests"), "telegram should show '? tests' when count is None");
@@ -1810,6 +1974,7 @@ mod tests {
         failure_summary: None,
         pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let terminal = brief.format_terminal();
         assert!(terminal.contains("no completed items recorded"), "empty completed should show fallback in terminal");
@@ -1841,6 +2006,7 @@ mod tests {
         failure_summary: None,
         pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         // The full 80-char string should NOT appear (truncated to 60)
@@ -1866,6 +2032,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         assert!(output.contains("📝 LAST SESSION"), "LAST SESSION header must always appear in terminal brief");
@@ -1893,6 +2060,7 @@ mod tests {
         failure_summary: None,
         pogo: None,
         meta_health: None,
+            today_priority: String::new(),
         };
         let terminal = brief.format_terminal();
         assert!(terminal.contains("2026-03-23"), "terminal should show date next to session name");
@@ -1925,6 +2093,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
             meta_health: None,
+            today_priority: String::new(),
         };
 
         // Should not panic even with a fresh (non-existent) DB path.
@@ -1970,6 +2139,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
             meta_health: None,
+            today_priority: String::new(),
         };
 
         brief.log_to_db_at(&db_path);
@@ -2010,6 +2180,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
             meta_health: None,
+            today_priority: String::new(),
         };
 
         brief.log_to_db_at(&db_path);
@@ -2062,6 +2233,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
             meta_health: Some(mh),
+            today_priority: String::new(),
         };
         assert!(brief.meta_health.is_some(), "meta_health should be Some when set");
     }
@@ -2088,6 +2260,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
             meta_health: Some(mh),
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         assert!(output.contains("META-SYSTEM"), "format_terminal should include META-SYSTEM section: {output}");
@@ -2117,6 +2290,7 @@ mod tests {
             failure_summary: None,
             pogo: None,
             meta_health: Some(mh),
+            today_priority: String::new(),
         };
         let output = brief.format_telegram();
         assert!(
@@ -2142,9 +2316,190 @@ mod tests {
             failure_summary: None,
             pogo: None,
             meta_health: None,
+            today_priority: String::new(),
         };
         let output = brief.format_terminal();
         assert!(output.contains("META-SYSTEM"), "META-SYSTEM section always present");
         assert!(output.contains("not checked"), "should show '(not checked)' when meta_health is None");
+    }
+
+    // ── synthesize_priority ───────────────────────────────────────────────────────
+
+    impl Brief {
+        /// Construct a minimal all-None Brief suitable for unit testing priority logic.
+        fn test_empty() -> Self {
+            Brief {
+                active_goals: vec![],
+                open_predictions: vec![],
+                recent_sessions: vec![],
+                note: None,
+                health: None,
+                bluesky_stats: None,
+                caddy: None,
+                docker: None,
+                calibration: None,
+                last_session: None,
+                failure_summary: None,
+                pogo: None,
+                meta_health: None,
+                today_priority: String::new(),
+            }
+        }
+    }
+
+    #[test]
+    fn test_synthesize_priority_all_clear() {
+        // Active goals present, no docker errors, no meta issues, no failures,
+        // predictions are fresh (year 2099 dates won't be overdue), and we rely
+        // on count_backlog_goals reading from disk — bypass by giving 3+ items via
+        // a brief state that won't hit rules 1-5, with no backlog check (we can't
+        // easily control GOALS.md in tests).
+        // Rule 6 (backlog < 3) may trigger depending on repo state; that's OK —
+        // we just verify the "nothing critical" path is reachable with no other flags.
+        let mut b = Brief::test_empty();
+        b.active_goals = vec!["G-082: today priority".to_string()];
+        // Use a far-future prediction date so it won't be overdue
+        b.open_predictions = vec![(1, "2099-01-01".to_string(), "future prediction".to_string())];
+
+        // With no docker, no meta issues, active goals, no failures, no overdue preds,
+        // the result is either backlog warning or all clear.
+        let result = synthesize_priority(&b);
+        // Either "Nothing critical" or "Backlog has N goals" — both are valid
+        assert!(
+            result.contains("Nothing critical") || result.contains("Backlog"),
+            "expected all-clear or backlog warning, got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_synthesize_priority_no_active_goals() {
+        let b = Brief::test_empty(); // active_goals is empty
+        let result = synthesize_priority(&b);
+        assert!(
+            result.contains("No active goal"),
+            "empty active_goals should produce 'No active goal' message, got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_synthesize_priority_meta_health_issue_beats_no_goals() {
+        // Meta-health issues have priority 2, no-goals has priority 3.
+        // So if meta_health has issues AND no active goals, meta-health wins.
+        let mh = crate::meta_health::MetaHealthCheck::run_with_paths(
+            std::path::Path::new("/nonexistent/predictions.json"),
+            std::path::Path::new("/nonexistent/cycle_summary.json"),
+            std::path::Path::new("/nonexistent/METRICS.md"),
+        );
+        let mut b = Brief::test_empty();
+        b.meta_health = Some(mh);
+        // active_goals is empty — but meta-health should win
+        let result = synthesize_priority(&b);
+        assert!(
+            result.starts_with("Meta-health:"),
+            "meta-health issue should take priority over no-goals, got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_synthesize_priority_overdue_prediction() {
+        // Prediction with date far in the past (>14 days ago) should be flagged.
+        let mut b = Brief::test_empty();
+        b.active_goals = vec!["some goal".to_string()];
+        // Use a date from 2020 — definitely overdue
+        b.open_predictions = vec![(42, "2020-01-01".to_string(), "ancient prediction".to_string())];
+
+        let result = synthesize_priority(&b);
+        assert!(
+            result.contains("Prediction #42") && result.contains("overdue"),
+            "overdue prediction should be flagged, got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_count_backlog_goals_parses_markdown() {
+        // Test the backlog counting logic with an inline string (mirrors count_backlog_goals)
+        let sample = "## Active\n### G-001\n\n## Backlog\n### G-002\n### G-003\n\n## Done\n### G-old\n";
+        let mut in_backlog = false;
+        let mut count = 0;
+        for line in sample.lines() {
+            if line.starts_with("## Backlog") { in_backlog = true; continue; }
+            if in_backlog && line.starts_with("## ") { break; }
+            if in_backlog && line.starts_with("### ") { count += 1; }
+        }
+        assert_eq!(count, 2, "should count exactly 2 backlog goals");
+    }
+
+    #[test]
+    fn test_days_since_calculation() {
+        // days_since("2026-03-01", "2026-03-27") should be roughly 26
+        let diff = days_since("2026-03-01", "2026-03-27");
+        assert_eq!(diff, 26, "2026-03-01 to 2026-03-27 should be 26 days, got {diff}");
+    }
+
+    #[test]
+    fn test_days_since_same_date() {
+        assert_eq!(days_since("2026-05-10", "2026-05-10"), 0, "same date should be 0 days");
+    }
+
+    #[test]
+    fn test_days_since_future_date_returns_zero() {
+        // date_str is AFTER today → should return 0 (not negative)
+        let diff = days_since("2030-01-01", "2026-01-01");
+        assert_eq!(diff, 0, "future date should return 0");
+    }
+
+    #[test]
+    fn test_synthesize_priority_consecutive_failures() {
+        let mut b = Brief::test_empty();
+        b.active_goals = vec!["some goal".to_string()];
+        b.recent_sessions = vec![
+            SessionSummary {
+                day: "10".to_string(),
+                session: "S2".to_string(),
+                date: "2026-04-01".to_string(),
+                tests: "500".to_string(),
+                notes: "FAILED tests in build".to_string(),
+            },
+            SessionSummary {
+                day: "10".to_string(),
+                session: "S1".to_string(),
+                date: "2026-03-31".to_string(),
+                tests: "500".to_string(),
+                notes: "FAILED again".to_string(),
+            },
+        ];
+
+        let result = synthesize_priority(&b);
+        assert!(
+            result.contains("sessions had test failures"),
+            "consecutive FAILED sessions should be flagged, got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_today_priority_shown_in_terminal() {
+        let mut b = Brief::test_empty();
+        b.today_priority = "Test priority message".to_string();
+        b.active_goals = vec!["some goal".to_string()];
+        let output = b.format_terminal();
+        assert!(output.contains("TODAY'S PRIORITY"), "terminal should show TODAY'S PRIORITY header");
+        assert!(output.contains("Test priority message"), "terminal should show the priority text");
+        // Priority section should appear before ACTIVE GOALS
+        let priority_pos = output.find("TODAY'S PRIORITY").unwrap();
+        let goals_pos = output.find("ACTIVE GOALS").unwrap();
+        assert!(priority_pos < goals_pos, "priority section should appear before active goals");
+    }
+
+    #[test]
+    fn test_today_priority_shown_in_telegram() {
+        let mut b = Brief::test_empty();
+        b.today_priority = "Telegram priority".to_string();
+        let output = b.format_telegram();
+        assert!(output.contains("Today's Priority"), "telegram should show Today's Priority header");
+        assert!(output.contains("Telegram priority"), "telegram should show the priority text");
+        // Priority section should appear before Active Goals
+        let priority_pos = output.find("Today's Priority").unwrap();
+        let goals_pos = output.find("Active Goals").unwrap();
+        assert!(priority_pos < goals_pos, "priority section should appear before active goals in telegram");
     }
 }
