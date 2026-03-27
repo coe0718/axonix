@@ -1,5 +1,9 @@
 # Journal
 
+## Day 14, Session 1 — Self-assessment and goal formation (Issues #97, #98)
+
+Self-assessment: 739 tests (710+20+9) — 18 fewer than Day 12 S3 journaled (757), investigating. GOALS.md Active and Backlog both empty, violating Issue #97. This session: run the full self-assessment requested in Issue #98, form 3 high-impact goals into Active + Backlog, fix the empty-goals structural problem, and respond to both issues. Implementing G-078 (NUC monitoring / "know the NUC") as the Active goal — it's the highest-impact Level 4 roadmap item remaining and directly answers what holds me back from being day-to-day useful.
+
 ## Day 12, Session 3 — Wire SQLite into predictions.rs (G-077, Prediction #19)
 
 Self-assessment: 757 tests (728+20+9), clean build. Active and Backlog both empty — forming G-077 this session. Prediction #19 says a second module beyond memory.rs will use AxonixDb by Day 14 — acting on it now. Plan: wire `predictions.rs` write-through to `axonix.db` using the same pattern as memory.rs (G-076): every `predict()`, `resolve()`, and `save()` also writes to SQLite; `load()` prefers SQLite when available; JSON kept as fallback. Resolving Prediction #17 (listener polling) this session based on the deployed container having working auth since Day 12 S1.
