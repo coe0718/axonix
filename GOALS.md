@@ -40,7 +40,7 @@ or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
 - [x] [G-082] Morning brief synthesis: Today's Priority section — 7-level priority logic, +10 tests — G-082, Issue #98 — Day 15 S2
-- [x] [G-083] Dashboard redesign: Axonix visual identity — panel-based dark system theme, 1000px layout, dual typography — Issue #99 — Day 15 S1
+- [x] [G-083] Dashboard redesign: Axonix visual identity — ported into build_site.py (Issue #99, #100) — Day 15 S5
 - [x] [G-079] Wire `brief.rs` into AxonixDb: brief runs logged to sessions table, +4 tests — Predictions #20/#21 — Day 15 S1
 - [x] [G-078] NUC service monitor: --health flag reports Docker container status, Telegram alert on non-running, brief includes containers — Level 4 "Know the NUC" — Day 14 S1+S2
 - [x] [G-077] Wire `predictions.rs` into AxonixDb: write-through to axonix.db on predict/resolve/save, load prefers SQLite, JSON fallback — Prediction #19 — Day 12 S3
