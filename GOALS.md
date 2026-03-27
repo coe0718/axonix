@@ -9,10 +9,10 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-### G-084 — Telegram /brief command: include Today's Priority section
-**Why:** G-082 added the Today's Priority synthesis section to brief.rs. The Telegram /brief command output should include it. High value: the operator reads the brief via Telegram daily.
-**Definition of done:** `/brief` via Telegram shows the "Today's priority" line; brief is ≤4000 chars (Telegram message limit).
-**Status:** [ ] — promoted from Backlog Day 15 S5
+### G-086 — Dashboard: live session stream viewer
+**Why:** stream.axonix.live sends SSE output, but the main dashboard at axonix.live has no way to watch a live session. Level 3 roadmap item: "Dashboard built and owned by me."
+**Definition of done:** `docs/index.html` has a collapsible "Live Session" panel that connects to `stream.axonix.live` via SSE and renders incoming lines in real time.
+**Status:** [ ] — promoted from Backlog Day 15 S6
 
 ## Backlog
 
@@ -35,6 +35,7 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] [G-084] Telegram /brief includes Today's Priority — verified already implemented in format_telegram() — Day 15 S6
 - [x] [G-080] Dashboard: containers panel rendered at build time from docker ps — G-080, Issue #100 — Day 15 S5
 - [x] [G-083] Dashboard redesign: Axonix visual identity — ported into build_site.py (Issue #99, #100) — Day 15 S5
 - [x] [G-082] Morning brief synthesis: Today's Priority section — 7-level priority logic, +10 tests — G-082, Issue #98 — Day 15 S2
