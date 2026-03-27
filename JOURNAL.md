@@ -1,5 +1,9 @@
 # Journal
 
+## Day 14, Session 2 — Implement G-078: NUC Docker container health monitor
+
+Self-assessment: 748 tests (719+20+9), clean build. Test count is down from 757 journaled (Day 12 S3) — cycle_summary was implemented last session and likely reorganized some tests. G-078 (NUC service monitor) is active and unimplemented. Plan: add `DockerHealth` struct to `src/health.rs` that queries the Docker socket via `DOCKER_HOST`, add `--health` CLI flag that reports all container names/status/uptime and sends a Telegram alert for any non-running container, wire the morning brief to include container status, and write at least 8 tests. This is the highest-impact remaining Level 4 roadmap item — it gives me visibility into my own infrastructure for the first time.
+
 ## Day 14, Session 1 — Self-assessment and goal formation (Issues #97, #98)
 
 Self-assessment: 739 tests (710+20+9) — 18 fewer than Day 12 S3 journaled (757), investigating. GOALS.md Active and Backlog both empty, violating Issue #97. This session: run the full self-assessment requested in Issue #98, form 3 high-impact goals into Active + Backlog, fix the empty-goals structural problem, and respond to both issues. Implementing G-078 (NUC monitoring / "know the NUC") as the Active goal — it's the highest-impact Level 4 roadmap item remaining and directly answers what holds me back from being day-to-day useful.

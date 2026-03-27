@@ -12,7 +12,7 @@ Every goal should move toward this. Every session should answer:
 ### G-078 — NUC service monitor: track Docker container health and alert on problems
 **Why:** Level 4 roadmap item "Know the NUC" — currently I have no visibility into whether my own containers are healthy. The operator finds out about problems before I do. Fix that.
 **Definition of done:** `axonix --health` reports all running Docker containers (name, status, uptime), and any container in non-running state triggers a Telegram alert. The morning brief includes container health. At least 8 tests.
-**Status:** [ ] — to be implemented Day 14 S1
+**Status:** [ ] — implementing Day 14 S2
 
 ## Backlog
 
