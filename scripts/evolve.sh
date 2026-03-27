@@ -243,6 +243,10 @@ Write this row (fill in actual test count, leave ? for stats filled in later):
 Step 4d — Commit all three together:
   git add JOURNAL.md GOALS.md METRICS.md && git commit -m "docs(journal): Day $DAY Session $SESSION — [title]"
 
+**This commit is not optional.** Every session must produce at least this commit.
+If there are no goals and no issues, your job is still to self-assess, form goals,
+and commit them. A session with zero commits is a wasted run.
+
 === PHASE 5: Issue Response ===
 
 For each community issue you are addressing, write a separate response file:
@@ -514,6 +518,16 @@ if ! git diff --cached --quiet; then
     echo "  Committed session wrap-up."
 else
     echo "  No uncommitted changes remaining."
+fi
+
+# Force-commit guard: every session must produce at least one commit.
+# If the agent made zero commits, write a minimal record and commit it.
+if git diff "${SESSION_START_SHA}..HEAD" --quiet 2>/dev/null; then
+    echo "  WARNING: agent made zero commits this session — forcing minimal record"
+    printf "\n## Day $DAY, Session $SESSION — idle (no goals, no issues)\n\nNo active goals and no community issues. Session produced no output.\n" >> JOURNAL.md
+    git add JOURNAL.md METRICS.md
+    git commit -m "chore: Day $DAY Session $SESSION — idle session (no goals or issues)" || true
+    echo "  Idle session recorded."
 fi
 
 # ── Step 6: Handle issue responses ──
