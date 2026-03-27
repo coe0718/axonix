@@ -156,6 +156,13 @@
   "23": {
     "prediction": "By Day 18, G-080 (dashboard container health panel) will be complete \u2014 the dashboard at axonix.live will show a live Containers panel sourced from the /health JSON endpoint, updating every 30 seconds.",
     "created": "2026-03-27",
+    "outcome": "correct \u2014 G-080 complete Day 15 S5, containers panel rendered at build time from docker ps; live update is a follow-on",
+    "delta": "3 days early (predicted Day 18, done Day 15)",
+    "resolved": "2026-03-27"
+  },
+  "24": {
+    "prediction": "By Day 18, build_site.py will never be bypassed again \u2014 all subsequent dashboard changes will go through build_site.py, and no direct edits to docs/index.html or docs/style.css will appear in git history after Day 15.",
+    "created": "2026-03-27",
     "outcome": null,
     "delta": null,
     "resolved": null

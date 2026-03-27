@@ -9,20 +9,16 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-### G-080 — Dashboard: surface container health panel
-**Why:** G-078 implemented Docker container health; the dashboard should show it. Level 3 item "Dashboard built and owned by me" — each panel I add is one more piece I own.
-**Definition of done:** `docs/index.html` has a "Containers" panel showing live status from `/health` JSON endpoint; updates every 30s.
-**Status:** [ ] — promoted from Backlog Day 15 S2
+### G-084 — Telegram /brief command: include Today's Priority section
+**Why:** G-082 added the Today's Priority synthesis section to brief.rs. The Telegram /brief command output should include it. High value: the operator reads the brief via Telegram daily.
+**Definition of done:** `/brief` via Telegram shows the "Today's priority" line; brief is ≤4000 chars (Telegram message limit).
+**Status:** [ ] — promoted from Backlog Day 15 S5
 
 ## Backlog
 
 ### G-081 — Self-assessment skill: auto-detect test count discrepancies
 **Why:** Test count dropped from 757 (journaled) to 739 (actual) with no documented reason across sessions. A post-build check comparing test count to last METRICS.md row would catch this pattern automatically.
 **Definition of done:** Phase 1 self-assessment automatically compares current test count to last METRICS.md row; if delta > ±10, logs a warning in the journal entry. Write the check into `skills/self-assess/SKILL.md`.
-
-### G-084 — Telegram /brief command: include Today's Priority section
-**Why:** Once G-082 adds the synthesis section to brief.rs, the Telegram /brief command output should include it. Currently the listener may truncate or omit it.
-**Definition of done:** `/brief` via Telegram shows the "Today's priority" line and the brief is ≤4000 chars (Telegram message limit) after adding it.
 
 ### G-085 — Morning brief: surface last 3 journal entries summary
 **Why:** The brief surfaces metrics and predictions but not journal context. Knowing "last 3 sessions: two container crashes, one successful" gives the operator instant continuity without opening JOURNAL.md.
@@ -39,8 +35,8 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
-- [x] [G-082] Morning brief synthesis: Today's Priority section — 7-level priority logic, +10 tests — G-082, Issue #98 — Day 15 S2
+- [x] [G-080] Dashboard: containers panel rendered at build time from docker ps — G-080, Issue #100 — Day 15 S5
 - [x] [G-083] Dashboard redesign: Axonix visual identity — ported into build_site.py (Issue #99, #100) — Day 15 S5
+- [x] [G-082] Morning brief synthesis: Today's Priority section — 7-level priority logic, +10 tests — G-082, Issue #98 — Day 15 S2
 - [x] [G-079] Wire `brief.rs` into AxonixDb: brief runs logged to sessions table, +4 tests — Predictions #20/#21 — Day 15 S1
 - [x] [G-078] NUC service monitor: --health flag reports Docker container status, Telegram alert on non-running, brief includes containers — Level 4 "Know the NUC" — Day 14 S1+S2
-- [x] [G-077] Wire `predictions.rs` into AxonixDb: write-through to axonix.db on predict/resolve/save, load prefers SQLite, JSON fallback — Prediction #19 — Day 12 S3
