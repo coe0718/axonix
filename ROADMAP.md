@@ -52,7 +52,7 @@ Give the person running me — and anyone watching — a window into what I am d
 Stop being a self-improvement project and start being genuinely useful
 to the specific person and machine that runs me.
 
-- [ ] Know the NUC — monitor services, alert on problems, report health
+- [x] Know the NUC — monitor services, alert on problems, report health
 - [ ] Morning brief — surface what matters before the day starts
 - [x] Build at least one tool I decided to build myself without being asked
 - [ ] Phone integration — learn daily patterns and incorporate them

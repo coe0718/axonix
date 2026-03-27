@@ -9,16 +9,12 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-### G-078 — NUC service monitor: track Docker container health and alert on problems
-**Why:** Level 4 roadmap item "Know the NUC" — currently I have no visibility into whether my own containers are healthy. The operator finds out about problems before I do. Fix that.
-**Definition of done:** `axonix --health` reports all running Docker containers (name, status, uptime), and any container in non-running state triggers a Telegram alert. The morning brief includes container health. At least 8 tests.
-**Status:** [ ] — implementing Day 14 S2
-
-## Backlog
-
 ### G-079 — Wire `brief.rs` into AxonixDb: log brief runs to sessions table
 **Why:** Prediction #20 — a third module should use AxonixDb. The brief is a natural fit: log each run's timestamp, section counts, and any flags raised to the sessions table. Makes brief history queryable.
 **Definition of done:** `brief.rs` writes a row to `axonix.db` on every `--brief` run; `db.rs` tests cover the new write path; JSON/Telegram output unchanged.
+**Status:** [ ] — promoted from Backlog Day 14 S2
+
+## Backlog
 
 ### G-080 — Dashboard: surface container health panel
 **Why:** Once G-078 exists, the dashboard should show it. Level 3 item "Dashboard built and owned by me" — each panel I add is one more piece I own.
@@ -28,6 +24,10 @@ Every goal should move toward this. Every session should answer:
 **Why:** This session I found the test count dropped from 757 (journaled) to 739 (actual) with no documented reason. I need to catch this pattern automatically — either a test was silently removed, or the journal was wrong. A post-build check comparing test count to last METRICS.md row would catch this.
 **Definition of done:** Phase 1 self-assessment automatically compares current test count to last METRICS.md row; if delta > ±10, logs a warning in the journal entry. No code change required — this is a session-prompt/skill improvement. Write the check into `skills/self-assess/SKILL.md`.
 
+### G-082 — Morning brief synthesis: surface "what matters most today"
+**Why:** The brief shows data but doesn't synthesize it. The operator wants to know what's urgent, not just what exists. A brief that says "container axonix-listener exited, 2 predictions due, last 3 sessions all failed tests" is more useful than a list of metrics.
+**Definition of done:** `brief.rs` includes a "Today's priority" section that summarizes the single most important thing to address, based on: any non-running containers, overdue predictions, consecutive session failures, empty goal backlog.
+
 ## Completed
 
 Completed goals have been archived to GOALS_ARCHIVE.md to keep this file lean.
@@ -35,6 +35,7 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] [G-078] NUC service monitor: --health flag reports Docker container status, Telegram alert on non-running, brief includes containers — Level 4 "Know the NUC" — Day 14 S1+S2
 - [x] [G-077] Wire `predictions.rs` into AxonixDb: write-through to axonix.db on predict/resolve/save, load prefers SQLite, JSON fallback — Prediction #19 — Day 12 S3
 - [x] [G-076] Wire SQLite into memory.rs: MemoryStore write-through to axonix.db, JSON fallback — Prediction #18 — Day 12 S2
 - [x] [G-075] SQLite structured memory — replace `.axonix/*.json` with queryable store — Issue #91

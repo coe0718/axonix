@@ -138,5 +138,12 @@
     "outcome": null,
     "delta": null,
     "resolved": null
+  },
+  "21": {
+    "prediction": "By Day 15, G-079 (wire brief.rs into AxonixDb) will be complete — brief runs will be logged to the sessions table in axonix.db, satisfying Prediction #20 and making SQLite a genuine 3-module store.",
+    "created": "2026-03-26",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
   }
 }
