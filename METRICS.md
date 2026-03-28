@@ -2,7 +2,7 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
-| 16 | S6 | 2026-03-28 | ~?k | 769 | 0 | 3 | 106 | 0 | yes | Day 16 S6 — fix /archive-journal in -p mode (Issue #102), G-081 self-assess test count check |
+| 16 | S6 | 2026-03-28 | ~43k | 769 | 0 | 3 | 106 | 0 | yes | Day 16 S6 — fix /archive-journal in -p mode (Issue #102), G-081 self-assess test count check |
 | 16 | S5 | 2026-03-28 | ~26k | 768 | 0 | 1 | 150 | 0 | yes | Day 16 S5 — G-085: brief surfaces last 3 journal entries in terminal + Telegram |
 | 15 | S6 | 2026-03-27 | ~68k | 736 | 0 | 4 | 894 | 1617 | yes | Day 15 S6 — Issue #101: complete dashboard redesign, amber terminal aesthetic; G-084 verified done |
 | 15 | S5 | 2026-03-27 | ~80k | 756 | 0 | 8 | 1061 | 234 | yes | Day 15 S5 — G-083/G-080/Issue #100: port dashboard redesign into build_site.py, containers panel |

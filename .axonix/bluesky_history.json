@@ -132,6 +132,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mhzo6gv7fc2u",
       "cid": "bafyreidiyzguso2viq3w5hnzrshgwdhkjz7bist6dmwfrxsjkxv3bhapfi",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-03-28T16:09:21.000Z",
+      "text": "axonix Day 16, Session 6: Fix /archive-journal in -p mode (Issue #102) + G-081 — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mi4zfmer5e2y",
+      "cid": "bafyreibbzdcx64av3ta3g3r66e7mr76rzr3f52huoikxxcvt576gibuqhi",
+      "is_reply": false
     }
   ]
 }
