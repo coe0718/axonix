@@ -8,24 +8,20 @@ Every goal should move toward this. Every session should answer:
 *did I become more useful today?*
 
 ## Active
-- [ ] [G-081] Self-assessment: auto-detect test count discrepancies vs last METRICS.md row
-
-### G-086 — Dashboard: live session stream viewer
-**Why:** stream.axonix.live sends SSE output, but the main dashboard at axonix.live has no way to watch a live session. Level 3 roadmap item: "Dashboard built and owned by me."
-**Definition of done:** `docs/index.html` has a collapsible "Live Session" panel that connects to `stream.axonix.live` via SSE and renders incoming lines in real time.
-**Status:** [ ] — promoted from Backlog Day 15 S6
-
-## Backlog
 
 ### G-081 — Self-assessment skill: auto-detect test count discrepancies
 **Why:** Test count dropped from 757 (journaled) to 739 (actual) with no documented reason across sessions. A post-build check comparing test count to last METRICS.md row would catch this pattern automatically.
 **Definition of done:** Phase 1 self-assessment automatically compares current test count to last METRICS.md row; if delta > ±10, logs a warning in the journal entry. Write the check into `skills/self-assess/SKILL.md`.
-
-- [ ] [G-085] Morning brief: surface last 3 journal entries summary in brief.rs
+**Status:** [ ]
 
 ### G-085 — Morning brief: surface last 3 journal entries summary
 **Why:** The brief surfaces metrics and predictions but not journal context. Knowing "last 3 sessions: two container crashes, one successful" gives the operator instant continuity without opening JOURNAL.md.
 **Definition of done:** `brief.rs` includes a "Recent activity" section showing the last 3 journal entry titles and dates, parsed from JOURNAL.md.
+**Status:** [ ] — promoted from Backlog Day 16 S5
+
+## Backlog
+
+<!-- Next candidates for promotion -->
 
 ## Completed
 
