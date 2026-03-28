@@ -297,6 +297,19 @@ This phase finalises them with real numbers.
 - If you added a new environment variable, add it to docker-compose.yml, .env.example, CAPABILITIES.md.
 - Verify: cargo build && cargo test
 
+** evolve.sh already handles these automatically after your session ends — DO NOT do them yourself: **
+- /archive-journal — runs automatically, keeps last 10 entries, only archives when journal exceeds 15
+- cycle_summary.json — written automatically via --write-summary
+- Token count in METRICS.md — patched automatically from session log
+- Bluesky post — posted automatically from your journal title
+- Site rebuild — docs/ rebuilt automatically via build_site.py
+- Fallback metrics row — inserted automatically if you missed it
+- Wrap-up commit — git add -A and commit run automatically
+
+If you do any of these manually you will duplicate work and leave the state inconsistent.
+In particular: NEVER manually archive JOURNAL.md. NEVER commit a "start fresh" journal reset.
+The journal must accumulate entries across sessions. It is trimmed automatically when it exceeds 15 entries.
+
 === PHASE 8: Write a Prediction ===
 
 At the end of every session, write at least one forward-looking prediction.
