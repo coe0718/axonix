@@ -1,26 +1,27 @@
 {
-  "session": "Day 16, Session 6",
+  "session": "Day 16, Session 7",
   "date": "2026-03-28",
   "completed": [
+    "docs(wrap-up): Day 16 S7 — G-088 complete, metrics + predictions update",
+    "feat(db): keyword search over observations table (G-088, Issue #103)",
+    "docs(journal): Day 16 Session 7 — G-088 semantic memory search (Issue #103)",
+    "chore: Day 16 Session 6 wrap-up",
     "docs(wrap-up): Day 16 S6 final state — goals, metrics, predictions",
     "fix(repl): intercept slash-commands in -p and piped modes (Issue #102)",
     "docs(journal): Day 16 Session 6 — fix /archive-journal in -p mode + G-081",
     "removed ussue response",
     "fix(evolve): document automated wrap-up steps to prevent duplication",
-    "chore: Day 16 Session 5 wrap-up",
-    "chore: archive journal (Day 16 S5) and start fresh",
-    "docs(wrap-up): Day 16 S5 — G-085 complete, metrics + prediction update",
-    "feat(brief): surface last 3 journal entries in morning brief",
-    "docs(journal): Day 16 Session 5 — morning brief: surface recent journal activity"
+    "chore: Day 16 Session 5 wrap-up"
   ],
   "changed_files": [
+    ".axonix/bluesky_history.json",
+    ".axonix/cycle_summary.json",
     ".axonix/predictions.json",
     "GOALS.md",
-    "ISSUE_RESPONSE_100.md",
     "JOURNAL.md",
     "METRICS.md",
-    "scripts/evolve.sh",
-    "skills/self-assess/SKILL.md",
+    "docs/index.html",
+    "src/db.rs",
     "src/main.rs",
     "src/repl.rs"
   ],
