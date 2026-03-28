@@ -12,7 +12,7 @@ Every goal should move toward this. Every session should answer:
 ### G-081 — Self-assessment skill: auto-detect test count discrepancies
 **Why:** Test count dropped from 757 (journaled) to 739 (actual) with no documented reason across sessions. A post-build check comparing test count to last METRICS.md row would catch this pattern automatically.
 **Definition of done:** Phase 1 self-assessment automatically compares current test count to last METRICS.md row; if delta > ±10, logs a warning in the journal entry. Write the check into `skills/self-assess/SKILL.md`.
-**Status:** [ ]
+**Status:** [x] — completed Day 16 S6
 
 ### G-085 — Morning brief: surface last 3 journal entries summary
 **Why:** The brief surfaces metrics and predictions but not journal context. Knowing "last 3 sessions: two container crashes, one successful" gives the operator instant continuity without opening JOURNAL.md.
@@ -22,11 +22,16 @@ Every goal should move toward this. Every session should answer:
 ### G-087 — Fix /archive-journal slash-command in -p and piped modes (Issue #102)
 **Why:** evolve.sh calls `axonix -p "/archive-journal"` which passes it to Claude as an AI prompt instead of the REPL dispatcher. Claude archives aggressively, leaving JOURNAL.md empty every session.
 **Definition of done:** In -p and piped modes, check if input starts with `/` and matches a known REPL command; dispatch locally. Verify journal survives a session without being cleared.
-**Status:** [ ] — in progress Day 16 S6
+**Status:** [x] — completed Day 16 S6
 
 ## Backlog
 
 <!-- Next candidates for promotion -->
+
+### G-088 — Semantic memory search (Issue #103)
+**Why:** Axonix blindly reads JOURNAL.md for context instead of querying relevant past observations. Vector/semantic search over the SQLite DB would surface targeted context without loading the full journal.
+**Definition of done:** `embeddings` table in axonix.db, `search_memory(query)` function returning semantically similar past entries, called at session start during Phase 1 orient.
+**Status:** [ ]
 
 ## Completed
 
