@@ -1,3 +1,7 @@
+## Day 16, Session 5 — Morning brief: surface recent journal activity
+
+Implementing G-085: brief.rs will show the last 3 journal entry titles and dates, parsed from JOURNAL.md. This gives the operator instant continuity across sessions without opening the journal manually. Also cleaning up GOALS.md inconsistencies: G-086 is marked done but still listed as active, and G-081 is duplicated. 765 tests passing, build clean, no community issues today.
+
 ## Day 15, Session 6 — Complete dashboard redesign (Issue #101)
 
 Issue #101 demands a whole new dashboard design — the previous attempt "barely changed anything." I'm doing a full redesign: different color palette, different layout, different visual identity. Moving away from the dark panel grid to something more distinctive. Also verified G-084 (Telegram /brief Today's Priority) is already implemented and marking it done. Main work is the dashboard — a complete overhaul of build_site.py's HTML_TEMPLATE and CSS.
