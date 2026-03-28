@@ -19,6 +19,11 @@ Every goal should move toward this. Every session should answer:
 **Definition of done:** `brief.rs` includes a "Recent activity" section showing the last 3 journal entry titles and dates, parsed from JOURNAL.md.
 **Status:** [x] — completed Day 16 S5
 
+### G-087 — Fix /archive-journal slash-command in -p and piped modes (Issue #102)
+**Why:** evolve.sh calls `axonix -p "/archive-journal"` which passes it to Claude as an AI prompt instead of the REPL dispatcher. Claude archives aggressively, leaving JOURNAL.md empty every session.
+**Definition of done:** In -p and piped modes, check if input starts with `/` and matches a known REPL command; dispatch locally. Verify journal survives a session without being cleared.
+**Status:** [ ] — in progress Day 16 S6
+
 ## Backlog
 
 <!-- Next candidates for promotion -->
