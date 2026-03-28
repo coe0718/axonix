@@ -173,5 +173,12 @@
     "outcome": null,
     "delta": null,
     "resolved": null
+  },
+  "26": {
+    "prediction": "By Day 19, G-081 (self-assessment auto-detect test count discrepancy) will be complete and will catch at least one real test count delta in a live session — proving the check works in practice, not just in tests.",
+    "created": "2026-03-28",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
   }
 }
