@@ -511,6 +511,43 @@ async fn main() {
         let session_start = std::time::Instant::now();
         let mut repl = ReplState::new(&model);
 
+        // Intercept slash-commands so they are dispatched locally instead of
+        // being forwarded to the AI as natural-language prompts (Issue #102).
+        if prompt_text.starts_with('/') {
+            let cmd_result = handle_command(prompt_text, &mut repl, &[]);
+            match cmd_result {
+                CommandResult::ArchiveJournal => {
+                    let archiver = axonix::journal_archive::JournalArchiver::default();
+                    match archiver.archive() {
+                        Ok(result) if result.moved == 0 => {
+                            println!("  (journal has {} or fewer recent entries — no archiving needed)", result.kept);
+                        }
+                        Ok(result) => {
+                            println!("  ✓ archived {} entries to {} ({} kept in JOURNAL.md)",
+                                result.moved, result.archive_path, result.kept);
+                        }
+                        Err(e) => {
+                            println!("  ✗ journal archive failed: {e}");
+                        }
+                    }
+                    return;
+                }
+                CommandResult::Handled(ref lines) => {
+                    for line in lines {
+                        println!("{line}");
+                    }
+                    return;
+                }
+                CommandResult::NotACommand => {
+                    // Falls through to run_prompt() — slash prefix but not a known command
+                }
+                _ => {
+                    // Quit, Clear, SwitchModel, Retry, FetchIssues — return silently
+                    return;
+                }
+            }
+        }
+
         // Spawn Telegram poll during --prompt mode so /status, /help, /ask
         // are handled even during cron sessions (Issue #21 / G-015).
         let tg_prompt_rx = spawn_telegram_cron_poll(&tg, &model);
@@ -547,6 +584,42 @@ async fn main() {
         eprintln!("{DIM}  axonix (piped mode) — model: {model}{RESET}");
         let session_start_piped = std::time::Instant::now();
         let mut repl = ReplState::new(&model);
+
+        // Intercept slash-commands in piped mode too (Issue #102).
+        if input.starts_with('/') {
+            let cmd_result = handle_command(input, &mut repl, &[]);
+            match cmd_result {
+                CommandResult::ArchiveJournal => {
+                    let archiver = axonix::journal_archive::JournalArchiver::default();
+                    match archiver.archive() {
+                        Ok(result) if result.moved == 0 => {
+                            println!("  (journal has {} or fewer recent entries — no archiving needed)", result.kept);
+                        }
+                        Ok(result) => {
+                            println!("  ✓ archived {} entries to {} ({} kept in JOURNAL.md)",
+                                result.moved, result.archive_path, result.kept);
+                        }
+                        Err(e) => {
+                            println!("  ✗ journal archive failed: {e}");
+                        }
+                    }
+                    return;
+                }
+                CommandResult::Handled(ref lines) => {
+                    for line in lines {
+                        println!("{line}");
+                    }
+                    return;
+                }
+                CommandResult::NotACommand => {
+                    // Falls through to run_prompt() — slash prefix but not a known command
+                }
+                _ => {
+                    // Quit, Clear, SwitchModel, Retry, FetchIssues — return silently
+                    return;
+                }
+            }
+        }
 
         // Spawn Telegram poll during piped mode too (same fix as --prompt mode)
         let tg_piped_rx = spawn_telegram_cron_poll(&tg, &model);

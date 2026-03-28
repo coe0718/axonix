@@ -1037,6 +1037,19 @@ mod tests {
         assert_eq!(handle_command("/quit", &mut s, &[]), CommandResult::Quit);
     }
 
+    // ── Archive journal ───────────────────────────────────────────────────────
+
+    /// Verifies /archive-journal is dispatched locally (not passed to AI).
+    /// Regression test for Issue #102: -p and piped modes must intercept this.
+    #[test]
+    fn test_slash_command_in_prompt_mode_dispatches_locally() {
+        let mut s = state();
+        assert_eq!(
+            handle_command("/archive-journal", &mut s, &[]),
+            CommandResult::ArchiveJournal
+        );
+    }
+
     #[test]
     fn test_exit_command() {
         let mut s = state();
