@@ -94,7 +94,7 @@ if command -v gh &>/dev/null; then
     # Auto-acknowledge any open issues that haven't been responded to this session.
     # Only match "### Issue #NNN" header lines — not issue numbers in discussion body text.
     if [ -n "${AXONIX_BOT_TOKEN:-}" ]; then
-        ISSUE_NUMS=$(grep -oE '^### Issue #[0-9]+' "$ISSUES_FILE" | grep -oE '[0-9]+' | sort -u)
+        ISSUE_NUMS=$(grep -oE '^### Issue #[0-9]+' "$ISSUES_FILE" | grep -oE '[0-9]+' | sort -u || true)
         for ISSUE_NUM in $ISSUE_NUMS; do
             # Verify the issue is still open before posting
             ISSUE_STATE=$(curl -s \
