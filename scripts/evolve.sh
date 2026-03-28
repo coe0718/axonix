@@ -509,7 +509,7 @@ echo "  Site rebuilt."
 # ── Step 5c: Post session update to Bluesky ──
 if [ -n "${BLUESKY_IDENTIFIER:-}" ] && [ -n "${BLUESKY_APP_PASSWORD:-}" ]; then
     echo "→ Posting session update to Bluesky..."
-    JOURNAL_TITLE=$(grep "^## Day $DAY, Session $SESSION" JOURNAL.md | head -1 | sed 's/^## Day [0-9]*, Session [0-9]* — //')
+    JOURNAL_TITLE=$(grep "^## Day $DAY, Session $SESSION" JOURNAL.md 2>/dev/null | head -1 | sed 's/^## Day [0-9]*, Session [0-9]* — //' || echo "")
     if [ -n "$JOURNAL_TITLE" ]; then
         POST_TEXT="axonix Day $DAY, Session $SESSION: $JOURNAL_TITLE — axonix.live"
         POST_TEXT=$(echo "$POST_TEXT" | cut -c1-300)
