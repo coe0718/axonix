@@ -114,6 +114,8 @@ pub enum CommandResult {
     FetchIssues(u8),
     /// `/archive-journal` — archive old journal entries to JOURNAL_ARCHIVE.md.
     ArchiveJournal,
+    /// `/memory-search <query>` — search stored observations by keyword.
+    MemorySearch(String),
 }
 
 /// Process a REPL input string. Returns a `CommandResult`.
@@ -158,6 +160,7 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                 "    /recap             Post session recap thread to Bluesky (title, commits, tests)".to_string(),
                 "    /failures          Show logged failure patterns across sessions".to_string(),
                 "    /archive-journal   Archive old journal entries to JOURNAL_ARCHIVE.md".to_string(),
+                "    /memory-search <q>  Search stored observations by keyword".to_string(),
             ];
             if !skill_names.is_empty() {
                 lines.push("    /skills        Show loaded skills".to_string());
@@ -972,6 +975,23 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
         }
 
         "/archive-journal" => CommandResult::ArchiveJournal,
+
+        s if s == "/memory-search" || s.starts_with("/memory-search ") => {
+            let arg = if s == "/memory-search" {
+                ""
+            } else {
+                s.trim_start_matches("/memory-search ").trim()
+            };
+            if arg.is_empty() {
+                CommandResult::Handled(vec![
+                    "  Usage: /memory-search <query>".to_string(),
+                    "  Example: /memory-search rust borrow checker".to_string(),
+                    String::new(),
+                ])
+            } else {
+                CommandResult::MemorySearch(arg.to_string())
+            }
+        }
 
         s if s.starts_with('/') => {
             // /status, /context, /tokens are handled by main (they need agent/session data)

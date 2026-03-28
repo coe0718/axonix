@@ -1,10 +1,11 @@
 //! SQLite-backed structured memory for Axonix (G-075, Issue #91).
 //!
-//! Provides four tables:
-//! - `kv`          — key/value store for agent state
-//! - `sessions`    — per-session records (day, tokens, tests, notes)
-//! - `goals`       — goal tracking (active / backlog / done)
-//! - `predictions` — prediction tracking with outcome/delta/resolved (G-077)
+//! Provides five tables:
+//! - `kv`           — key/value store for agent state
+//! - `sessions`     — per-session records (day, tokens, tests, notes)
+//! - `goals`        — goal tracking (active / backlog / done)
+//! - `predictions`  — prediction tracking with outcome/delta/resolved (G-077)
+//! - `observations` — keyword-searchable observations with tags (G-088)
 //!
 //! # Example
 //! ```rust,no_run
@@ -42,6 +43,18 @@ pub struct GoalRow {
     pub status: String,
     pub created_at: String,
     pub completed_at: Option<String>,
+}
+
+/// A row from the `observations` table, with a computed relevance score.
+#[derive(Debug, Clone)]
+pub struct ObservationRow {
+    pub id: i64,
+    pub key: String,
+    pub text: String,
+    pub tags: String,
+    pub created_at: String,
+    /// Relevance score set by `search_memory`; not stored in DB.
+    pub score: f64,
 }
 
 // ─── Main struct ─────────────────────────────────────────────────────────────
@@ -106,6 +119,15 @@ impl AxonixDb {
                 outcome    TEXT,
                 delta      TEXT,
                 resolved   TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS observations (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                key        TEXT NOT NULL,
+                text       TEXT NOT NULL,
+                tags       TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL,
+                UNIQUE(key)
             );
         ")
     }
@@ -311,6 +333,98 @@ impl AxonixDb {
         })?;
         rows.collect()
     }
+
+    // ─── Observation helpers ──────────────────────────────────────────────────
+
+    /// Store (insert or replace) an observation by key.
+    /// `tags` is a comma-separated list of topic tags (e.g. `"repl,slash-command,bug"`).
+    pub fn observation_store(&self, key: &str, text: &str, tags: &str) -> Result<()> {
+        let now = now_utc();
+        self.conn.execute(
+            "INSERT INTO observations (key, text, tags, created_at)
+             VALUES (?1, ?2, ?3, ?4)
+             ON CONFLICT(key) DO UPDATE SET
+               text       = excluded.text,
+               tags       = excluded.tags,
+               created_at = excluded.created_at",
+            params![key, text, tags, now],
+        )?;
+        Ok(())
+    }
+
+    /// Return up to `limit` observations most relevant to `query`.
+    ///
+    /// Uses keyword overlap scoring:
+    /// - tag token matches contribute 2.0 each
+    /// - text token matches contribute 1.0 each
+    ///
+    /// Only rows with score > 0 are returned.  Tie-breaks by most-recently
+    /// created first.
+    pub fn search_memory(&self, query: &str, limit: usize) -> Result<Vec<ObservationRow>> {
+        let query_tokens = tokenize(query);
+        if query_tokens.is_empty() || limit == 0 {
+            return Ok(vec![]);
+        }
+
+        // Fetch all observations
+        let all = self.observations_list(usize::MAX)?;
+
+        // Score each row
+        let mut scored: Vec<ObservationRow> = all
+            .into_iter()
+            .filter_map(|mut row| {
+                let text_tokens = tokenize(&row.text);
+                let tag_tokens = tokenize(&row.tags);
+                let mut score = 0.0f64;
+                for qt in &query_tokens {
+                    if text_tokens.contains(qt) {
+                        score += 1.0;
+                    }
+                    if tag_tokens.contains(qt) {
+                        score += 2.0;
+                    }
+                }
+                if score > 0.0 {
+                    row.score = score;
+                    Some(row)
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        // Sort: score DESC, then created_at DESC
+        scored.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+                .then_with(|| b.created_at.cmp(&a.created_at))
+        });
+
+        scored.truncate(limit);
+        Ok(scored)
+    }
+
+    /// Return all observations, most recent first.
+    pub fn observations_list(&self, limit: usize) -> Result<Vec<ObservationRow>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, key, text, tags, created_at
+             FROM observations
+             ORDER BY created_at DESC
+             LIMIT ?1",
+        )?;
+        let rows = stmt.query_map(params![limit as i64], |row| {
+            Ok(ObservationRow {
+                id: row.get(0)?,
+                key: row.get(1)?,
+                text: row.get(2)?,
+                tags: row.get(3)?,
+                created_at: row.get(4)?,
+                score: 0.0,
+            })
+        })?;
+        rows.collect()
+    }
 }
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
@@ -365,6 +479,30 @@ fn epoch_to_ymd_hms(secs: u64) -> (u64, u64, u64, u64, u64, u64) {
 
 fn is_leap(y: u64) -> bool {
     (y % 4 == 0 && y % 100 != 0) || y % 400 == 0
+}
+
+/// Tokenize a string for keyword search.
+///
+/// Lowercases, splits on whitespace and non-alphanumeric characters,
+/// filters out stop words, deduplicates, and returns the result.
+fn tokenize(s: &str) -> Vec<String> {
+    const STOP_WORDS: &[&str] = &[
+        "a", "the", "is", "it", "in", "on", "at", "to", "of",
+        "for", "and", "or", "but", "not", "was", "has", "be",
+    ];
+
+    let lower = s.to_lowercase();
+    let mut tokens: Vec<String> = lower
+        .split(|c: char| !c.is_alphanumeric())
+        .filter(|t| !t.is_empty())
+        .filter(|t| !STOP_WORDS.contains(t))
+        .map(|t| t.to_string())
+        .collect();
+
+    // Deduplicate while preserving order
+    let mut seen = std::collections::HashSet::new();
+    tokens.retain(|t| seen.insert(t.clone()));
+    tokens
 }
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
@@ -511,5 +649,84 @@ mod tests {
         let done = db.goals_by_status("done").unwrap();
         assert_eq!(done.len(), 1);
         assert_eq!(done[0].id, "G-004");
+    }
+
+    // ── Observations ─────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_observation_store_and_list() {
+        let db = open_tmp();
+        db.observation_store("obs:1", "rust borrow checker error", "rust,error").unwrap();
+        db.observation_store("obs:2", "repl command dispatch", "repl,slash-command").unwrap();
+        let rows = db.observations_list(10).unwrap();
+        assert_eq!(rows.len(), 2, "should have 2 observations");
+    }
+
+    #[test]
+    fn test_observation_store_upsert() {
+        let db = open_tmp();
+        db.observation_store("obs:dup", "original text", "tag1").unwrap();
+        db.observation_store("obs:dup", "updated text", "tag1,tag2").unwrap();
+        let rows = db.observations_list(10).unwrap();
+        assert_eq!(rows.len(), 1, "upsert should result in only 1 row");
+        assert_eq!(rows[0].text, "updated text", "text should be updated");
+        assert_eq!(rows[0].tags, "tag1,tag2", "tags should be updated");
+    }
+
+    #[test]
+    fn test_search_memory_finds_by_keyword() {
+        let db = open_tmp();
+        db.observation_store("obs:rust", "rust borrow checker error", "rust,error").unwrap();
+        let results = db.search_memory("rust", 10).unwrap();
+        assert!(!results.is_empty(), "search for 'rust' should find the observation");
+        assert_eq!(results[0].key, "obs:rust");
+        assert!(results[0].score > 0.0);
+    }
+
+    #[test]
+    fn test_search_memory_tags_score_higher() {
+        let db = open_tmp();
+        // "repl" in tags → score 2.0
+        db.observation_store("obs:tag", "something about commands", "repl,commands").unwrap();
+        // "repl" only in text → score 1.0
+        db.observation_store("obs:text", "the repl handles user input", "").unwrap();
+        let results = db.search_memory("repl", 10).unwrap();
+        assert_eq!(results.len(), 2, "both observations should match");
+        assert_eq!(results[0].key, "obs:tag",
+            "tag match should rank higher than text match");
+        assert!(results[0].score > results[1].score,
+            "tag score ({}) should beat text score ({})", results[0].score, results[1].score);
+    }
+
+    #[test]
+    fn test_search_memory_no_results() {
+        let db = open_tmp();
+        db.observation_store("obs:a", "something about rust", "rust").unwrap();
+        let results = db.search_memory("xyzzy nothing", 10).unwrap();
+        assert!(results.is_empty(), "search for nonsense words should return empty");
+    }
+
+    #[test]
+    fn test_search_memory_limit() {
+        let db = open_tmp();
+        for i in 0..5 {
+            db.observation_store(
+                &format!("obs:{i}"),
+                &format!("rust error number {i}"),
+                "rust,error",
+            ).unwrap();
+        }
+        let results = db.search_memory("rust", 3).unwrap();
+        assert_eq!(results.len(), 3, "limit should cap results at 3");
+    }
+
+    #[test]
+    fn test_search_memory_filters_stop_words() {
+        let db = open_tmp();
+        db.observation_store("obs:sw", "database error occurred", "error,database").unwrap();
+        // "the" is a stop word; "error" is meaningful
+        let results = db.search_memory("the error", 10).unwrap();
+        assert!(!results.is_empty(), "should match on 'error' even though 'the' is filtered");
+        assert_eq!(results[0].key, "obs:sw");
     }
 }

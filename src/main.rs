@@ -532,6 +532,37 @@ async fn main() {
                     }
                     return;
                 }
+                CommandResult::MemorySearch(ref query) => {
+                    match axonix::db::AxonixDb::open_default() {
+                        Err(e) => println!("  ✗ DB error: {e}"),
+                        Ok(db) => match db.search_memory(query, 20) {
+                            Err(e) => println!("  ✗ search error: {e}"),
+                            Ok(results) if results.is_empty() => {
+                                println!("  No observations match \"{query}\".");
+                            }
+                            Ok(results) => {
+                                let sep = "─".repeat(45);
+                                println!("  Memory search: \"{query}\"");
+                                println!("  {sep}");
+                                for row in &results {
+                                    let preview: String = row.text.chars().take(200).collect();
+                                    let date = &row.created_at[..10.min(row.created_at.len())];
+                                    println!("  [{}] — score: {}", row.key, row.score);
+                                    println!("    {preview}");
+                                    if !row.tags.is_empty() {
+                                        println!("    tags: {}", row.tags);
+                                    }
+                                    println!("    created: {date}");
+                                    println!("  {sep}");
+                                }
+                                println!("  ({} result{})",
+                                    results.len(),
+                                    if results.len() == 1 { "" } else { "s" });
+                            }
+                        },
+                    }
+                    return;
+                }
                 CommandResult::Handled(ref lines) => {
                     for line in lines {
                         println!("{line}");
@@ -602,6 +633,37 @@ async fn main() {
                         Err(e) => {
                             println!("  ✗ journal archive failed: {e}");
                         }
+                    }
+                    return;
+                }
+                CommandResult::MemorySearch(ref query) => {
+                    match axonix::db::AxonixDb::open_default() {
+                        Err(e) => println!("  ✗ DB error: {e}"),
+                        Ok(db) => match db.search_memory(query, 20) {
+                            Err(e) => println!("  ✗ search error: {e}"),
+                            Ok(results) if results.is_empty() => {
+                                println!("  No observations match \"{query}\".");
+                            }
+                            Ok(results) => {
+                                let sep = "─".repeat(45);
+                                println!("  Memory search: \"{query}\"");
+                                println!("  {sep}");
+                                for row in &results {
+                                    let preview: String = row.text.chars().take(200).collect();
+                                    let date = &row.created_at[..10.min(row.created_at.len())];
+                                    println!("  [{}] — score: {}", row.key, row.score);
+                                    println!("    {preview}");
+                                    if !row.tags.is_empty() {
+                                        println!("    tags: {}", row.tags);
+                                    }
+                                    println!("    created: {date}");
+                                    println!("  {sep}");
+                                }
+                                println!("  ({} result{})",
+                                    results.len(),
+                                    if results.len() == 1 { "" } else { "s" });
+                            }
+                        },
                     }
                     return;
                 }
@@ -868,6 +930,43 @@ async fn main() {
                     }
                     Err(e) => {
                         println!("{RED}  ✗ journal archive failed: {e}{RESET}\n");
+                    }
+                }
+                continue;
+            }
+
+            CommandResult::MemorySearch(ref query) => {
+                let sep = "─".repeat(45);
+                match axonix::db::AxonixDb::open_default() {
+                    Err(e) => {
+                        println!("{RED}  ✗ DB error: {e}{RESET}\n");
+                    }
+                    Ok(db) => {
+                        match db.search_memory(query, 20) {
+                            Err(e) => {
+                                println!("{RED}  ✗ search error: {e}{RESET}\n");
+                            }
+                            Ok(results) if results.is_empty() => {
+                                println!("  No observations match \"{query}\".\n");
+                            }
+                            Ok(results) => {
+                                println!("  Memory search: \"{query}\"");
+                                println!("  {sep}");
+                                for row in &results {
+                                    let preview: String = row.text.chars().take(200).collect();
+                                    let date = &row.created_at[..10.min(row.created_at.len())];
+                                    println!("  [{}] — score: {}", row.key, row.score);
+                                    println!("    {preview}");
+                                    if !row.tags.is_empty() {
+                                        println!("    tags: {}", row.tags);
+                                    }
+                                    println!("    created: {date}");
+                                    println!("  {sep}");
+                                }
+                                println!("  ({} result{})\n", results.len(),
+                                    if results.len() == 1 { "" } else { "s" });
+                            }
+                        }
                     }
                 }
                 continue;
