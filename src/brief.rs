@@ -59,6 +59,8 @@ pub struct Brief {
     pub meta_health: Option<crate::meta_health::MetaHealthCheck>,
     /// Synthesized priority: the single most important thing to address.
     pub today_priority: String,
+    /// Last 3 journal entry titles from JOURNAL.md.
+    pub recent_journal: Vec<String>,
 }
 
 /// One session row from METRICS.md.
@@ -133,6 +135,8 @@ impl Brief {
             }
         };
 
+        let recent_journal = parse_recent_journal_entries(3);
+
         let mut brief = Brief {
             active_goals,
             open_predictions,
@@ -151,6 +155,7 @@ impl Brief {
             },
             meta_health: Some(crate::meta_health::MetaHealthCheck::run()),
             today_priority: String::new(),
+            recent_journal,
         };
         brief.today_priority = synthesize_priority(&brief);
         brief
@@ -168,6 +173,15 @@ impl Brief {
         out.push_str("🎯 TODAY'S PRIORITY\n");
         out.push_str(&format!("   → {}\n", self.today_priority));
         out.push('\n');
+
+        // Recent journal activity
+        if !self.recent_journal.is_empty() {
+            out.push_str("📓 Recent Activity\n");
+            for title in &self.recent_journal {
+                out.push_str(&format!("  • {title}\n"));
+            }
+            out.push('\n');
+        }
 
         // Active goals
         out.push_str("📋 ACTIVE GOALS\n");
@@ -316,6 +330,15 @@ impl Brief {
         out.push_str("🎯 *Today's Priority*\n");
         out.push_str(&format!("→ {}\n", self.today_priority));
         out.push('\n');
+
+        // Recent journal activity (compact)
+        if !self.recent_journal.is_empty() {
+            out.push_str("📓 *Recent Activity*\n");
+            for title in &self.recent_journal {
+                out.push_str(&format!("• {title}\n"));
+            }
+            out.push('\n');
+        }
 
         // Goals
         out.push_str("📋 *Active Goals*\n");
@@ -639,6 +662,38 @@ pub fn parse_recent_metrics(n: usize) -> Vec<SessionSummary> {
         .collect()
 }
 
+/// Parse journal entry titles (lines starting with `## `) from a string.
+///
+/// Returns the last `n` such headings (full text after `## `), preserving
+/// document order (oldest → newest within the slice).
+pub fn parse_journal_entries_from_str(content: &str, n: usize) -> Vec<String> {
+    let all: Vec<String> = content
+        .lines()
+        .filter(|l| l.starts_with("## "))
+        .map(|l| l.trim_start_matches("## ").to_string())
+        .collect();
+    let skip = all.len().saturating_sub(n);
+    all.into_iter().skip(skip).collect()
+}
+
+/// Read JOURNAL.md and return the last `n` entry headings.
+///
+/// Looks first at the workspace root (`/workspace/JOURNAL.md`), then falls
+/// back to `JOURNAL.md` relative to the current working directory. Returns an
+/// empty vec if the file does not exist or cannot be read.
+pub fn parse_recent_journal_entries(n: usize) -> Vec<String> {
+    let paths = [
+        Path::new("/workspace/JOURNAL.md"),
+        Path::new("JOURNAL.md"),
+    ];
+    for path in &paths {
+        if let Ok(content) = std::fs::read_to_string(path) {
+            return parse_journal_entries_from_str(&content, n);
+        }
+    }
+    vec![]
+}
+
 /// Parse a single METRICS.md table row.
 /// Format: | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 fn parse_metrics_row(line: &str) -> Option<SessionSummary> {
@@ -893,6 +948,56 @@ mod tests {
         assert!(goals.is_empty(), "checked goals should not be included");
     }
 
+    // ── parse_journal_entries_from_str ──────────────────────────────────────────
+
+    #[test]
+    fn test_parse_recent_journal_entries_empty() {
+        // Empty content: no ## headings → empty vec
+        let result = parse_journal_entries_from_str("", 3);
+        assert!(result.is_empty(), "empty content should return empty vec");
+
+        // Content with no ## headings
+        let result = parse_journal_entries_from_str("# Title\nsome text\n### Sub", 3);
+        assert!(result.is_empty(), "no ## headings should return empty vec");
+    }
+
+    #[test]
+    fn test_parse_recent_journal_entries_finds_headings() {
+        let content = "\
+# Journal\n\
+\n\
+## Day 15, Session 5 — Dashboard: containers panel\n\
+Some body text.\n\
+\n\
+## Day 15, Session 6 — Complete dashboard redesign\n\
+More text.\n\
+\n\
+## Day 16, Session 5 — Morning brief: surface recent journal activity\n\
+";
+        let result = parse_journal_entries_from_str(content, 3);
+        assert_eq!(result.len(), 3);
+        assert_eq!(result[0], "Day 15, Session 5 — Dashboard: containers panel");
+        assert_eq!(result[1], "Day 15, Session 6 — Complete dashboard redesign");
+        assert_eq!(result[2], "Day 16, Session 5 — Morning brief: surface recent journal activity");
+    }
+
+    #[test]
+    fn test_parse_recent_journal_entries_respects_limit() {
+        let content = "\
+## Day 11, Session 1 — Alpha\n\
+## Day 12, Session 2 — Beta\n\
+## Day 13, Session 3 — Gamma\n\
+## Day 14, Session 4 — Delta\n\
+## Day 15, Session 5 — Epsilon\n\
+";
+        // Given 5 headings, n=3 should return only the last 3
+        let result = parse_journal_entries_from_str(content, 3);
+        assert_eq!(result.len(), 3, "should return exactly 3 entries");
+        assert_eq!(result[0], "Day 13, Session 3 — Gamma");
+        assert_eq!(result[1], "Day 14, Session 4 — Delta");
+        assert_eq!(result[2], "Day 15, Session 5 — Epsilon");
+    }
+
     // ── truncate_str ─────────────────────────────────────────────────────────────
 
     #[test]
@@ -948,6 +1053,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("MORNING BRIEF"), "should contain header");
@@ -976,6 +1082,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("no active goals"), "should note empty goals");
@@ -1006,6 +1113,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Axonix Morning Brief*"), "should have bold header");
@@ -1029,6 +1137,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("deploy needed"), "note should appear in output");
@@ -1088,6 +1197,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("end of brief"), "should have end marker");
@@ -1114,6 +1224,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("Goal one"));
@@ -1141,6 +1252,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("#1"), "should show prediction IDs");
@@ -1166,6 +1278,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Axonix Morning Brief*"), "should have header");
@@ -1190,6 +1303,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_telegram();
         // format_telegram doesn't render notes (compact format) — but must not panic
@@ -1214,6 +1328,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("alpha"));
@@ -1259,6 +1374,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("Day 7"), "should show day number");
@@ -1328,6 +1444,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("SYSTEM HEALTH"), "should contain SYSTEM HEALTH section");
@@ -1354,6 +1471,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("SYSTEM HEALTH"), "should still contain section header");
@@ -1382,6 +1500,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("Health:"), "telegram brief should contain Health: line");
@@ -1441,6 +1560,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("BLUESKY"), "should contain BLUESKY section");
@@ -1466,6 +1586,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         assert!(!output.contains("BLUESKY"), "no bluesky_stats → no BLUESKY section");
@@ -1488,6 +1609,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Bluesky*"), "telegram should show *Bluesky* label");
@@ -1512,6 +1634,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let terminal = brief.format_terminal();
         assert!(terminal.contains("(never)"), "no last date should display (never)");
@@ -1545,6 +1668,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("calibration:"), "terminal should show calibration line");
@@ -1570,6 +1694,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         assert!(!output.contains("calibration:"), "no calibration → should not show calibration line");
@@ -1599,6 +1724,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("📊 Calibration:"), "telegram should show calibration emoji line");
@@ -1623,6 +1749,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_telegram();
         assert!(!output.contains("📊 Calibration:"), "no calibration → should not show calibration line");
@@ -1653,6 +1780,7 @@ mod tests {
         pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("LAST SESSION"), "should contain LAST SESSION header");
@@ -1677,6 +1805,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("LAST SESSION"), "header still present when None");
@@ -1709,6 +1838,7 @@ mod tests {
         pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("G-064: prediction calibration"), "should show first completed item");
@@ -1745,6 +1875,7 @@ mod tests {
         pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("item five"), "fifth item should appear");
@@ -1774,6 +1905,7 @@ mod tests {
         pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("624 tests"), "should show numeric test count");
@@ -1802,6 +1934,7 @@ mod tests {
         pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("? tests"), "should show '? tests' when count is None");
@@ -1832,6 +1965,7 @@ mod tests {
         pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Last Session*"), "telegram should show bold Last Session header");
@@ -1856,6 +1990,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Last Session*"), "telegram header still present when None");
@@ -1888,6 +2023,7 @@ mod tests {
         pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("G-064: prediction calibration"), "telegram should show completed items");
@@ -1917,6 +2053,7 @@ mod tests {
         pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("624 tests"), "telegram should show numeric test count");
@@ -1945,6 +2082,7 @@ mod tests {
         pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("? tests"), "telegram should show '? tests' when count is None");
@@ -1975,6 +2113,7 @@ mod tests {
         pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let terminal = brief.format_terminal();
         assert!(terminal.contains("no completed items recorded"), "empty completed should show fallback in terminal");
@@ -2007,6 +2146,7 @@ mod tests {
         pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         // The full 80-char string should NOT appear (truncated to 60)
@@ -2033,6 +2173,7 @@ mod tests {
             pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("📝 LAST SESSION"), "LAST SESSION header must always appear in terminal brief");
@@ -2061,6 +2202,7 @@ mod tests {
         pogo: None,
         meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let terminal = brief.format_terminal();
         assert!(terminal.contains("2026-03-23"), "terminal should show date next to session name");
@@ -2094,6 +2236,7 @@ mod tests {
             pogo: None,
             meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
 
         // Should not panic even with a fresh (non-existent) DB path.
@@ -2140,6 +2283,7 @@ mod tests {
             pogo: None,
             meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
 
         brief.log_to_db_at(&db_path);
@@ -2181,6 +2325,7 @@ mod tests {
             pogo: None,
             meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
 
         brief.log_to_db_at(&db_path);
@@ -2234,6 +2379,7 @@ mod tests {
             pogo: None,
             meta_health: Some(mh),
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         assert!(brief.meta_health.is_some(), "meta_health should be Some when set");
     }
@@ -2261,6 +2407,7 @@ mod tests {
             pogo: None,
             meta_health: Some(mh),
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("META-SYSTEM"), "format_terminal should include META-SYSTEM section: {output}");
@@ -2291,6 +2438,7 @@ mod tests {
             pogo: None,
             meta_health: Some(mh),
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_telegram();
         assert!(
@@ -2317,6 +2465,7 @@ mod tests {
             pogo: None,
             meta_health: None,
             today_priority: String::new(),
+            recent_journal: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("META-SYSTEM"), "META-SYSTEM section always present");
@@ -2343,6 +2492,7 @@ mod tests {
                 pogo: None,
                 meta_health: None,
                 today_priority: String::new(),
+                recent_journal: vec![],
             }
         }
     }
