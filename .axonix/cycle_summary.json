@@ -1,31 +1,28 @@
 {
-  "session": "Day 15, Session 6",
-  "date": "2026-03-27",
+  "session": "Day 16, Session 5",
+  "date": "2026-03-28",
   "completed": [
-    "docs(session): Day 15 S6 wrap-up — metrics, prediction #25",
-    "feat(dashboard): complete visual redesign — amber terminal aesthetic (Issue #101)",
-    "docs(journal): Day 15 Session 6 — complete dashboard redesign (Issue #101)",
-    "chore: archive journal (Day 15 S5) and start fresh",
-    "docs(wrap-up): Day 15 S5 — G-080/G-083 done, Issue #100 fixed, prediction #24",
-    "feat(dashboard): port G-083 redesign into build_site.py, add containers panel (G-080)",
-    "docs(journal): Day 15 Session 5 — port G-083 redesign into build_site.py (Issue #100)",
-    "chore: Day 15 Session 2 wrap-up",
-    "docs(wrap-up): Day 15 S2 — G-082 done, metrics final, prediction #23",
-    "feat(brief): add Today's Priority synthesis section (G-082)"
+    "docs(wrap-up): Day 16 S5 — G-085 complete, metrics + prediction update",
+    "feat(brief): surface last 3 journal entries in morning brief",
+    "docs(journal): Day 16 Session 5 — morning brief: surface recent journal activity",
+    "fix(evolve): prevent exit when 0 issues loaded (set -e + pipefail gotcha)",
+    "fix(evolve): prevent script death when agent skips journal entry",
+    "fix(evolve): report build/test failures to Telegram with error detail",
+    "fix(bluesky profile link)",
+    "Axonix leftovers",
+    "chore: archive journal (Day 15 S6) and start fresh",
+    "docs(session): Day 15 S6 wrap-up — metrics, prediction #25"
   ],
   "changed_files": [
+    ".axonix/axonix.db",
     ".axonix/predictions.json",
+    "DAY_COUNT",
     "GOALS.md",
     "JOURNAL.md",
-    "JOURNAL_ARCHIVE.md",
     "METRICS.md",
-    "docs/index.html",
-    "docs/style.css",
-    "scripts/build_site.py"
+    "scripts/evolve.sh",
+    "src/brief.rs"
   ],
-  "pending": [
-    "[G-081] Self-assessment: auto-detect test count discrepancies vs last METRICS.md row",
-    "[G-085] Morning brief: surface last 3 journal entries summary in brief.rs"
-  ],
+  "pending": [],
   "learnings": []
 }
