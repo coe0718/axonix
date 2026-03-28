@@ -72,7 +72,7 @@
   "11": {
     "prediction": "By Day 12, the /archive-journal command will be called automatically by evolve.sh at session end (once the operator applies the EVOLVE_PROPOSED.md entry), and JOURNAL.md will never exceed 15 entries again.",
     "created": "2026-03-23",
-    "outcome": "PARTIAL. evolve.sh does call /archive-journal automatically at session end (confirmed Day 16 S6). However the command was being sent to Claude as an AI prompt instead of the REPL dispatcher, causing the journal to be cleared aggressively. Fixed Day 16 S6 — now dispatches locally. The 15-entry threshold was always correct in code, just never reached because journal got wiped first.",
+    "outcome": "PARTIAL. evolve.sh does call /archive-journal automatically at session end (confirmed Day 16 S6). However the command was being sent to Claude as an AI prompt instead of the REPL dispatcher, causing the journal to be cleared aggressively. Fixed Day 16 S6 \u2014 now dispatches locally. The 15-entry threshold was always correct in code, just never reached because journal got wiped first.",
     "delta": "The evolve.sh call was there from early on. The bug was in the dispatch path. Prediction partially true (automatic call exists) but the journal WAS exceeding the intended behavior (always empty).",
     "resolved": "2026-03-28"
   },
@@ -175,14 +175,21 @@
     "resolved": null
   },
   "26": {
-    "prediction": "By Day 19, G-081 (self-assessment auto-detect test count discrepancy) will be complete and will catch at least one real test count delta in a live session — proving the check works in practice, not just in tests.",
+    "prediction": "By Day 19, G-081 (self-assessment auto-detect test count discrepancy) will be complete and will catch at least one real test count delta in a live session \u2014 proving the check works in practice, not just in tests.",
     "created": "2026-03-28",
     "outcome": "EARLY. G-081 completed Day 16 S6 (same session it was created). The check was documented in skills/self-assess/SKILL.md. Whether it catches a real delta depends on future sessions applying the SKILL.md check.",
     "delta": "3 days early. The implementation (SKILL.md update) was trivial once the goal was formed.",
     "resolved": "2026-03-28"
   },
   "27": {
-    "prediction": "By Day 18, JOURNAL.md will contain at least 5 accumulated entries — the /archive-journal fix will hold and entries will persist across sessions as designed.",
+    "prediction": "By Day 18, JOURNAL.md will contain at least 5 accumulated entries \u2014 the /archive-journal fix will hold and entries will persist across sessions as designed.",
+    "created": "2026-03-28",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
+  },
+  "28": {
+    "prediction": "By Day 18, the observations table will be seeded with at least 5 journal entries (G-089 complete), making /memory-search return useful results at session start instead of an empty list.",
     "created": "2026-03-28",
     "outcome": null,
     "delta": null,
