@@ -61,6 +61,10 @@ pub struct Brief {
     pub today_priority: String,
     /// Last 3 journal entry titles from JOURNAL.md.
     pub recent_journal: Vec<String>,
+    /// Predictions due within 3 days (id, deadline_date, text).
+    pub predictions_due_soon: Vec<(u32, String, String)>,
+    /// Top memory-search results for the current active goal (text, score).
+    pub memory_context: Vec<(String, f64)>,
 }
 
 /// One session row from METRICS.md.
@@ -137,6 +141,13 @@ impl Brief {
 
         let recent_journal = parse_recent_journal_entries(3);
 
+        let predictions_due_soon = collect_predictions_due_soon();
+        let memory_context = if !active_goals.is_empty() {
+            collect_memory_context(&active_goals[0])
+        } else {
+            vec![]
+        };
+
         let mut brief = Brief {
             active_goals,
             open_predictions,
@@ -156,6 +167,8 @@ impl Brief {
             meta_health: Some(crate::meta_health::MetaHealthCheck::run()),
             today_priority: String::new(),
             recent_journal,
+            predictions_due_soon,
+            memory_context,
         };
         brief.today_priority = synthesize_priority(&brief);
         brief
@@ -179,6 +192,24 @@ impl Brief {
             out.push_str("📓 Recent Activity\n");
             for title in &self.recent_journal {
                 out.push_str(&format!("  • {title}\n"));
+            }
+            out.push('\n');
+        }
+
+        // Predictions due soon
+        if !self.predictions_due_soon.is_empty() {
+            out.push_str("⏰ DUE SOON\n");
+            for (id, date, text) in &self.predictions_due_soon {
+                out.push_str(&format!("   #{id} [{date}] {}\n", truncate_str(text, 60)));
+            }
+            out.push('\n');
+        }
+
+        // Memory context for active goal
+        if !self.memory_context.is_empty() {
+            out.push_str("🧠 MEMORY CONTEXT\n");
+            for (text, score) in &self.memory_context {
+                out.push_str(&format!("   [{:.2}] {}\n", score, truncate_str(text, 70)));
             }
             out.push('\n');
         }
@@ -336,6 +367,24 @@ impl Brief {
             out.push_str("📓 *Recent Activity*\n");
             for title in &self.recent_journal {
                 out.push_str(&format!("• {title}\n"));
+            }
+            out.push('\n');
+        }
+
+        // Predictions due soon (Telegram compact)
+        if !self.predictions_due_soon.is_empty() {
+            out.push_str("⏰ *Due Soon*\n");
+            for (id, _date, text) in &self.predictions_due_soon {
+                out.push_str(&format!("• #{id} {}\n", truncate_str(text, 50)));
+            }
+            out.push('\n');
+        }
+
+        // Memory context (Telegram compact)
+        if !self.memory_context.is_empty() {
+            out.push_str("🧠 *Memory Context*\n");
+            for (text, score) in self.memory_context.iter().take(2) {
+                out.push_str(&format!("• [{:.2}] {}\n", score, truncate_str(text, 50)));
             }
             out.push('\n');
         }
@@ -858,6 +907,63 @@ fn synthesize_priority(brief: &Brief) -> String {
     "Nothing critical — proceed with active goal".to_string()
 }
 
+/// Collect predictions due within 3 days (have "By Day N" where N ≤ current_day + 3).
+///
+/// Uses the DAY_COUNT env var (format: "N YYYY-MM-DD") to determine the current day.
+/// Returns an empty vec when DAY_COUNT is unset or zero, or when no predictions match.
+fn collect_predictions_due_soon() -> Vec<(u32, String, String)> {
+    let open = collect_open_predictions();
+    let current_day: u32 = std::env::var("DAY_COUNT")
+        .unwrap_or_default()
+        .split_whitespace()
+        .next()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(0);
+
+    if current_day == 0 {
+        return vec![];
+    }
+
+    let threshold = current_day + 3;
+
+    open.into_iter()
+        .filter(|(_id, _date, text)| {
+            // Look for "by day N" (case-insensitive) and extract N
+            let lower = text.to_lowercase();
+            if let Some(pos) = lower.find("by day ") {
+                let rest = &text[pos + 7..];
+                let num_str: String = rest
+                    .chars()
+                    .take_while(|c| c.is_ascii_digit())
+                    .collect();
+                if let Ok(n) = num_str.parse::<u32>() {
+                    return n <= threshold;
+                }
+            }
+            false
+        })
+        .collect()
+}
+
+/// Search the axonix DB memory for the top `limit` results matching `goal_title`.
+///
+/// Returns an empty vec when the DB is unavailable, the query is empty, or no
+/// results are found — never panics.
+fn collect_memory_context(goal_title: &str) -> Vec<(String, f64)> {
+    if goal_title.is_empty() {
+        return vec![];
+    }
+    match crate::db::AxonixDb::open_default() {
+        Ok(db) => db
+            .search_memory(goal_title, 3)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|row| (row.text, row.score))
+            .collect(),
+        Err(_) => vec![],
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1054,6 +1160,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("MORNING BRIEF"), "should contain header");
@@ -1083,6 +1191,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("no active goals"), "should note empty goals");
@@ -1114,6 +1224,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Axonix Morning Brief*"), "should have bold header");
@@ -1138,6 +1250,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("deploy needed"), "note should appear in output");
@@ -1198,6 +1312,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("end of brief"), "should have end marker");
@@ -1225,6 +1341,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("Goal one"));
@@ -1253,6 +1371,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("#1"), "should show prediction IDs");
@@ -1279,6 +1399,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Axonix Morning Brief*"), "should have header");
@@ -1304,6 +1426,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_telegram();
         // format_telegram doesn't render notes (compact format) — but must not panic
@@ -1329,6 +1453,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("alpha"));
@@ -1375,6 +1501,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("Day 7"), "should show day number");
@@ -1445,6 +1573,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("SYSTEM HEALTH"), "should contain SYSTEM HEALTH section");
@@ -1472,6 +1602,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("SYSTEM HEALTH"), "should still contain section header");
@@ -1501,6 +1633,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("Health:"), "telegram brief should contain Health: line");
@@ -1561,6 +1695,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("BLUESKY"), "should contain BLUESKY section");
@@ -1587,6 +1723,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         assert!(!output.contains("BLUESKY"), "no bluesky_stats → no BLUESKY section");
@@ -1610,6 +1748,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Bluesky*"), "telegram should show *Bluesky* label");
@@ -1635,6 +1775,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let terminal = brief.format_terminal();
         assert!(terminal.contains("(never)"), "no last date should display (never)");
@@ -1669,6 +1811,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("calibration:"), "terminal should show calibration line");
@@ -1695,6 +1839,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         assert!(!output.contains("calibration:"), "no calibration → should not show calibration line");
@@ -1725,6 +1871,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("📊 Calibration:"), "telegram should show calibration emoji line");
@@ -1750,6 +1898,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_telegram();
         assert!(!output.contains("📊 Calibration:"), "no calibration → should not show calibration line");
@@ -1781,6 +1931,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("LAST SESSION"), "should contain LAST SESSION header");
@@ -1806,6 +1958,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("LAST SESSION"), "header still present when None");
@@ -1839,6 +1993,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("G-064: prediction calibration"), "should show first completed item");
@@ -1876,6 +2032,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("item five"), "fifth item should appear");
@@ -1906,6 +2064,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("624 tests"), "should show numeric test count");
@@ -1935,6 +2095,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("? tests"), "should show '? tests' when count is None");
@@ -1966,6 +2128,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Last Session*"), "telegram should show bold Last Session header");
@@ -1991,6 +2155,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Last Session*"), "telegram header still present when None");
@@ -2024,6 +2190,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("G-064: prediction calibration"), "telegram should show completed items");
@@ -2054,6 +2222,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("624 tests"), "telegram should show numeric test count");
@@ -2083,6 +2253,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("? tests"), "telegram should show '? tests' when count is None");
@@ -2114,6 +2286,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let terminal = brief.format_terminal();
         assert!(terminal.contains("no completed items recorded"), "empty completed should show fallback in terminal");
@@ -2147,6 +2321,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         // The full 80-char string should NOT appear (truncated to 60)
@@ -2174,6 +2350,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("📝 LAST SESSION"), "LAST SESSION header must always appear in terminal brief");
@@ -2203,6 +2381,8 @@ More text.\n\
         meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let terminal = brief.format_terminal();
         assert!(terminal.contains("2026-03-23"), "terminal should show date next to session name");
@@ -2237,6 +2417,8 @@ More text.\n\
             meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
 
         // Should not panic even with a fresh (non-existent) DB path.
@@ -2284,6 +2466,8 @@ More text.\n\
             meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
 
         brief.log_to_db_at(&db_path);
@@ -2326,6 +2510,8 @@ More text.\n\
             meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
 
         brief.log_to_db_at(&db_path);
@@ -2380,6 +2566,8 @@ More text.\n\
             meta_health: Some(mh),
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         assert!(brief.meta_health.is_some(), "meta_health should be Some when set");
     }
@@ -2408,6 +2596,8 @@ More text.\n\
             meta_health: Some(mh),
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("META-SYSTEM"), "format_terminal should include META-SYSTEM section: {output}");
@@ -2439,6 +2629,8 @@ More text.\n\
             meta_health: Some(mh),
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_telegram();
         assert!(
@@ -2466,6 +2658,8 @@ More text.\n\
             meta_health: None,
             today_priority: String::new(),
             recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("META-SYSTEM"), "META-SYSTEM section always present");
@@ -2493,6 +2687,8 @@ More text.\n\
                 meta_health: None,
                 today_priority: String::new(),
                 recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
             }
         }
     }
@@ -2652,4 +2848,88 @@ More text.\n\
         let goals_pos = output.find("Active Goals").unwrap();
         assert!(priority_pos < goals_pos, "priority section should appear before active goals in telegram");
     }
+
+    // ── collect_predictions_due_soon ─────────────────────────────────────────────
+
+    #[test]
+    fn test_collect_predictions_due_soon_empty_when_no_day_count() {
+        // When DAY_COUNT is not set (or unset), collect_predictions_due_soon returns empty.
+        std::env::remove_var("DAY_COUNT");
+        let result = collect_predictions_due_soon();
+        assert!(result.is_empty(), "should return empty when DAY_COUNT is not set");
+    }
+
+    #[test]
+    fn test_collect_predictions_due_soon_parses_by_day() {
+        // Directly test the "By Day N" parsing logic.
+        // "By Day 20" with current day 17 → threshold 20 → 20 <= 20 → included
+        // "By Day 25" with current day 17 → threshold 20 → 25 > 20 → excluded
+        let predictions: Vec<(u32, String, String)> = vec![
+            (1, "2026-01-01".to_string(), "By Day 20, the X will happen".to_string()),
+            (2, "2026-01-02".to_string(), "By Day 25, something else".to_string()),
+            (3, "2026-01-03".to_string(), "By Day 18, another thing".to_string()),
+        ];
+        let current_day: u32 = 17;
+        let threshold = current_day + 3; // 20
+
+        let due_soon: Vec<_> = predictions
+            .iter()
+            .filter(|(_id, _date, text)| {
+                let lower = text.to_lowercase();
+                if let Some(pos) = lower.find("by day ") {
+                    let rest = &text[pos + 7..];
+                    let num_str: String = rest
+                        .chars()
+                        .take_while(|c| c.is_ascii_digit())
+                        .collect();
+                    if let Ok(n) = num_str.parse::<u32>() {
+                        return n <= threshold;
+                    }
+                }
+                false
+            })
+            .collect();
+
+        assert_eq!(due_soon.len(), 2, "Day 20 and Day 18 should be included (threshold=20)");
+        assert!(due_soon.iter().any(|(id, _, _)| *id == 1), "Day 20 prediction should be included");
+        assert!(due_soon.iter().any(|(id, _, _)| *id == 3), "Day 18 prediction should be included");
+        assert!(!due_soon.iter().any(|(id, _, _)| *id == 2), "Day 25 prediction should NOT be included");
+    }
+
+    #[test]
+    fn test_brief_format_terminal_shows_due_soon() {
+        let mut b = Brief::test_empty();
+        b.predictions_due_soon = vec![
+            (7, "2026-04-01".to_string(), "By Day 20, tests will pass".to_string()),
+        ];
+        let output = b.format_terminal();
+        assert!(output.contains("⏰ DUE SOON"), "terminal should show DUE SOON section");
+        assert!(output.contains("#7"), "should show prediction id");
+        assert!(output.contains("By Day 20"), "should show prediction text");
+    }
+
+    #[test]
+    fn test_brief_format_terminal_shows_memory_context() {
+        let mut b = Brief::test_empty();
+        b.memory_context = vec![
+            ("rust borrow checker error in module X".to_string(), 0.92),
+            ("repl command dispatch pattern".to_string(), 0.75),
+        ];
+        let output = b.format_terminal();
+        assert!(output.contains("🧠 MEMORY CONTEXT"), "terminal should show MEMORY CONTEXT section");
+        assert!(output.contains("rust borrow checker"), "should show first memory result");
+        assert!(output.contains("0.92"), "should show relevance score");
+    }
+
+    #[test]
+    fn test_brief_format_telegram_shows_due_soon() {
+        let mut b = Brief::test_empty();
+        b.predictions_due_soon = vec![
+            (12, "2026-04-05".to_string(), "By Day 22, deploy to prod".to_string()),
+        ];
+        let output = b.format_telegram();
+        assert!(output.contains("⏰ *Due Soon*"), "telegram should show Due Soon section");
+        assert!(output.contains("#12"), "should show prediction id in telegram");
+    }
 }
+
