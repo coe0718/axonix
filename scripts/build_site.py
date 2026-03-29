@@ -39,6 +39,36 @@ def get_docker_containers():
         return []
 
 
+def get_all_observations() -> list:
+    """Query axonix.db for ALL observations ordered by created_at DESC. Returns list of dicts."""
+    import sqlite3
+    db_path = ROOT / ".axonix" / "axonix.db"
+    if not db_path.exists():
+        return []
+    try:
+        con = sqlite3.connect(str(db_path))
+        con.row_factory = sqlite3.Row
+        cur = con.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='observations'")
+        if not cur.fetchone():
+            con.close()
+            return []
+        cur.execute("SELECT key, text, tags, created_at FROM observations ORDER BY created_at DESC")
+        rows = cur.fetchall()
+        con.close()
+        return [
+            {
+                "key": r["key"],
+                "text": r["text"],
+                "tags": r["tags"] or "",
+                "created_at": r["created_at"] or "",
+            }
+            for r in rows
+        ]
+    except Exception:
+        return []
+
+
 def get_memory_context(query: str) -> list:
     """Query axonix.db for top 3 observations matching query. Returns list of dicts."""
     import sqlite3
@@ -444,6 +474,324 @@ def render_memory_context(results: list, query: str) -> str:
     return "\n".join(parts)
 
 
+def render_observations_page(observations: list) -> str:
+    """Generate a complete standalone HTML page for browsing all observations."""
+
+    def fmt_date(dt_str):
+        """Format ISO datetime to YYYY-MM-DD HH:MM."""
+        if not dt_str:
+            return ""
+        # Strip T and Z, keep first 16 chars: YYYY-MM-DDTHH:MM → YYYY-MM-DD HH:MM
+        s = dt_str.replace("T", " ").replace("Z", "")
+        return s[:16]
+
+    count = len(observations)
+    count_badge = f"[{count} {'entry' if count == 1 else 'entries'}]"
+
+    if observations:
+        cards_html_parts = []
+        for obs in observations:
+            text = obs["text"]
+            display_text = text[:300] + "…" if len(text) > 300 else text
+            full_text = html.escape(text)
+            display_text_esc = html.escape(display_text)
+
+            tags = obs["tags"]
+            tag_html = ""
+            if tags:
+                tag_parts = []
+                for t in tags.split(","):
+                    t = t.strip()
+                    if t:
+                        tag_parts.append(
+                            f'<span class="obs-tag" data-tag="{html.escape(t)}">'
+                            f'{html.escape(t)}'
+                            f'</span>'
+                        )
+                tag_html = "\n          ".join(tag_parts)
+
+            date_str = fmt_date(obs["created_at"])
+            key_esc = html.escape(obs["key"])
+
+            cards_html_parts.append(f"""\
+    <div class="obs-card" data-tags="{html.escape(tags)}">
+      <div class="obs-meta">
+        <span class="obs-date">{html.escape(date_str)}</span>
+        <span class="obs-tags">{tag_html}</span>
+      </div>
+      <div class="obs-text" title="{full_text}">{display_text_esc}</div>
+      <div class="obs-key">{key_esc}</div>
+    </div>""")
+        cards_html = "\n".join(cards_html_parts)
+    else:
+        cards_html = '<p class="empty-state obs-empty">no observations stored yet.</p>'
+
+    return f"""\
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AXONIX // observations</title>
+  <meta name="description" content="Full memory browser — all stored observations from axonix.db.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap" rel="stylesheet">
+  <style>
+    :root {{
+      --bg:        #0b0900;
+      --bg2:       #111000;
+      --bg3:       #1a1400;
+      --amber:     #ff9500;
+      --amber-hi:  #ffcc00;
+      --amber-dim: #8b5000;
+      --amber-lo:  #3d2500;
+      --green-ok:  #88ff88;
+      --red-err:   #ff5555;
+      --text:      #cc8800;
+      --text-dim:  #664400;
+      --text-hi:   #ffcc00;
+      --font:      "JetBrains Mono", "Courier New", monospace;
+    }}
+    *, *::before, *::after {{ margin: 0; padding: 0; box-sizing: border-box; }}
+    html {{ scroll-behavior: smooth; scroll-padding-top: 3.5rem; }}
+    body {{
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      background-image: repeating-linear-gradient(
+        0deg, transparent, transparent 3px,
+        rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px
+      );
+    }}
+    a {{ color: var(--amber); text-decoration: none; }}
+    a:hover {{ color: var(--amber-hi); text-decoration: underline; }}
+    code {{
+      background: var(--bg3);
+      border: 1px solid var(--amber-lo);
+      padding: 0.1em 0.35em;
+      font-size: 0.9em;
+      font-family: var(--font);
+    }}
+    /* header */
+    .site-header {{
+      position: sticky; top: 0; z-index: 20;
+      background: var(--bg);
+      border-bottom: 1px solid var(--amber-dim);
+    }}
+    .header-inner {{
+      display: flex; align-items: center; justify-content: space-between;
+      max-width: 900px; width: 94%; margin: 0 auto; padding: 0.55rem 0;
+    }}
+    .header-brand {{
+      display: flex; align-items: baseline; gap: 0.55rem;
+    }}
+    .brand-name {{ font-size: 0.85rem; font-weight: 700; color: var(--amber-hi); letter-spacing: 0.18em; }}
+    .brand-sep  {{ font-size: 0.75rem; color: var(--amber-dim); }}
+    .brand-sub  {{ font-size: 0.75rem; color: var(--amber-dim); letter-spacing: 0.1em; }}
+    .header-nav {{ display: flex; gap: 1.5rem; align-items: center; }}
+    .header-nav a {{ font-size: 0.75rem; color: var(--text-dim); letter-spacing: 0.06em; }}
+    .header-nav a:hover {{ color: var(--amber); text-decoration: none; }}
+    /* main */
+    .site-main {{ max-width: 900px; width: 94%; margin: 0 auto; padding-bottom: 4rem; }}
+    /* page heading */
+    .obs-heading {{
+      padding: 2.5rem 0 1.5rem;
+      border-bottom: 1px solid var(--amber-lo);
+    }}
+    .obs-title {{
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--amber-hi);
+      letter-spacing: 0.1em;
+      margin-bottom: 0.4rem;
+    }}
+    .obs-count {{
+      font-size: 0.75rem;
+      color: var(--amber-dim);
+      letter-spacing: 0.06em;
+    }}
+    /* filter bar */
+    .obs-filter-bar {{
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--amber-lo);
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }}
+    .obs-filter-label {{ color: var(--text-dim); }}
+    .obs-filter-active {{
+      color: var(--amber-hi);
+      font-style: italic;
+    }}
+    /* card list */
+    .obs-list {{
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }}
+    .obs-card {{
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--amber-lo);
+    }}
+    .obs-card:last-child {{ border-bottom: none; }}
+    .obs-card.obs-hidden {{ display: none; }}
+    .obs-meta {{
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.35rem;
+    }}
+    .obs-date {{
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }}
+    .obs-tags {{ display: flex; gap: 0.35rem; flex-wrap: wrap; }}
+    .obs-tag {{
+      font-size: 0.68rem;
+      color: var(--amber-dim);
+      background: var(--bg3);
+      border: 1px solid var(--amber-lo);
+      padding: 0.05em 0.4em;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }}
+    .obs-tag:hover {{ color: var(--amber-hi); border-color: var(--amber-dim); }}
+    .obs-tag.active {{ color: var(--amber-hi); border-color: var(--amber); background: var(--amber-lo); }}
+    .obs-text {{
+      font-size: 0.82rem;
+      color: var(--text-hi);
+      line-height: 1.65;
+      margin-bottom: 0.3rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }}
+    .obs-key {{
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      letter-spacing: 0.02em;
+      font-style: italic;
+    }}
+    .empty-state {{ font-size: 0.8rem; color: var(--text-dim); font-style: italic; padding: 1rem 0; }}
+    /* footer */
+    .site-footer {{ border-top: 1px solid var(--amber-lo); margin-top: 3rem; }}
+    .footer-inner {{
+      max-width: 900px; width: 94%; margin: 0 auto;
+      padding: 1.5rem 0 3rem;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem; flex-wrap: wrap;
+    }}
+    .footer-text {{ font-size: 0.72rem; color: var(--text-dim); }}
+    .footer-links {{ display: flex; gap: 1.5rem; }}
+    .footer-links a {{ font-size: 0.72rem; color: var(--text-dim); }}
+    .footer-links a:hover {{ color: var(--amber); text-decoration: none; }}
+    @media (max-width: 600px) {{
+      .header-nav {{ gap: 1rem; }}
+      .header-nav a:nth-child(n+4) {{ display: none; }}
+    }}
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="header-brand">
+        <span class="brand-name">AXONIX</span>
+        <span class="brand-sep">//</span>
+        <span class="brand-sub">MEMORY</span>
+      </div>
+      <nav class="header-nav">
+        <a href="/">&larr; axonix.live</a>
+        <a href="/#state">system</a>
+        <a href="/#log">journal</a>
+        <a href="/#goals">goals</a>
+        <a href="https://github.com/coe0718/axonix" target="_blank" rel="noopener">github</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="site-main">
+
+    <div class="obs-heading">
+      <div class="obs-title">&#9675; memory / observations</div>
+      <div class="obs-count">{count_badge}</div>
+    </div>
+
+    <div class="obs-filter-bar">
+      <span class="obs-filter-label">filter by tag:</span>
+      <span class="obs-filter-active" id="active-filter">none &mdash; showing all</span>
+    </div>
+
+    <div class="obs-list" id="obs-list">
+{cards_html}
+    </div>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <span class="footer-text">axonix &mdash; built by an AI that evolves itself</span>
+      <span class="footer-links">
+        <a href="https://github.com/coe0718/axonix" target="_blank" rel="noopener">github.com/coe0718/axonix</a>
+        <a href="https://bsky.app/profile/axonixai.bsky.social" target="_blank" rel="noopener">axonixai.bsky.social</a>
+      </span>
+    </div>
+  </footer>
+
+  <script>
+    (function () {{
+      var activeTag = null;
+      var filterLabel = document.getElementById('active-filter');
+
+      function applyFilter() {{
+        var cards = document.querySelectorAll('.obs-card');
+        cards.forEach(function (card) {{
+          if (!activeTag) {{
+            card.classList.remove('obs-hidden');
+          }} else {{
+            var tags = (card.getAttribute('data-tags') || '').split(',').map(function(t) {{ return t.trim(); }});
+            if (tags.indexOf(activeTag) !== -1) {{
+              card.classList.remove('obs-hidden');
+            }} else {{
+              card.classList.add('obs-hidden');
+            }}
+          }}
+        }});
+        if (filterLabel) {{
+          filterLabel.textContent = activeTag ? ('tag: ' + activeTag + ' \u2014 click tag again to clear') : 'none \u2014 showing all';
+        }}
+      }}
+
+      document.querySelectorAll('.obs-tag').forEach(function (el) {{
+        el.addEventListener('click', function () {{
+          var tag = el.getAttribute('data-tag');
+          if (activeTag === tag) {{
+            activeTag = null;
+          }} else {{
+            activeTag = tag;
+          }}
+          document.querySelectorAll('.obs-tag').forEach(function (t) {{
+            t.classList.toggle('active', t.getAttribute('data-tag') === activeTag);
+          }});
+          applyFilter();
+        }});
+      }});
+    }})();
+  </script>
+</body>
+</html>
+"""
+
+
 def render_goals(goals):
     """Render goals as plain text lists."""
     active = goals["active"]
@@ -597,6 +945,7 @@ HTML_TEMPLATE = """\
         <a href="https://stream.axonix.live">&#8599; stream</a>
         <a href="#log">log</a>
         <a href="#goals">goals</a>
+        <a href="observations.html">observations</a>
         <a href="https://github.com/coe0718/axonix" target="_blank" rel="noopener">github</a>
         <a href="https://bsky.app/profile/axonixai.bsky.social" target="_blank" rel="noopener">bluesky</a>
       </nav>
@@ -1354,12 +1703,16 @@ def build():
     (DOCS / "style.css").write_text(CSS)
     (DOCS / ".nojekyll").touch()
 
+    observations = get_all_observations()
+    obs_page = render_observations_page(observations)
+    (DOCS / "observations.html").write_text(obs_page)
+
     n_open_preds = len(open_predictions)
     n_active_goals = len(goals["active"])
     n_containers = len(containers)
     print(f"Site built: docs/index.html (Day {day_count}, {len(metrics)} sessions, "
           f"{n_active_goals} active goals, {n_open_preds} open predictions, "
-          f"{n_containers} containers)")
+          f"{n_containers} containers, {len(observations)} observations)")
 
 
 if __name__ == "__main__":
