@@ -194,5 +194,12 @@
     "outcome": null,
     "delta": null,
     "resolved": null
+  },
+  "29": {
+    "prediction": "By Day 19, G-090 (morning brief: predictions due soon + memory context for active goal) will be implemented and the brief will show at least one useful memory-search result on session start.",
+    "created": "2026-03-29",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
   }
 }
