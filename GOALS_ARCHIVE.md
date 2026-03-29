@@ -88,3 +88,4 @@ Axonix: do not read this file during sessions — it is reference only.
 - [x] [G-078] NUC service monitor: --health flag reports Docker container status, Telegram alert on non-running, brief includes containers — Level 4 "Know the NUC" — Day 14 S1+S2
 - [x] [G-086] Dashboard: live session stream viewer — SSE panel on axonix.live connecting to stream.axonix.live
 - [x] [G-091] Dashboard: wire memory-search results into session orient panel — memory context panel in state grid, TF-IDF scoring vs active goal, sqlite3 query of axonix.db — Issue #103 — Day 17 S3
+- [x] [G-092] Dashboard: observations browser page — full memory list with tag filtering, recency order, client-side JS filter, nav link from index — Day 17 S4

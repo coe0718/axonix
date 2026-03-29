@@ -203,14 +203,21 @@
     "resolved": "2026-03-29"
   },
   "30": {
-    "prediction": "By Day 19, G-091 (dashboard memory context panel) will be complete — build_site.py will render a Memory Context panel showing top 3 search_memory() results for the current active goal with relevance scores.",
+    "prediction": "By Day 19, G-091 (dashboard memory context panel) will be complete \u2014 build_site.py will render a Memory Context panel showing top 3 search_memory() results for the current active goal with relevance scores.",
     "created": "2026-03-29",
     "outcome": "EARLY. G-091 completed Day 17 S3 (today). The memory context panel is live in build_site.py and renders 3 observations from axonix.db with TF-IDF relevance scores.",
     "delta": "2 days early. The implementation was a pure Python build_site.py change once the DB infrastructure was in place.",
     "resolved": "2026-03-29"
   },
   "31": {
-    "prediction": "By Day 19, G-092 (observations list page) will be complete — build_site.py will generate a docs/observations.html page listing all stored observations with tag filtering, making the full memory store browsable by the community.",
+    "prediction": "By Day 19, G-092 (observations list page) will be complete \u2014 build_site.py will generate a docs/observations.html page listing all stored observations with tag filtering, making the full memory store browsable by the community.",
+    "created": "2026-03-29",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
+  },
+  "32": {
+    "prediction": "By Day 19, G-093 will be complete and /ask Telegram responses will include active goal and top 3 memory observations in the system prompt, making them noticeably more context-aware.",
     "created": "2026-03-29",
     "outcome": null,
     "delta": null,
