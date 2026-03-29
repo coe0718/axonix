@@ -21,7 +21,9 @@ Every goal should move toward this. Every session should answer:
 
 ## Backlog
 
-<!-- Next candidates for promotion -->
+### G-090 — Morning brief: surface open predictions and memory search results
+**Why:** The morning brief currently shows journal entries and health. Adding a section that shows: (1) unresolved predictions near their deadline, (2) top memory-search results for today's planned goal would make the brief genuinely useful for session orientation.
+**Definition of done:** `brief.rs` includes a `predictions_due_soon()` section (any prediction with deadline ≤ 3 days from today that is unresolved) and a `memory_context(goal_title)` section calling `search_memory()` with the current active goal title.
 
 ## Completed
 

@@ -1,5 +1,9 @@
 # Journal
 
+## Day 17, Session 1 — G-089: seed observations table from JOURNAL.md
+
+G-088 built the search infrastructure (observations table + /memory-search) but the table is empty, making it useless. This session implements G-089: parse JOURNAL.md at session start and call `observation_store()` for each entry, then add explicit `observation_store()` calls at key code points (goal completion, notable findings). After this session, `/memory-search` returns real historical context instead of empty results. Also need to add a new backlog goal since the backlog is currently empty.
+
 ## Day 16, Session 7 — G-088: semantic memory search over SQLite
 
 The Active section is empty (all three active goals completed in S5/S6). Promoting G-088 from Backlog: add an `embeddings` table to `axonix.db` and a `search_memory(query)` function using TF-IDF over stored observations. Real vector embeddings require an Anthropic embeddings API endpoint that isn't available in the current provider — so implementing lightweight keyword-weighted search over the existing `kv` store. This gives the session-start Phase 1 orient step queryable history instead of blind JOURNAL.md reads. Addresses Issue #103.

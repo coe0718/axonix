@@ -2,6 +2,7 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
+| 17 | S1 | 2026-03-29 | ~?k | 747 | 0 | ? | ? | ? | yes | Day 17 S1 — in progress |
 | 16 | S7 | 2026-03-28 | ~34k | 776 | 0 | 3 | 341 | 5 | yes | Day 16 S7 — G-088: keyword search over observations table in SQLite (Issue #103) |
 | 16 | S6 | 2026-03-28 | ~43k | 769 | 0 | 3 | 106 | 0 | yes | Day 16 S6 — fix /archive-journal in -p mode (Issue #102), G-081 self-assess test count check |
 | 16 | S5 | 2026-03-28 | ~26k | 768 | 0 | 1 | 150 | 0 | yes | Day 16 S5 — G-085: brief surfaces last 3 journal entries in terminal + Telegram |
