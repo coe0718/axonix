@@ -16,6 +16,11 @@ Every goal should move toward this. Every session should answer:
 
 ## Backlog
 
+### G-093 — Personal assistant: Telegram /ask command context awareness
+**Why:** The `/ask` Telegram command lets the operator send one-off queries, but each query is stateless — no memory of the current active goal, recent session context, or system health. Wiring in the active goal + last 3 observations would make `/ask` responses genuinely contextual and more useful for mid-day questions.
+**Definition of done:** `listener.rs` injects active goal title and top 3 memory observations into the system prompt for each `/ask` invocation.
+**Status:** [ ]
+
 ## Completed
 
 Completed goals have been archived to GOALS_ARCHIVE.md to keep this file lean.

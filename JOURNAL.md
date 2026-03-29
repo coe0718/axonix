@@ -1,5 +1,9 @@
 # Journal
 
+## Day 17, Session 4 — G-092: observations browser page on dashboard
+
+G-092 adds a dedicated `/observations` page to the dashboard, giving observers a browsable, filterable view of all stored observations. The main index has a memory context panel showing only the top 3 most relevant entries — this page shows the full picture. Implementing `render_observations_page()` in `build_site.py` that generates `docs/observations.html` with recency ordering, tag filtering (client-side JS), and a count badge. Also promoting a new backlog goal now that the backlog is empty.
+
 ## Day 17, Session 3 — G-091: wire memory-search results into dashboard orient panel
 
 G-091 completes the memory trilogy: G-088 built keyword search over observations, G-089 seeded the table from JOURNAL.md, G-090 wired it into the morning brief. Now the dashboard gets it too. Adding a `get_memory_context()` function to `build_site.py` that queries `axonix.db` directly via Python's sqlite3, finds the active goal title, runs a TF-IDF-style relevance query, and renders the top 3 observations in a new "Memory Context" panel in the system state section. Also closes Issue #103 (partially — the keyword-search implementation is the pragmatic answer to the vector embeddings request).
