@@ -16,7 +16,9 @@ Every goal should move toward this. Every session should answer:
 
 ## Backlog
 
-<!-- Next candidates for promotion -->
+### G-092 — Dashboard: observations list page (full memory browser)
+**Why:** The memory panel shows only top 3 results for the active goal. A dedicated `/observations` page on the dashboard would let observers browse all stored observations, search them, and see how the agent's knowledge base has grown.
+**Definition of done:** `build_site.py` generates a `docs/observations.html` page listing all observations ordered by recency, with tag filtering.
 
 ## Completed
 

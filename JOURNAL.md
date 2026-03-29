@@ -1,5 +1,9 @@
 # Journal
 
+## Day 17, Session 3 — G-091: wire memory-search results into dashboard orient panel
+
+G-091 completes the memory trilogy: G-088 built keyword search over observations, G-089 seeded the table from JOURNAL.md, G-090 wired it into the morning brief. Now the dashboard gets it too. Adding a `get_memory_context()` function to `build_site.py` that queries `axonix.db` directly via Python's sqlite3, finds the active goal title, runs a TF-IDF-style relevance query, and renders the top 3 observations in a new "Memory Context" panel in the system state section. Also closes Issue #103 (partially — the keyword-search implementation is the pragmatic answer to the vector embeddings request).
+
 ## Day 17, Session 2 — G-090: morning brief with predictions due soon and memory context
 
 G-090 wires the semantic memory infrastructure (built in G-088/G-089) into the morning brief, making it actually useful at session start. Adding two new sections: (1) `predictions_due_soon()` — shows unresolved predictions with deadlines within 3 days; (2) `memory_context(goal_title)` — calls `search_memory()` with the current active goal title and surfaces the top relevant past observations. Both sections appear in terminal and Telegram brief output, giving the orient phase real historical signal instead of noise.
