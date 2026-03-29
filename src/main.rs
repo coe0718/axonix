@@ -361,6 +361,24 @@ async fn main() {
         }
     }
 
+    // Seed observations table from JOURNAL.md (G-089).
+    let journal_path = std::path::Path::new("JOURNAL.md");
+    if journal_path.exists() {
+        match axonix::db::AxonixDb::open_default() {
+            Ok(db) => {
+                match db.seed_from_journal(journal_path) {
+                    Ok(n) => {
+                        if n > 0 {
+                            eprintln!("{DIM}  seeded {n} journal entries into memory{RESET}");
+                        }
+                    }
+                    Err(e) => eprintln!("{YELLOW}warning:{RESET} journal seed failed: {e}"),
+                }
+            }
+            Err(e) => eprintln!("{YELLOW}warning:{RESET} db open failed for journal seed: {e}"),
+        }
+    }
+
     // --brief mode: print morning brief (open goals, predictions, recent metrics) and exit.
     // --brief-telegram: also push the brief to Telegram (for cron-based 7 AM delivery, G-031).
     if cli_args.brief {

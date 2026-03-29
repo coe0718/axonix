@@ -405,6 +405,75 @@ impl AxonixDb {
         Ok(scored)
     }
 
+    /// Parse `journal_path` (a `JOURNAL.md`-format file) and upsert each `## ` section
+    /// as an observation.
+    ///
+    /// Key  = `journal:` + lowercase slug of the heading, truncated to 80 chars.
+    /// Tags = `"journal"`.
+    /// Text = heading line + `"\n"` + body, truncated to 800 chars.
+    ///
+    /// The operation is idempotent: calling it twice on the same file produces
+    /// the same DB state (upsert by key).
+    ///
+    /// Returns the number of entries stored (including upserted duplicates).
+    pub fn seed_from_journal(&self, journal_path: &std::path::Path) -> Result<usize> {
+        let content = match std::fs::read_to_string(journal_path) {
+            Ok(s) => s,
+            Err(e) => {
+                return Err(rusqlite::Error::InvalidParameterName(
+                    format!("cannot read journal: {e}"),
+                ));
+            }
+        };
+
+        // Split on "\n## " to get sections (first chunk may be a preamble).
+        // We also handle a file that starts with "## " directly.
+        let raw_sections: Vec<&str> = content.split("\n## ").collect();
+
+        let mut count = 0usize;
+        for (i, section) in raw_sections.iter().enumerate() {
+            // The very first chunk from split("\n## ") still has its "## " prefix
+            // only if the file starts with "## " — otherwise the first chunk is
+            // whatever precedes the first "## " heading (e.g. "# Journal\n\n").
+            let section_trimmed = if i == 0 {
+                // Strip a possible leading "## " if the file starts with it.
+                section.strip_prefix("## ").unwrap_or(section)
+            } else {
+                section
+            };
+
+            // First line is the heading; the rest is the body.
+            let mut lines = section_trimmed.splitn(2, '\n');
+            let heading = lines.next().unwrap_or("").trim();
+            let body = lines.next().unwrap_or("").trim();
+
+            // Skip sections with an empty heading (e.g. the preamble before the first "## ")
+            // or preamble sections starting with a title-level "#" heading.
+            if heading.is_empty() || heading.starts_with('#') {
+                continue;
+            }
+
+            // Build the key slug: lowercase, non-alphanumeric → '-', truncate to 80 chars.
+            let slug: String = heading
+                .chars()
+                .map(|c| if c.is_alphanumeric() { c.to_ascii_lowercase() } else { '-' })
+                .collect::<String>()
+                .chars()
+                .take(80)
+                .collect();
+            let key = format!("journal:{slug}");
+
+            // Build the text: heading + newline + body, truncated to 800 chars.
+            let combined = format!("{heading}\n{body}");
+            let text: String = combined.chars().take(800).collect();
+
+            self.observation_store(&key, &text, "journal")?;
+            count += 1;
+        }
+
+        Ok(count)
+    }
+
     /// Return all observations, most recent first.
     pub fn observations_list(&self, limit: usize) -> Result<Vec<ObservationRow>> {
         let mut stmt = self.conn.prepare(
@@ -728,5 +797,60 @@ mod tests {
         let results = db.search_memory("the error", 10).unwrap();
         assert!(!results.is_empty(), "should match on 'error' even though 'the' is filtered");
         assert_eq!(results[0].key, "obs:sw");
+    }
+
+    // ── seed_from_journal ────────────────────────────────────────────────────
+
+    #[test]
+    fn test_seed_from_journal_parses_entries() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let db = AxonixDb::open(&db_path).unwrap();
+
+        // Write a mock journal
+        let journal = dir.path().join("JOURNAL.md");
+        std::fs::write(
+            &journal,
+            "# Journal\n\n## Day 16, S7 — G-088: memory search\n\nBuilt TF-IDF search over SQLite observations table.\n\n## Day 16, S6 — G-087: archive fix\n\nFixed /archive-journal slash-command dispatch.\n",
+        ).unwrap();
+
+        let n = db.seed_from_journal(&journal).unwrap();
+        assert_eq!(n, 2);
+
+        let results = db.search_memory("memory search", 10).unwrap();
+        assert!(!results.is_empty(), "should find memory search entry");
+    }
+
+    #[test]
+    fn test_seed_from_journal_upserts_idempotent() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let db = AxonixDb::open(&db_path).unwrap();
+
+        let journal = dir.path().join("JOURNAL.md");
+        std::fs::write(
+            &journal,
+            "# Journal\n\n## Day 1, S1 — test entry\n\nSome content.\n",
+        ).unwrap();
+
+        let n1 = db.seed_from_journal(&journal).unwrap();
+        let n2 = db.seed_from_journal(&journal).unwrap();
+        assert_eq!(n1, 1);
+        assert_eq!(n2, 1); // idempotent, still upserts same entry
+
+        // Should still only have 1 observation
+        let list = db.observations_list(10).unwrap();
+        assert_eq!(list.len(), 1);
+    }
+
+    #[test]
+    fn test_seed_from_journal_missing_file() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let db = AxonixDb::open(&db_path).unwrap();
+
+        let missing = dir.path().join("NONEXISTENT.md");
+        let result = db.seed_from_journal(&missing);
+        assert!(result.is_err() || result.unwrap() == 0);
     }
 }
