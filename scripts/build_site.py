@@ -39,6 +39,55 @@ def get_docker_containers():
         return []
 
 
+def get_memory_context(query: str) -> list:
+    """Query axonix.db for top 3 observations matching query. Returns list of dicts."""
+    import sqlite3
+    db_path = ROOT / ".axonix" / "axonix.db"
+    if not db_path.exists():
+        return []
+    try:
+        con = sqlite3.connect(str(db_path))
+        con.row_factory = sqlite3.Row
+        cur = con.cursor()
+        # Check table exists
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='observations'")
+        if not cur.fetchone():
+            con.close()
+            return []
+        cur.execute("SELECT key, text, tags, created_at FROM observations ORDER BY created_at DESC LIMIT 200")
+        rows = cur.fetchall()
+        con.close()
+
+        if not rows:
+            return []
+
+        # TF-IDF-style scoring: tokenize query, score each row
+        query_tokens = set(re.sub(r'[^a-z0-9\s]', ' ', query.lower()).split())
+        if not query_tokens:
+            # No query tokens — return 3 most recent
+            return [{"key": r["key"], "text": r["text"], "tags": r["tags"] or "", "score": 0.0} for r in rows[:3]]
+
+        scored = []
+        for row in rows:
+            text_tokens = re.sub(r'[^a-z0-9\s]', ' ', row["text"].lower()).split()
+            tag_tokens = re.sub(r'[^a-z0-9\s]', ' ', (row["tags"] or "").lower()).split()
+            all_tokens = text_tokens + tag_tokens * 3  # tags weighted 3x
+            if not all_tokens:
+                continue
+            matches = sum(1 for t in all_tokens if t in query_tokens)
+            score = matches / len(all_tokens)
+            if score > 0:
+                scored.append({"key": row["key"], "text": row["text"], "tags": row["tags"] or "", "score": round(score, 3)})
+
+        scored.sort(key=lambda x: x["score"], reverse=True)
+        # If no hits, return 3 most recent
+        if not scored:
+            return [{"key": r["key"], "text": r["text"], "tags": r["tags"] or "", "score": 0.0} for r in rows[:3]]
+        return scored[:3]
+    except Exception:
+        return []
+
+
 def md_inline(text):
     """Convert inline markdown (bold, code, links) to HTML."""
     text = html.escape(text)
@@ -321,7 +370,7 @@ def parse_open_predictions():
     return open_preds
 
 
-def render_live_state(goals, open_predictions):
+def render_live_state(goals, open_predictions, memory_context_html=""):
     """Render live state as plain text blocks."""
     active_goals = goals["active"]
     parts = []
@@ -362,6 +411,36 @@ def render_live_state(goals, open_predictions):
         parts.append('<p class="empty-state">no open predictions</p>')
     parts.append('</div>')
 
+    if memory_context_html:
+        parts.append(memory_context_html)
+
+    return "\n".join(parts)
+
+
+def render_memory_context(results: list, query: str) -> str:
+    """Render memory context as a state block for the live state section."""
+    parts = []
+    parts.append('<div class="state-block">')
+    parts.append('<div class="state-label">◉ memory context</div>')
+    if query:
+        parts.append(f'<p class="memory-query">query: <code>{html.escape(query[:60])}</code></p>')
+    if results:
+        parts.append('<ul class="plain-list memory-list">')
+        for r in results:
+            text = r["text"]
+            if len(text) > 120:
+                text = text[:117] + "..."
+            score_str = f' <span class="memory-score">{r["score"]:.3f}</span>' if r["score"] > 0 else ""
+            tags = r["tags"]
+            tag_html = ""
+            if tags:
+                tag_parts = [f'<span class="tag">{html.escape(t.strip())}</span>' for t in tags.split(",") if t.strip()][:3]
+                tag_html = " " + " ".join(tag_parts)
+            parts.append(f'<li><span class="item-text">{html.escape(text)}</span>{tag_html}{score_str}</li>')
+        parts.append('</ul>')
+    else:
+        parts.append('<p class="empty-state">no observations yet — runs after first session completes</p>')
+    parts.append('</div>')
     return "\n".join(parts)
 
 
@@ -1220,6 +1299,12 @@ code {
     align-items: flex-start;
   }
 }
+
+/* ── memory context panel ── */
+
+.memory-query { font-size: 0.78rem; color: var(--text-dim); margin: 0.2rem 0 0.4rem; }
+.memory-score { font-size: 0.72rem; color: var(--amber); margin-left: 0.4rem; }
+.memory-list li { margin-bottom: 0.5rem; }
 """
 
 
@@ -1239,9 +1324,15 @@ def build():
     open_predictions = parse_open_predictions()
     containers = get_docker_containers()
 
+    # Memory context: query for the first active goal title
+    active_goals = goals.get("active", [])
+    memory_query = active_goals[0]["text"] if active_goals else ""
+    memory_results = get_memory_context(memory_query)
+    memory_context_html = render_memory_context(memory_results, memory_query)
+
     stats_html = render_stats(metrics)
     patterns_html = render_metrics_patterns(metrics)
-    live_state_html = render_live_state(goals, open_predictions)
+    live_state_html = render_live_state(goals, open_predictions, memory_context_html)
     containers_html = render_containers(containers)
     journal_html = render_journal(parse_journal(read_file("JOURNAL.md")))
     goals_html = render_goals(goals)
