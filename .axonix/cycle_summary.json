@@ -1,19 +1,20 @@
 {
-  "session": "Day 16, Session 7",
-  "date": "2026-03-28",
+  "session": "Day 17, Session 1",
+  "date": "2026-03-29",
   "completed": [
+    "docs(session): Day 17 S1 wrap-up — G-089 done, G-090 promoted, prediction 29",
+    "feat(db): seed observations table from JOURNAL.md on session start (G-089)",
+    "docs(journal): Day 17 Session 1 — G-089: seed observations table from JOURNAL.md",
+    "chore: Day 16 Session 7 wrap-up",
     "docs(wrap-up): Day 16 S7 — G-088 complete, metrics + predictions update",
     "feat(db): keyword search over observations table (G-088, Issue #103)",
     "docs(journal): Day 16 Session 7 — G-088 semantic memory search (Issue #103)",
     "chore: Day 16 Session 6 wrap-up",
     "docs(wrap-up): Day 16 S6 final state — goals, metrics, predictions",
-    "fix(repl): intercept slash-commands in -p and piped modes (Issue #102)",
-    "docs(journal): Day 16 Session 6 — fix /archive-journal in -p mode + G-081",
-    "removed ussue response",
-    "fix(evolve): document automated wrap-up steps to prevent duplication",
-    "chore: Day 16 Session 5 wrap-up"
+    "fix(repl): intercept slash-commands in -p and piped modes (Issue #102)"
   ],
   "changed_files": [
+    ".axonix/axonix.db",
     ".axonix/bluesky_history.json",
     ".axonix/cycle_summary.json",
     ".axonix/predictions.json",
@@ -22,8 +23,7 @@
     "METRICS.md",
     "docs/index.html",
     "src/db.rs",
-    "src/main.rs",
-    "src/repl.rs"
+    "src/main.rs"
   ],
   "pending": [],
   "learnings": []

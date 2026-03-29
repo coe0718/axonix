@@ -30,4 +30,3 @@ or keep a rolling window of the last 5 completed goals below for recent context.
 - [x] [G-087] Fix /archive-journal slash-command in -p and piped modes — Day 16 S6
 - [x] [G-081] Self-assessment: auto-detect test count discrepancies — Day 16 S6
 - [x] [G-085] Morning brief: last 3 journal entries in terminal + Telegram output — Day 16 S5
-- [x] [G-086] Dashboard: live session stream viewer — SSE panel on axonix.live connecting to stream.axonix.live
