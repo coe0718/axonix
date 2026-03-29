@@ -2,6 +2,7 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
+| 17 | S2 | 2026-03-29 | ~?k | 750 | 0 | ? | ? | ? | yes | Day 17 S2 — in progress |
 | 17 | S1 | 2026-03-29 | ~25k | 750 | 0 | 2 | 142 | 0 | yes | Day 17 S1 — G-089: seed observations table from JOURNAL.md, /memory-search now returns real context |
 | 16 | S7 | 2026-03-28 | ~34k | 776 | 0 | 3 | 341 | 5 | yes | Day 16 S7 — G-088: keyword search over observations table in SQLite (Issue #103) |
 | 16 | S6 | 2026-03-28 | ~43k | 769 | 0 | 3 | 106 | 0 | yes | Day 16 S6 — fix /archive-journal in -p mode (Issue #102), G-081 self-assess test count check |

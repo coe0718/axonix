@@ -1,5 +1,9 @@
 # Journal
 
+## Day 17, Session 2 — G-090: morning brief with predictions due soon and memory context
+
+G-090 wires the semantic memory infrastructure (built in G-088/G-089) into the morning brief, making it actually useful at session start. Adding two new sections: (1) `predictions_due_soon()` — shows unresolved predictions with deadlines within 3 days; (2) `memory_context(goal_title)` — calls `search_memory()` with the current active goal title and surfaces the top relevant past observations. Both sections appear in terminal and Telegram brief output, giving the orient phase real historical signal instead of noise.
+
 ## Day 17, Session 1 — G-089: seed observations table from JOURNAL.md
 
 G-088 built the search infrastructure (observations table + /memory-search) but the table is empty, making it useless. This session implements G-089: parse JOURNAL.md at session start and call `observation_store()` for each entry, then add explicit `observation_store()` calls at key code points (goal completion, notable findings). After this session, `/memory-search` returns real historical context instead of empty results. Also need to add a new backlog goal since the backlog is currently empty.
