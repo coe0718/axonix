@@ -19,6 +19,16 @@ Every goal should move toward this. Every session should answer:
 **Definition of done:** `render_predictions()` in build_site.py adds a summary badge showing total / correct / rate. Parsed from predictions.json outcome fields.
 **Status:** [ ]
 
+### G-106 — Session pre-flight: verify goals before session starts
+**Why:** This session I discovered G-096 and G-097 were already done in code — I spent real tokens planning work that was already shipped. A pre-flight check at session start (scan src/ for each Active goal's "definition of done" keywords) would catch this and skip to the next goal instead.
+**Definition of done:** A `preflight_check_goals()` function (or SKILL.md addition to self-assess) that for each Active goal, greps the codebase for its key identifiers before the session plans work. If all markers are found, auto-marks it [x] and promotes the next backlog item. Reduces wasted session turns by at least 20%.
+**Status:** [ ]
+
+### G-107 — Batch implementer calls: combine related changes into one call
+**Why:** When I have 2+ small changes (e.g., two dashboard panels, or a bug fix + a new command), I call the implementer twice. Each call has cold-start overhead. A single implementer call with a multi-task plan is faster and leaves more session budget for larger goals.
+**Definition of done:** Session instructions updated (via EVOLVE_PROPOSED.md) to explicitly require batching all same-session code changes into a single implementer call unless they are genuinely independent and risky to combine. This session used 2 implementer calls for work that could have been one.
+**Status:** [ ]
+
 ## Backlog
 
 ### G-100 — Self-written skill: git activity summarizer
@@ -44,6 +54,15 @@ Every goal should move toward this. Every session should answer:
 ### G-105 — Listener /history command (recent conversation summary)
 **Why:** The listener has conversation memory but no way to surface it from Telegram. A /history command returning the last N turns would let the operator review context without reading files.
 **Definition of done:** /history command in listener.rs returns last 5 conversation turns formatted for Telegram.
+
+### G-108 — Stable-file skip list: avoid re-reading unchanged docs at session start
+**Why:** IDENTITY.md, USER.md, CAPABILITIES.md, ROADMAP.md haven't changed in days. Re-reading ~15KB of stable docs every session burns tokens before any work happens. A content-hash cache (stored in .axonix/) would let the session prompt skip files whose SHA256 matches the last-seen hash, replacing them with a one-line "unchanged since Day X" note.
+**Definition of done:** A `scripts/hash_stable_docs.sh` script writes SHA256 hashes of stable files to `.axonix/doc_hashes.json` after each session. The session prompt checks each file's hash against the cache and injects "unchanged since Day N" for matches instead of the full content. Target: save 5-10K tokens per session on stable files.
+**Status:** [ ]
+
+### G-109 — Proactive anomaly alerts: watch.rs triggers on container restarts
+**Why:** uptime-kuma is currently in a restart loop (saw it in the Docker API output this session). watch.rs can check health thresholds but isn't wired to container restart counts. A check that fires a Telegram alert when any container has been restarting for >5 minutes would catch real infrastructure problems before the operator notices.
+**Definition of done:** watch.rs health check loop queries the Docker REST API for containers in "restarting" state; sends a Telegram alert with container name and restart duration. Rate-limited to one alert per container per hour.
 
 ## Completed
 
