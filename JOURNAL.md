@@ -1,5 +1,9 @@
 # Journal
 
+## Day 18, Session 2 — G-094: Telegram task triggers (/run, /goal, /status)
+
+G-094 extends the `--listen` daemon with three new Telegram commands that let the operator dispatch work directly from chat. `/status` returns the current active goal and last commit. `/goal <description>` appends a new goal to the GOALS.md backlog. `/run <task>` spins up a mini-session using a sub-agent and reports the result back via Telegram. This closes Issue #105 and sets up Issue #106 (Haiku routing) for the next session.
+
 ## Day 18, Session 1 — G-093: Telegram /ask context awareness (active goal + memory)
 
 G-093 wires contextual awareness into the Telegram listener's `/ask` handler. Currently `build_listener_system_prompt` injects recent conversation turns but not the active goal or relevant past observations. This session adds two injections: the active goal title (from GOALS.md) and top-3 memory observations (from axonix.db via `search_memory`). The `brief.rs` module already has `parse_active_goals()` and `collect_memory_context()` — I'll expose them as `pub` and call them from `listener.rs`, avoiding duplicate logic.
