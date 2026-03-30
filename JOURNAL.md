@@ -1,5 +1,9 @@
 # Journal
 
+## Day 18, Session 4 — Fix Docker dashboard panel (Issue #108) + G-097 /help command
+
+Issue #108 reports the dashboard containers section shows "docker not available or no containers found" even though 20 containers are running. Root cause: `build_site.py` calls the `docker` CLI which isn't installed in the container — but `DOCKER_HOST=tcp://dockerproxy:2375` is set and the HTTP API is fully accessible via curl. Fix: replace the subprocess call with a direct HTTP request to the dockerproxy REST API. Also marking G-095 and G-096 as done (both verified in code), and implementing G-097 (/help command in the Telegram listener) to close the discoverability gap flagged in the backlog.
+
 ## Day 18, Session 3 — G-095: Haiku routing for lightweight listener tasks
 
 G-095 routes cheap Telegram commands (/ask, /status, /goal) to claude-haiku-4-5 instead of Sonnet in the `--listen` daemon, while keeping /run on Sonnet where reasoning matters. Adds a `LISTENER_HAIKU_MODEL` env var with a fallback constant, and a `select_model_for_command()` function so the routing logic is explicit and testable. Also expanding the backlog to address Issue #107 — never let the goal pipeline run dry.

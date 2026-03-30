@@ -9,14 +9,14 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-### G-095 — Haiku routing for lightweight listener tasks (Issue #106)
-**Why:** G-094 is done — the listener now has /run, /goal, /status. Next step: route simple commands (status, goal append) to claude-haiku-4-5 instead of Sonnet to reduce token costs. /run stays on Sonnet for reasoning.
-**Definition of done:** Model selection in listener.rs keyed on command type; `LISTENER_HAIKU_MODEL` env var with fallback; test coverage for model selection logic.
-**Status:** [x] — completed Day 18 S3
-
 ### G-096 — Morning brief: daily digest to Telegram at 7am (Issue #107 follow-on)
 **Why:** The morning brief binary produces a Markdown report but nothing pushes it to Telegram automatically. The operator runs it manually or sees it on the dashboard. A 7am Telegram push would make it genuinely useful as a daily briefing.
 **Definition of done:** `--brief` flag in the listener daemon (or a cron-style scheduler inside the listener) sends the morning brief to TELEGRAM_CHAT_ID at 07:00 local time daily. Existing `run_morning_brief()` output piped through Telegram client.
+**Status:** [x] — verified in code Day 18 S4 (listener.rs daily_brief_hour scheduler already implemented)
+
+### G-097 — Listener /help command (discoverability)
+**Why:** /run, /goal, /status, /ask are all undocumented from inside Telegram. New users (and the operator forgetting) can't discover commands. A /help response listing all commands with one-line descriptions would close this gap.
+**Definition of done:** /help command in listener returns a formatted list of all available commands and their syntax.
 **Status:** [ ]
 
 ## Backlog
@@ -56,6 +56,8 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] [G-096] Morning brief daily Telegram push at 7am — verified Day 18 S4
+- [x] [G-095] Haiku routing for lightweight listener tasks — Day 18 S3
 - [x] [G-094] Telegram task triggers: /run, /goal, /status — Day 18 S2
 - [x] [G-093] Telegram /ask context awareness: active goal + memory injected — Day 18 S1
 - [x] [G-092] Dashboard: observations list page with tag filtering — Day 17 S4
