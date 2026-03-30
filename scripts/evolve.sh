@@ -167,6 +167,11 @@ PROMPT_FILE=$(mktemp)
 cat > "$PROMPT_FILE" <<PROMPT
 Today is Day $DAY, Session $SESSION ($DATE).
 
+Before reading stable docs, check .axonix/doc_hashes.json. For each file listed,
+compute its current SHA256 prefix and compare to the stored hash. If they match,
+skip reading the file and instead note: "[FILENAME: unchanged since last session]".
+Only read the full file if the hash differs or doc_hashes.json does not exist.
+
 Read these files in this order:
 1. IDENTITY.md — who you are, your values, your rules
 2. USER.md — who is running you; calibrate all output to this person
@@ -282,6 +287,13 @@ It will read files, write code, run tests, and commit — then return a summary.
 
 If the implementer reports a failure, you may call it again with a revised plan.
 Do not attempt to implement changes in this context.
+
+**BATCHING RULE:** If you have multiple code changes this session, combine them into a
+SINGLE implementer call unless they are genuinely risky to combine (e.g., one change
+modifies a file the other depends on in a way that could mask failures). Separate calls
+are appropriate for large independent modules, not for small same-file changes. The
+implementer's 25-turn budget is sufficient for 3-5 related tasks. Multiple cold-starts
+waste session budget — one well-scoped call is always preferred over two.
 
 === PHASE 7: Wrap Up ===
 
@@ -466,6 +478,11 @@ cargo run --bin axonix --quiet -- --write-summary "Day ${DAY}, Session ${SESSION
     && echo "  Cycle summary written to .axonix/cycle_summary.json" \
     || echo "  Cycle summary write failed (non-fatal)"
 
+# ── Step 5a-iv: Extract session memories from log (Layer 1 — Capture) ──
+cargo run --bin axonix --quiet -- --extract-memories /tmp/session.log 2>/dev/null \
+    && echo "  Session memories extracted." \
+    || echo "  Memory extraction skipped (non-fatal)"
+
 # ── Step 5a-iii: Auto-archive old journal entries (Issue #69 / G-068) ──
 # Keeps JOURNAL.md bounded — archives entries older than the most recent 15.
 cargo run --bin axonix --quiet -- -p "/archive-journal" 2>/dev/null \
@@ -593,6 +610,22 @@ Commit: $(git rev-parse --short HEAD)"
 
     rm -f "$RESPONSE_FILE"
 done
+
+# ── Step 6b: Write stable-doc hashes for next session (G-108) ──
+# Axonix checks these at session start to skip re-reading unchanged docs.
+python3 -c "
+import json, hashlib, pathlib
+files = ['IDENTITY.md', 'USER.md', 'CAPABILITIES.md', 'ROADMAP.md', 'COMMIT_CONVENTIONS.md']
+hashes = {}
+for f in files:
+    p = pathlib.Path(f)
+    if p.exists():
+        hashes[f] = hashlib.sha256(p.read_bytes()).hexdigest()[:16]
+pathlib.Path('.axonix').mkdir(exist_ok=True)
+with open('.axonix/doc_hashes.json', 'w') as fh:
+    json.dump(hashes, fh, indent=2)
+" || true
+echo "  Stable-doc hashes written to .axonix/doc_hashes.json"
 
 # ── Step 7: Enforce non-empty commit body before push ──
 LAST_COMMIT_BODY=$(git log -1 --format="%b" | tr -d '[:space:]')

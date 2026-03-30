@@ -1,11 +1,14 @@
 //! SQLite-backed structured memory for Axonix (G-075, Issue #91).
 //!
-//! Provides five tables:
-//! - `kv`           — key/value store for agent state
-//! - `sessions`     — per-session records (day, tokens, tests, notes)
-//! - `goals`        — goal tracking (active / backlog / done)
-//! - `predictions`  — prediction tracking with outcome/delta/resolved (G-077)
-//! - `observations` — keyword-searchable observations with tags (G-088)
+//! Provides eight tables:
+//! - `kv`                    — key/value store for agent state
+//! - `sessions`              — per-session records (day, tokens, tests, notes)
+//! - `goals`                 — goal tracking (active / backlog / done)
+//! - `predictions`           — prediction tracking with outcome/delta/resolved (G-077)
+//! - `observations`          — keyword-searchable observations with tags (G-088)
+//! - `hot_memories`          — recent extracted memories with TTL (30 days)
+//! - `cold_memories`         — synthesized memories with TTL (90 days)
+//! - `memory_contradictions` — conflict tracking between cold memories
 //!
 //! # Example
 //! ```rust,no_run
@@ -55,6 +58,44 @@ pub struct ObservationRow {
     pub created_at: String,
     /// Relevance score set by `search_memory`; not stored in DB.
     pub score: f64,
+}
+
+/// A row from the `hot_memories` table.
+#[derive(Debug, Clone)]
+pub struct HotMemoryRow {
+    pub id: i64,
+    pub content: String,
+    pub summary: String,
+    pub entities: String,
+    pub topics: String,
+    pub importance: f64,
+    pub created_at: String,
+    pub last_accessed: String,
+    pub access_count: i64,
+    pub expires_at: String,
+}
+
+/// A row from the `cold_memories` table.
+#[derive(Debug, Clone)]
+pub struct ColdMemoryRow {
+    pub id: i64,
+    pub content: String,
+    pub topics: String,
+    pub importance: f64,
+    pub created_at: String,
+    pub reinforcement_count: i64,
+    pub last_reinforced: String,
+    pub expires_at: String,
+}
+
+/// A row from the `memory_contradictions` table.
+#[derive(Debug, Clone)]
+pub struct ContradictionRow {
+    pub id: i64,
+    pub cold_memory_id: i64,
+    pub new_memory: String,
+    pub created_at: String,
+    pub resolved: bool,
 }
 
 // ─── Main struct ─────────────────────────────────────────────────────────────
@@ -128,6 +169,38 @@ impl AxonixDb {
                 tags       TEXT NOT NULL DEFAULT '',
                 created_at TEXT NOT NULL,
                 UNIQUE(key)
+            );
+
+            CREATE TABLE IF NOT EXISTS hot_memories (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                content       TEXT NOT NULL,
+                summary       TEXT NOT NULL,
+                entities      TEXT NOT NULL DEFAULT '[]',
+                topics        TEXT NOT NULL DEFAULT '[]',
+                importance    REAL NOT NULL DEFAULT 0.5,
+                created_at    TEXT NOT NULL,
+                last_accessed TEXT NOT NULL,
+                access_count  INTEGER NOT NULL DEFAULT 0,
+                expires_at    TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS cold_memories (
+                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                content             TEXT NOT NULL,
+                topics              TEXT NOT NULL DEFAULT '[]',
+                importance          REAL NOT NULL DEFAULT 0.5,
+                created_at          TEXT NOT NULL,
+                reinforcement_count INTEGER NOT NULL DEFAULT 0,
+                last_reinforced     TEXT NOT NULL,
+                expires_at          TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS memory_contradictions (
+                id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                cold_memory_id INTEGER NOT NULL,
+                new_memory     TEXT NOT NULL,
+                created_at     TEXT NOT NULL,
+                resolved       INTEGER NOT NULL DEFAULT 0
             );
         ")
     }
@@ -494,6 +567,257 @@ impl AxonixDb {
         })?;
         rows.collect()
     }
+
+    // ─── Hot memory helpers ───────────────────────────────────────────────────
+
+    /// Insert a hot memory. expires_at is set to 30 days from now.
+    pub fn hot_memory_insert(
+        &self,
+        content: &str,
+        summary: &str,
+        entities: &str,
+        topics: &str,
+        importance: f64,
+    ) -> Result<i64> {
+        let now = now_utc();
+        let expires_at = add_days_to_utc(&now, 30);
+        self.conn.execute(
+            "INSERT INTO hot_memories
+             (content, summary, entities, topics, importance, created_at, last_accessed, access_count, expires_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 0, ?8)",
+            params![content, summary, entities, topics, importance, now, now, expires_at],
+        )?;
+        Ok(self.conn.last_insert_rowid())
+    }
+
+    /// Return up to `limit` hot memories, most recent first.
+    pub fn hot_memories_list(&self, limit: usize) -> Result<Vec<HotMemoryRow>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, content, summary, entities, topics, importance,
+                    created_at, last_accessed, access_count, expires_at
+             FROM hot_memories
+             ORDER BY created_at DESC
+             LIMIT ?1",
+        )?;
+        let rows = stmt.query_map(params![limit as i64], |row| {
+            Ok(HotMemoryRow {
+                id: row.get(0)?,
+                content: row.get(1)?,
+                summary: row.get(2)?,
+                entities: row.get(3)?,
+                topics: row.get(4)?,
+                importance: row.get(5)?,
+                created_at: row.get(6)?,
+                last_accessed: row.get(7)?,
+                access_count: row.get(8)?,
+                expires_at: row.get(9)?,
+            })
+        })?;
+        rows.collect()
+    }
+
+    /// Keyword search over hot memories (content + summary + topics).
+    /// Uses the same tokenize() approach as search_memory().
+    pub fn hot_memory_search(&self, query: &str, limit: usize) -> Result<Vec<HotMemoryRow>> {
+        let query_tokens = tokenize(query);
+        if query_tokens.is_empty() || limit == 0 {
+            return Ok(vec![]);
+        }
+
+        let all = self.hot_memories_list(usize::MAX)?;
+        let mut scored: Vec<(f64, HotMemoryRow)> = all
+            .into_iter()
+            .filter_map(|row| {
+                let content_tokens = tokenize(&row.content);
+                let summary_tokens = tokenize(&row.summary);
+                let topic_tokens = tokenize(&row.topics);
+                let mut score = 0.0f64;
+                for qt in &query_tokens {
+                    if content_tokens.contains(qt) { score += 1.0; }
+                    if summary_tokens.contains(qt) { score += 1.5; }
+                    if topic_tokens.contains(qt) { score += 2.0; }
+                }
+                if score > 0.0 { Some((score, row)) } else { None }
+            })
+            .collect();
+
+        scored.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+        scored.truncate(limit);
+        Ok(scored.into_iter().map(|(_, row)| row).collect())
+    }
+
+    /// Update last_accessed to now and increment access_count for a hot memory.
+    pub fn hot_memory_touch(&self, id: i64) -> Result<()> {
+        let now = now_utc();
+        self.conn.execute(
+            "UPDATE hot_memories SET last_accessed = ?1, access_count = access_count + 1 WHERE id = ?2",
+            params![now, id],
+        )?;
+        Ok(())
+    }
+
+    /// Return hot memories created more than 7 days ago (candidates for consolidation).
+    pub fn hot_memories_consolidatable(&self) -> Result<Vec<HotMemoryRow>> {
+        // Compute the cutoff timestamp: 7 days ago
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let secs = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let cutoff_secs = secs.saturating_sub(7 * 86400);
+        let (y, mo, d, h, mi, s) = epoch_to_ymd_hms(cutoff_secs);
+        let cutoff = format!("{y:04}-{mo:02}-{d:02}T{h:02}:{mi:02}:{s:02}Z");
+
+        let mut stmt = self.conn.prepare(
+            "SELECT id, content, summary, entities, topics, importance,
+                    created_at, last_accessed, access_count, expires_at
+             FROM hot_memories
+             WHERE created_at < ?1
+             ORDER BY created_at ASC",
+        )?;
+        let rows = stmt.query_map(params![cutoff], |row| {
+            Ok(HotMemoryRow {
+                id: row.get(0)?,
+                content: row.get(1)?,
+                summary: row.get(2)?,
+                entities: row.get(3)?,
+                topics: row.get(4)?,
+                importance: row.get(5)?,
+                created_at: row.get(6)?,
+                last_accessed: row.get(7)?,
+                access_count: row.get(8)?,
+                expires_at: row.get(9)?,
+            })
+        })?;
+        rows.collect()
+    }
+
+    /// Delete a hot memory by id. Returns true if the row existed and was deleted.
+    pub fn hot_memory_delete(&self, id: i64) -> Result<bool> {
+        let n = self.conn.execute("DELETE FROM hot_memories WHERE id = ?1", params![id])?;
+        Ok(n > 0)
+    }
+
+    // ─── Cold memory helpers ──────────────────────────────────────────────────
+
+    /// Insert a cold memory. expires_at is set to 90 days from now.
+    pub fn cold_memory_insert(&self, content: &str, topics: &str, importance: f64) -> Result<i64> {
+        let now = now_utc();
+        let expires_at = add_days_to_utc(&now, 90);
+        self.conn.execute(
+            "INSERT INTO cold_memories
+             (content, topics, importance, created_at, reinforcement_count, last_reinforced, expires_at)
+             VALUES (?1, ?2, ?3, ?4, 0, ?5, ?6)",
+            params![content, topics, importance, now, now, expires_at],
+        )?;
+        Ok(self.conn.last_insert_rowid())
+    }
+
+    /// Return up to `limit` cold memories, most recent first.
+    pub fn cold_memories_list(&self, limit: usize) -> Result<Vec<ColdMemoryRow>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, content, topics, importance, created_at,
+                    reinforcement_count, last_reinforced, expires_at
+             FROM cold_memories
+             ORDER BY created_at DESC
+             LIMIT ?1",
+        )?;
+        let rows = stmt.query_map(params![limit as i64], |row| {
+            Ok(ColdMemoryRow {
+                id: row.get(0)?,
+                content: row.get(1)?,
+                topics: row.get(2)?,
+                importance: row.get(3)?,
+                created_at: row.get(4)?,
+                reinforcement_count: row.get(5)?,
+                last_reinforced: row.get(6)?,
+                expires_at: row.get(7)?,
+            })
+        })?;
+        rows.collect()
+    }
+
+    /// Keyword search over cold memories (content + topics).
+    pub fn cold_memory_search(&self, query: &str, limit: usize) -> Result<Vec<ColdMemoryRow>> {
+        let query_tokens = tokenize(query);
+        if query_tokens.is_empty() || limit == 0 {
+            return Ok(vec![]);
+        }
+
+        let all = self.cold_memories_list(usize::MAX)?;
+        let mut scored: Vec<(f64, ColdMemoryRow)> = all
+            .into_iter()
+            .filter_map(|row| {
+                let content_tokens = tokenize(&row.content);
+                let topic_tokens = tokenize(&row.topics);
+                let mut score = 0.0f64;
+                for qt in &query_tokens {
+                    if content_tokens.contains(qt) { score += 1.0; }
+                    if topic_tokens.contains(qt) { score += 2.0; }
+                }
+                if score > 0.0 { Some((score, row)) } else { None }
+            })
+            .collect();
+
+        scored.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+        scored.truncate(limit);
+        Ok(scored.into_iter().map(|(_, row)| row).collect())
+    }
+
+    /// Increment reinforcement_count, update last_reinforced, and extend expires_at by 90 days.
+    pub fn cold_memory_reinforce(&self, id: i64) -> Result<()> {
+        let now = now_utc();
+        let new_expires = add_days_to_utc(&now, 90);
+        self.conn.execute(
+            "UPDATE cold_memories
+             SET reinforcement_count = reinforcement_count + 1,
+                 last_reinforced = ?1,
+                 expires_at = ?2
+             WHERE id = ?3",
+            params![now, new_expires, id],
+        )?;
+        Ok(())
+    }
+
+    /// Delete a cold memory by id. Returns true if the row existed and was deleted.
+    pub fn cold_memory_delete(&self, id: i64) -> Result<bool> {
+        let n = self.conn.execute("DELETE FROM cold_memories WHERE id = ?1", params![id])?;
+        Ok(n > 0)
+    }
+
+    // ─── Contradiction helpers ────────────────────────────────────────────────
+
+    /// Record a new contradiction between an existing cold memory and a new memory.
+    pub fn contradiction_insert(&self, cold_memory_id: i64, new_memory: &str) -> Result<()> {
+        let now = now_utc();
+        self.conn.execute(
+            "INSERT INTO memory_contradictions (cold_memory_id, new_memory, created_at, resolved)
+             VALUES (?1, ?2, ?3, 0)",
+            params![cold_memory_id, new_memory, now],
+        )?;
+        Ok(())
+    }
+
+    /// Return all unresolved contradictions.
+    pub fn contradictions_open(&self) -> Result<Vec<ContradictionRow>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, cold_memory_id, new_memory, created_at, resolved
+             FROM memory_contradictions
+             WHERE resolved = 0
+             ORDER BY created_at DESC",
+        )?;
+        let rows = stmt.query_map([], |row| {
+            let resolved_int: i64 = row.get(4)?;
+            Ok(ContradictionRow {
+                id: row.get(0)?,
+                cold_memory_id: row.get(1)?,
+                new_memory: row.get(2)?,
+                created_at: row.get(3)?,
+                resolved: resolved_int != 0,
+            })
+        })?;
+        rows.collect()
+    }
 }
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
@@ -548,6 +872,48 @@ fn epoch_to_ymd_hms(secs: u64) -> (u64, u64, u64, u64, u64, u64) {
 
 fn is_leap(y: u64) -> bool {
     (y % 4 == 0 && y % 100 != 0) || y % 400 == 0
+}
+
+/// Add `days` to a UTC timestamp string (YYYY-MM-DDTHH:MM:SSZ).
+///
+/// Parses the timestamp, adds days * 86400 seconds, re-formats.
+/// Falls back to `now_utc()` if parsing fails.
+fn add_days_to_utc(ts: &str, days: u64) -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    // Try to parse the timestamp or fall back to current time
+    let base_secs = if ts.len() >= 19 {
+        // Parse YYYY-MM-DDTHH:MM:SSZ
+        let y: u64 = ts[0..4].parse().unwrap_or(0);
+        let mo: u64 = ts[5..7].parse().unwrap_or(0);
+        let d: u64 = ts[8..10].parse().unwrap_or(0);
+        let h: u64 = ts[11..13].parse().unwrap_or(0);
+        let mi: u64 = ts[14..16].parse().unwrap_or(0);
+        let s: u64 = ts[17..19].parse().unwrap_or(0);
+        if y > 0 && mo > 0 && d > 0 {
+            ymd_hms_to_epoch(y, mo, d, h, mi, s)
+        } else {
+            SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs()
+        }
+    } else {
+        SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs()
+    };
+    let target_secs = base_secs + days * 86400;
+    let (y, mo, d, h, mi, s) = epoch_to_ymd_hms(target_secs);
+    format!("{y:04}-{mo:02}-{d:02}T{h:02}:{mi:02}:{s:02}Z")
+}
+
+/// Convert (year, month, day, hour, min, sec) to Unix timestamp (seconds).
+fn ymd_hms_to_epoch(y: u64, mo: u64, d: u64, h: u64, mi: u64, s: u64) -> u64 {
+    // Days from 1970-01-01 to year-01-01
+    let days_to_year: u64 = (1970..y).map(|yr| if is_leap(yr) { 366 } else { 365 }).sum();
+    let month_days: [u64; 12] = if is_leap(y) {
+        [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    } else {
+        [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    };
+    let days_to_month: u64 = month_days[..(mo as usize).saturating_sub(1)].iter().sum();
+    let total_days = days_to_year + days_to_month + d.saturating_sub(1);
+    total_days * 86400 + h * 3600 + mi * 60 + s
 }
 
 /// Tokenize a string for keyword search.
@@ -852,5 +1218,152 @@ mod tests {
         let missing = dir.path().join("NONEXISTENT.md");
         let result = db.seed_from_journal(&missing);
         assert!(result.is_err() || result.unwrap() == 0);
+    }
+
+    // ── Hot memories ──────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_hot_memory_insert_and_list() {
+        let db = open_tmp();
+        let id = db.hot_memory_insert(
+            "Operator prefers concise summaries",
+            "concise summaries",
+            "[]",
+            "[\"style\",\"preferences\"]",
+            0.9,
+        ).unwrap();
+        assert!(id > 0);
+
+        let rows = db.hot_memories_list(10).unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].content, "Operator prefers concise summaries");
+        assert_eq!(rows[0].importance, 0.9);
+        assert_eq!(rows[0].access_count, 0);
+    }
+
+    #[test]
+    fn test_hot_memory_search_finds_by_keyword() {
+        let db = open_tmp();
+        db.hot_memory_insert("rust borrow checker patterns", "rust borrow", "[]", "[\"rust\"]", 0.7).unwrap();
+        db.hot_memory_insert("SQLite migration scripts", "sqlite migration", "[]", "[\"database\"]", 0.6).unwrap();
+
+        let results = db.hot_memory_search("rust", 10).unwrap();
+        assert!(!results.is_empty(), "should find rust memory");
+        assert_eq!(results[0].summary, "rust borrow");
+    }
+
+    #[test]
+    fn test_hot_memory_touch_increments_access_count() {
+        let db = open_tmp();
+        let id = db.hot_memory_insert("some fact", "fact", "[]", "[]", 0.6).unwrap();
+        db.hot_memory_touch(id).unwrap();
+        db.hot_memory_touch(id).unwrap();
+
+        let rows = db.hot_memories_list(10).unwrap();
+        assert_eq!(rows[0].access_count, 2, "access_count should be 2 after two touches");
+    }
+
+    #[test]
+    fn test_hot_memory_delete() {
+        let db = open_tmp();
+        let id = db.hot_memory_insert("to be deleted", "delete me", "[]", "[]", 0.5).unwrap();
+        assert!(db.hot_memory_delete(id).unwrap());
+        let rows = db.hot_memories_list(10).unwrap();
+        assert!(rows.is_empty(), "hot memory should be deleted");
+    }
+
+    #[test]
+    fn test_hot_memory_search_no_results() {
+        let db = open_tmp();
+        db.hot_memory_insert("rust memory", "rust", "[]", "[\"rust\"]", 0.7).unwrap();
+        let results = db.hot_memory_search("xyzzy_nothing_here", 10).unwrap();
+        assert!(results.is_empty());
+    }
+
+    // ── Cold memories ─────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_cold_memory_insert_and_list() {
+        let db = open_tmp();
+        let id = db.cold_memory_insert(
+            "Axonix consistently uses async patterns across all modules",
+            "[\"architecture\",\"async\"]",
+            0.8,
+        ).unwrap();
+        assert!(id > 0);
+
+        let rows = db.cold_memories_list(10).unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].content, "Axonix consistently uses async patterns across all modules");
+        assert_eq!(rows[0].reinforcement_count, 0);
+    }
+
+    #[test]
+    fn test_cold_memory_search_finds_by_keyword() {
+        let db = open_tmp();
+        db.cold_memory_insert("async patterns dominate the codebase", "[\"async\",\"architecture\"]", 0.8).unwrap();
+        db.cold_memory_insert("SQLite is used for persistent storage", "[\"database\",\"sqlite\"]", 0.7).unwrap();
+
+        let results = db.cold_memory_search("async", 10).unwrap();
+        assert!(!results.is_empty());
+        assert!(results[0].content.contains("async"));
+    }
+
+    #[test]
+    fn test_cold_memory_reinforce() {
+        let db = open_tmp();
+        let id = db.cold_memory_insert("a synthesized pattern", "[\"pattern\"]", 0.7).unwrap();
+        db.cold_memory_reinforce(id).unwrap();
+
+        let rows = db.cold_memories_list(10).unwrap();
+        assert_eq!(rows[0].reinforcement_count, 1, "reinforcement_count should be 1");
+    }
+
+    #[test]
+    fn test_cold_memory_delete() {
+        let db = open_tmp();
+        let id = db.cold_memory_insert("temporary cold memory", "[]", 0.5).unwrap();
+        assert!(db.cold_memory_delete(id).unwrap());
+        let rows = db.cold_memories_list(10).unwrap();
+        assert!(rows.is_empty());
+    }
+
+    // ── Contradictions ────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_contradiction_insert_and_open() {
+        let db = open_tmp();
+        let cold_id = db.cold_memory_insert("old belief about X", "[\"topic\"]", 0.7).unwrap();
+        db.contradiction_insert(cold_id, "new conflicting belief about X").unwrap();
+
+        let open = db.contradictions_open().unwrap();
+        assert_eq!(open.len(), 1);
+        assert_eq!(open[0].cold_memory_id, cold_id);
+        assert_eq!(open[0].new_memory, "new conflicting belief about X");
+        assert!(!open[0].resolved);
+    }
+
+    #[test]
+    fn test_contradictions_open_empty_when_none() {
+        let db = open_tmp();
+        let open = db.contradictions_open().unwrap();
+        assert!(open.is_empty());
+    }
+
+    // ── add_days_to_utc ───────────────────────────────────────────────────────
+
+    #[test]
+    fn test_add_days_to_utc_basic() {
+        let ts = "2026-01-01T00:00:00Z";
+        let result = add_days_to_utc(ts, 30);
+        assert!(result.starts_with("2026-01-31"), "30 days from Jan 1 should be Jan 31: {result}");
+    }
+
+    #[test]
+    fn test_add_days_crosses_month() {
+        let ts = "2026-01-20T12:00:00Z";
+        let result = add_days_to_utc(ts, 30);
+        // Jan 20 + 30 days = Feb 19
+        assert!(result.starts_with("2026-02-19"), "should be Feb 19: {result}");
     }
 }

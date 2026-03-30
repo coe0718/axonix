@@ -309,6 +309,24 @@ async fn main() {
         return;
     }
 
+    // --extract-memories: run memory extraction on session log and exit
+    if let Some(ref log_path) = cli_args.extract_memories {
+        let path = std::path::Path::new(log_path);
+        let db_path = std::path::Path::new(".axonix/axonix.db");
+        eprintln!("{DIM}  extracting memories from {log_path}...{RESET}");
+        match axonix::memory::capture::extract_and_store(path, db_path).await {
+            Ok(result) => {
+                eprintln!("{GREEN}  ✓ memory extraction complete: {} stored, {} skipped{RESET}",
+                    result.stored, result.skipped);
+            }
+            Err(e) => {
+                eprintln!("{RED}  ✗ memory extraction failed: {e}{RESET}");
+                // Non-fatal — don't exit with error code
+            }
+        }
+        return;
+    }
+
     let api_key = match std::env::var("ANTHROPIC_API_KEY").or_else(|_| std::env::var("API_KEY")) {
         Ok(key) if !key.is_empty() => key,
         _ => {

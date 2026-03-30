@@ -34,6 +34,11 @@
 //! assert!(store.get("operator.tz").is_none());
 //! ```
 
+pub mod capture;
+pub mod consolidator;
+pub mod loader;
+pub mod search;
+
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 

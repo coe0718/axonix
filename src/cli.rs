@@ -29,6 +29,8 @@ pub struct CliArgs {
     pub session_summary_telegram: bool,
     /// If set, insert this row into METRICS.md using insert_metrics_row() (G-072).
     pub insert_metrics_row: Option<String>,
+    /// If set, run memory extraction on the given session log file and exit.
+    pub extract_memories: Option<String>,
 }
 
 impl CliArgs {
@@ -88,6 +90,12 @@ impl CliArgs {
             .and_then(|i| args.get(i + 1))
             .cloned();
 
+        let extract_memories = args
+            .iter()
+            .position(|a| a == "--extract-memories")
+            .and_then(|i| args.get(i + 1))
+            .cloned();
+
         Some(Self {
             model,
             skill_dirs,
@@ -101,6 +109,7 @@ impl CliArgs {
             write_summary,
             session_summary_telegram,
             insert_metrics_row,
+            extract_memories,
         })
     }
 }
@@ -124,6 +133,7 @@ pub fn print_help() {
     println!("  --write-summary <label> Write .axonix/cycle_summary.json from real git/GOALS data and exit");
     println!("  --session-summary-telegram  Read .axonix/cycle_summary.json and send a compact summary to Telegram");
     println!("  --insert-metrics-row <row>  Insert a row into METRICS.md (ordered, deduplicated)");
+    println!("  --extract-memories <path>   Extract memories from session log and store in DB, then exit");
     println!("  --help, -h              Show this help message");
     println!("  --version, -V           Show version");
     println!();
@@ -458,6 +468,15 @@ mod tests {
         assert!(cli.write_summary.is_none(), "write_summary default None");
         assert!(!cli.session_summary_telegram, "session_summary_telegram default false");
         assert!(cli.insert_metrics_row.is_none(), "insert_metrics_row default None");
+        assert!(cli.extract_memories.is_none(), "extract_memories default None");
+    }
+
+    #[test]
+    fn test_extract_memories_flag_parsing() {
+        let args: Vec<String> = vec!["axonix", "--extract-memories", "/tmp/session.log"]
+            .into_iter().map(String::from).collect();
+        let cli = CliArgs::parse(&args).unwrap();
+        assert_eq!(cli.extract_memories.as_deref(), Some("/tmp/session.log"));
     }
 
     /// Verifies --brief-telegram sets both brief and brief_telegram flags (G-031).
