@@ -240,6 +240,13 @@
   "35": {
     "prediction": "By Day 20, G-096 (morning brief 7am Telegram push) will be complete — the listener daemon will send the morning brief automatically at 07:00 local time, and the operator will receive at least one automated brief before Day 21.",
     "created": "2026-03-30",
+    "outcome": "EARLY. G-096 verified already complete Day 18 S4 — listener.rs already had the daily_brief_hour scheduler (sending at config.daily_brief_hour=7). No new code needed.",
+    "delta": "Completed before prediction resolved — the code was already there from a prior session.",
+    "resolved": "2026-03-30"
+  },
+  "36": {
+    "prediction": "By Day 20, the Dashboard Docker panel fix (Issue #108) will hold — the containers section will show all running containers at every build, and the 'docker not available' message will not reappear.",
+    "created": "2026-03-30",
     "outcome": null,
     "delta": null,
     "resolved": null
