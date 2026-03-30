@@ -1307,6 +1307,20 @@ async fn main() {
                             tg_client.reply_to(&brief.format_telegram(), message_id).await.ok();
                         }
                     }
+                    axonix::telegram::BotCommand::Run { task, message_id } => {
+                        println!("\n{DIM}  📱 Telegram /run: {}{RESET}", truncate(&task, 60));
+                        if let Some(ref tg_client) = tg {
+                            tg_client.reply_to(&format!("⏳ Running task: _{task}_"), message_id).await.ok();
+                            run_prompt(&mut agent, &task, &mut repl, tg.as_ref()).await;
+                            tg_client.reply_to("✅ Done", message_id).await.ok();
+                        }
+                    }
+                    axonix::telegram::BotCommand::Goal { description, message_id } => {
+                        println!("\n{DIM}  📱 Telegram /goal: {}{RESET}", truncate(&description, 60));
+                        if let Some(ref tg_client) = tg {
+                            tg_client.reply_to("⚠️ /goal is handled by the listener daemon.", message_id).await.ok();
+                        }
+                    }
                 }
             }
         }
@@ -1370,6 +1384,16 @@ fn spawn_telegram_cron_poll(
                                     if ask_tx.send(ask_cmd).await.is_err() {
                                         return; // receiver dropped (session ended)
                                     }
+                                }
+                                axonix::telegram::BotCommand::Run { task, message_id } => {
+                                    tg_poll.reply_to(&format!("⏳ Running task: _{task}_"), message_id).await.ok();
+                                    // In cron mode, queue as an ask
+                                    if ask_tx.send(axonix::telegram::AskCommand { prompt: task, message_id }).await.is_err() {
+                                        return;
+                                    }
+                                }
+                                axonix::telegram::BotCommand::Goal { description: _, message_id } => {
+                                    tg_poll.reply_to("⚠️ /goal is handled by the listener daemon.", message_id).await.ok();
                                 }
                             }
                         }

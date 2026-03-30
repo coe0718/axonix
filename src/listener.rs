@@ -303,6 +303,119 @@ fn make_listener_agent(api_key: &str, model: &str, system_prompt: &str) -> Agent
 
 // ── run_listener ──────────────────────────────────────────────────────────────
 
+/// Get the last git commit message (first line only).
+/// Returns None on any error.
+fn get_last_commit_message() -> Option<String> {
+    let output = std::process::Command::new("git")
+        .args(["show", "--no-patch", "--format=%s", "HEAD"])
+        .output()
+        .ok()?;
+    if output.status.success() {
+        let msg = String::from_utf8_lossy(&output.stdout);
+        Some(msg.trim().lines().next().unwrap_or("").to_string())
+    } else {
+        None
+    }
+}
+
+/// Append a new goal to the GOALS.md backlog (using default path).
+fn append_goal_to_backlog(description: &str) -> Result<(), String> {
+    append_goal_to_backlog_at(description, std::path::Path::new("GOALS.md"))
+}
+
+/// Append a new goal to a GOALS.md file at the given path.
+///
+/// Adds a minimal entry under the `## Backlog` heading.
+/// Returns Ok(()) if written, Err with message on failure.
+fn append_goal_to_backlog_at(description: &str, path: &std::path::Path) -> Result<(), String> {
+    let content = std::fs::read_to_string(path)
+        .map_err(|e| format!("cannot read GOALS.md: {e}"))?;
+
+    if !content.contains("## Backlog") {
+        return Err("GOALS.md has no ## Backlog section".to_string());
+    }
+
+    // Generate a simple ID based on timestamp (last 4 digits of epoch seconds)
+    let ts = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() % 10000)
+        .unwrap_or(0);
+
+    // Get date from system
+    let date = std::process::Command::new("date")
+        .arg("+%Y-%m-%d")
+        .output()
+        .ok()
+        .and_then(|o| String::from_utf8(o.stdout).ok())
+        .map(|s| s.trim().to_string())
+        .unwrap_or_else(|| "unknown".to_string());
+
+    let entry = format!(
+        "\n### G-TG{ts} — {description}\n\
+        **Why:** Requested via Telegram on {date}.\n\
+        **Definition of done:** TBD — refine in next session.\n",
+    );
+
+    // Insert after "## Backlog\n"
+    let new_content = content.replacen(
+        "## Backlog\n",
+        &format!("## Backlog\n{entry}"),
+        1,
+    );
+
+    std::fs::write(path, new_content)
+        .map_err(|e| format!("cannot write GOALS.md: {e}"))?;
+
+    Ok(())
+}
+
+/// Run a task as a mini sub-agent session and return the result text.
+///
+/// Uses a short-context agent (max 8 turns) focused on the given task.
+async fn run_mini_session(task: &str, api_key: &str, model: &str) -> Result<String, String> {
+    let system_prompt = "You are Axonix, running a short focused task requested via Telegram.\n\
+        Complete the task concisely. Keep your response under 2000 characters.\n\
+        If you cannot complete the task in 8 turns, summarise what you did and what remains.";
+
+    let mut agent = Agent::new(AnthropicProvider)
+        .with_system_prompt(system_prompt)
+        .with_model(model)
+        .with_api_key(api_key)
+        .with_tools(default_tools())
+        .with_context_config(ContextConfig {
+            max_context_tokens: 40_000,
+            system_prompt_tokens: 2_000,
+            keep_recent: 8,
+            keep_first: 1,
+            tool_output_max_lines: 20,
+        })
+        .with_retry_config(RetryConfig {
+            max_retries: 2,
+            initial_delay_ms: 1000,
+            backoff_multiplier: 2.0,
+            max_delay_ms: 15_000,
+        });
+
+    let mut rx = agent.prompt(task).await;
+    let mut result = String::new();
+
+    while let Some(event) = rx.recv().await {
+        if let AgentEvent::MessageUpdate {
+            delta: StreamDelta::Text { delta },
+            ..
+        } = event
+        {
+            result.push_str(&delta);
+        }
+    }
+
+    if result.is_empty() {
+        Err("mini-session produced no output".to_string())
+    } else {
+        Ok(result)
+    }
+}
+
 /// Run the always-on Telegram listener loop.
 ///
 /// Polls Telegram every `config.poll_interval_secs` seconds.
@@ -457,13 +570,44 @@ pub async fn run_listener(
                     let _ = tg.reply_to(&reply, message_id).await;
                     stats.messages_handled += 1;
                 }
+                BotCommand::Goal { description, message_id } => {
+                    match append_goal_to_backlog(&description) {
+                        Ok(()) => {
+                            let reply = format!("✅ Goal added to backlog:\n_{description}_");
+                            let _ = tg.reply_to(&reply, message_id).await;
+                        }
+                        Err(e) => {
+                            let reply = format!("⚠️ Failed to add goal: {e}");
+                            let _ = tg.reply_to(&reply, message_id).await;
+                            stats.errors += 1;
+                        }
+                    }
+                    stats.messages_handled += 1;
+                }
+                BotCommand::Run { task, message_id } => {
+                    let _ = tg.reply_to(&format!("⏳ Running task: _{task}_"), message_id).await;
+                    match run_mini_session(&task, api_key, model).await {
+                        Ok(result) => {
+                            let reply = TelegramClient::format_response(&result);
+                            for chunk in &reply {
+                                let _ = tg.reply_to(chunk, message_id).await;
+                            }
+                        }
+                        Err(e) => {
+                            let _ = tg.reply_to(&format!("⚠️ Task failed: {e}"), message_id).await;
+                            stats.errors += 1;
+                        }
+                    }
+                    stats.messages_handled += 1;
+                }
                 BotCommand::Status { message_id } => {
-                    let reply = TelegramClient::format_status_reply(
+                    let active_goal = crate::brief::parse_active_goals().into_iter().next();
+                    let last_commit = get_last_commit_message();
+                    let reply = TelegramClient::format_enhanced_status_reply(
                         model,
-                        "listener",
                         stats.uptime_secs,
-                        0,
-                        0,
+                        active_goal.as_deref(),
+                        last_commit.as_deref(),
                     );
                     let _ = tg.reply_to(&reply, message_id).await;
                     stats.messages_handled += 1;
@@ -896,5 +1040,45 @@ mod tests {
     fn test_local_hour_returns_valid_hour() {
         let h = local_hour();
         assert!(h < 24, "local_hour() should return 0-23, got {h}");
+    }
+
+    // ── append_goal_to_backlog ────────────────────────────────────────────────
+
+    #[test]
+    fn test_append_goal_to_backlog_adds_entry() {
+        let dir = tempfile::tempdir().unwrap();
+        let goals_path = dir.path().join("GOALS.md");
+
+        // Write minimal GOALS.md with a Backlog section
+        std::fs::write(&goals_path, "# Goals\n\n## Backlog\n\n## Completed\n").unwrap();
+
+        let result = append_goal_to_backlog_at("add dark mode to dashboard", &goals_path);
+
+        assert!(result.is_ok(), "append_goal_to_backlog_at should succeed: {result:?}");
+        let content = std::fs::read_to_string(&goals_path).unwrap();
+        assert!(content.contains("add dark mode to dashboard"), "goal description should appear in GOALS.md");
+        assert!(content.contains("## Backlog"), "Backlog section should still exist");
+    }
+
+    #[test]
+    fn test_append_goal_fails_without_backlog_section() {
+        let dir = tempfile::tempdir().unwrap();
+        let goals_path = dir.path().join("GOALS.md");
+        std::fs::write(&goals_path, "# Goals\n\nNo backlog here.\n").unwrap();
+
+        let result = append_goal_to_backlog_at("some goal", &goals_path);
+
+        assert!(result.is_err(), "should fail when no ## Backlog section");
+    }
+
+    // ── get_last_commit_message ────────────────────────────────────────────────
+
+    #[test]
+    fn test_get_last_commit_message_returns_something_in_git_repo() {
+        // We're in a git repo so this should work
+        let msg = get_last_commit_message();
+        // May be None if git show fails for some reason, but in a real repo it should be Some
+        // Just test it doesn't panic
+        let _ = msg;
     }
 }

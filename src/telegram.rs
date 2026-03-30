@@ -294,6 +294,40 @@ pub fn is_brief_command(text: &str) -> bool {
     matches!(text.trim(), "/brief")
 }
 
+/// Parse a `/run <task>` command. Returns the task text, or None.
+pub fn parse_run_command(text: &str) -> Option<&str> {
+    let text = text.trim();
+    if let Some(rest) = text.strip_prefix("/run") {
+        let task = rest.trim();
+        if !task.is_empty() {
+            return Some(task);
+        }
+    }
+    None
+}
+
+/// Parse a `/goal <description>` command. Returns the description, or None.
+pub fn parse_goal_command(text: &str) -> Option<&str> {
+    let text = text.trim();
+    if let Some(rest) = text.strip_prefix("/goal") {
+        let desc = rest.trim();
+        if !desc.is_empty() {
+            return Some(desc);
+        }
+    }
+    None
+}
+
+/// Check whether a Telegram message is a `/run <task>` command.
+pub fn is_run_command(text: &str) -> bool {
+    parse_run_command(text).is_some()
+}
+
+/// Check whether a Telegram message is a `/goal <description>` command.
+pub fn is_goal_command(text: &str) -> bool {
+    parse_goal_command(text).is_some()
+}
+
 /// The help text shown to Telegram users.
 ///
 /// Kept as a constant so the poll loop and tests share the same string.
@@ -301,6 +335,8 @@ pub const TELEGRAM_HELP_TEXT: &str = "\
 *Axonix Bot* — Available commands:
 
 /ask <prompt> — Send a prompt to the agent and get a response
+/run <task> — Execute a task as a mini-session and report the result
+/goal <description> — Add a goal to the backlog immediately
 /status — Show current session status (model, mode, uptime)
 /health — Show system health (CPU, memory, disk, uptime)
 /brief — Morning brief: active goals, open predictions, recent sessions
@@ -309,6 +345,8 @@ pub const TELEGRAM_HELP_TEXT: &str = "\
 *Examples:*
 • /ask explain how async Rust works
 • /ask what files are in /workspace/src?
+• /run check disk usage
+• /goal add dark mode to dashboard
 • /status
 • /health
 • /brief
@@ -331,6 +369,10 @@ pub enum BotCommand {
     Health { message_id: i64 },
     /// `/brief` — send the morning brief (active goals, predictions, recent sessions).
     Brief { message_id: i64 },
+    /// `/run <task>` — spin up a mini sub-agent session with the given prompt.
+    Run { task: String, message_id: i64 },
+    /// `/goal <description>` — append a goal to GOALS.md backlog.
+    Goal { description: String, message_id: i64 },
 }
 
 impl TelegramClient {
@@ -356,6 +398,12 @@ impl TelegramClient {
                 }
                 if is_brief_command(text) {
                     return Some(BotCommand::Brief { message_id: msg.message_id });
+                }
+                if let Some(task) = parse_run_command(text) {
+                    return Some(BotCommand::Run { task: task.to_string(), message_id: msg.message_id });
+                }
+                if let Some(desc) = parse_goal_command(text) {
+                    return Some(BotCommand::Goal { description: desc.to_string(), message_id: msg.message_id });
                 }
                 let prompt = parse_ask_command(text)?;
                 Some(BotCommand::Ask(AskCommand {
@@ -393,6 +441,35 @@ impl TelegramClient {
             ⏱ uptime: {elapsed_str}\n\
             📊 tokens: {tokens_in} in / {tokens_out} out",
         )
+    }
+
+    /// Build an enhanced status reply including active goal and last commit.
+    pub fn format_enhanced_status_reply(
+        model: &str,
+        elapsed_secs: u64,
+        active_goal: Option<&str>,
+        last_commit: Option<&str>,
+    ) -> String {
+        let mins = elapsed_secs / 60;
+        let secs = elapsed_secs % 60;
+        let elapsed_str = if mins > 0 {
+            format!("{mins}m {secs}s")
+        } else {
+            format!("{secs}s")
+        };
+        let mut parts = vec![
+            format!("*Axonix Status*"),
+            format!("🤖 model: `{model}`"),
+            format!("⚙️ mode: listener"),
+            format!("⏱ uptime: {elapsed_str}"),
+        ];
+        if let Some(goal) = active_goal {
+            parts.push(format!("🎯 active goal: {goal}"));
+        }
+        if let Some(commit) = last_commit {
+            parts.push(format!("📝 last commit: {commit}"));
+        }
+        parts.join("\n")
     }
 }
 
@@ -956,5 +1033,122 @@ mod tests {
     #[test]
     fn test_help_text_mentions_brief() {
         assert!(TELEGRAM_HELP_TEXT.contains("/brief"), "help text must mention /brief command");
+    }
+
+    // ── parse_run_command ──────────────────────────────────────────────────────
+
+    #[test]
+    fn test_parse_run_command_basic() {
+        assert_eq!(parse_run_command("/run check disk usage"), Some("check disk usage"));
+    }
+
+    #[test]
+    fn test_parse_run_command_empty_returns_none() {
+        assert_eq!(parse_run_command("/run"), None);
+        assert_eq!(parse_run_command("/run   "), None);
+    }
+
+    #[test]
+    fn test_parse_run_command_non_run_returns_none() {
+        assert_eq!(parse_run_command("/ask hello"), None);
+        assert_eq!(parse_run_command("run: something"), None);
+        assert_eq!(parse_run_command(""), None);
+    }
+
+    // ── parse_goal_command ────────────────────────────────────────────────────
+
+    #[test]
+    fn test_parse_goal_command_basic() {
+        assert_eq!(parse_goal_command("/goal add dark mode to dashboard"), Some("add dark mode to dashboard"));
+    }
+
+    #[test]
+    fn test_parse_goal_command_empty_returns_none() {
+        assert_eq!(parse_goal_command("/goal"), None);
+        assert_eq!(parse_goal_command("/goal   "), None);
+    }
+
+    #[test]
+    fn test_parse_goal_command_non_goal_returns_none() {
+        assert_eq!(parse_goal_command("/ask hello"), None);
+        assert_eq!(parse_goal_command("goal: something"), None);
+    }
+
+    // ── extract_commands with /run and /goal ──────────────────────────────────
+
+    #[test]
+    fn test_extract_commands_run_detected() {
+        let client = make_client();
+        let updates = vec![make_update(1, 12345, 5, "/run check disk usage")];
+        let commands = client.extract_commands(&updates);
+        assert_eq!(commands.len(), 1);
+        if let BotCommand::Run { task, message_id } = &commands[0] {
+            assert_eq!(task, "check disk usage");
+            assert_eq!(*message_id, 5);
+        } else {
+            panic!("expected BotCommand::Run, got {:?}", commands[0]);
+        }
+    }
+
+    #[test]
+    fn test_extract_commands_goal_detected() {
+        let client = make_client();
+        let updates = vec![make_update(1, 12345, 7, "/goal add dark mode")];
+        let commands = client.extract_commands(&updates);
+        assert_eq!(commands.len(), 1);
+        if let BotCommand::Goal { description, message_id } = &commands[0] {
+            assert_eq!(description, "add dark mode");
+            assert_eq!(*message_id, 7);
+        } else {
+            panic!("expected BotCommand::Goal, got {:?}", commands[0]);
+        }
+    }
+
+    #[test]
+    fn test_extract_commands_run_empty_not_extracted() {
+        let client = make_client();
+        let updates = vec![make_update(1, 12345, 1, "/run")];
+        let commands = client.extract_commands(&updates);
+        // /run with no task should not produce a Run command (no valid task)
+        assert!(commands.is_empty(), "empty /run should produce no commands: {commands:?}");
+    }
+
+    #[test]
+    fn test_help_text_mentions_run() {
+        assert!(TELEGRAM_HELP_TEXT.contains("/run"), "help text must mention /run command");
+    }
+
+    #[test]
+    fn test_help_text_mentions_goal() {
+        assert!(TELEGRAM_HELP_TEXT.contains("/goal"), "help text must mention /goal command");
+    }
+
+    // ── format_enhanced_status_reply ─────────────────────────────────────────
+
+    #[test]
+    fn test_format_enhanced_status_reply_with_goal_and_commit() {
+        let reply = TelegramClient::format_enhanced_status_reply(
+            "claude-sonnet-4-6",
+            120,
+            Some("G-094 — Telegram task triggers"),
+            Some("feat(listener): add /run and /goal commands"),
+        );
+        assert!(reply.contains("claude-sonnet-4-6"), "should show model: {reply}");
+        assert!(reply.contains("G-094"), "should show active goal: {reply}");
+        assert!(reply.contains("feat(listener)"), "should show last commit: {reply}");
+        assert!(reply.contains("listener"), "should show mode: {reply}");
+    }
+
+    #[test]
+    fn test_format_enhanced_status_reply_without_goal_or_commit() {
+        let reply = TelegramClient::format_enhanced_status_reply("m", 0, None, None);
+        assert!(!reply.contains("active goal"), "no goal section if None: {reply}");
+        assert!(!reply.contains("last commit"), "no commit section if None: {reply}");
+    }
+
+    #[test]
+    fn test_format_enhanced_status_reply_uptime_minutes() {
+        let reply = TelegramClient::format_enhanced_status_reply("m", 185, None, None);
+        assert!(reply.contains("3m"), "185s should show as 3m: {reply}");
     }
 }
