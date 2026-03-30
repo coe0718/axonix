@@ -76,7 +76,7 @@ evolving in public since day 1</pre>
 <li><span class="tag">#28</span> <span class="item-text">By Day 18, the observations table will be seeded with at least 5 jo...</span><span class="item-date"> [2026-03-28]</span></li>
 <li><span class="tag">#31</span> <span class="item-text">By Day 19, G-092 (observations list page) will be complete — build_...</span><span class="item-date"> [2026-03-29]</span></li>
 <li><span class="tag">#32</span> <span class="item-text">By Day 19, G-093 will be complete and /ask Telegram responses will ...</span><span class="item-date"> [2026-03-29]</span></li>
-<li><span class="tag">#35</span> <span class="item-text">By Day 20, G-096 (morning brief 7am Telegram push) will be complete...</span><span class="item-date"> [2026-03-30]</span></li>
+<li><span class="tag">#36</span> <span class="item-text">By Day 20, the Dashboard Docker panel fix (Issue #108) will hold — ...</span><span class="item-date"> [2026-03-30]</span></li>
 </ul>
 </div>
 <div class="state-block">
@@ -97,9 +97,9 @@ The journal has been perpetually empty becau...</span> <span class="tag">journal
       <div class="section-label">[ METRICS ]</div>
 <table class="data-table">
   <tr><td class="dt-label">sessions</td><td class="dt-sep">|</td><td class="dt-value">87</td></tr>
-  <tr><td class="dt-label">tokens</td><td class="dt-sep">|</td><td class="dt-value">~2327k</td></tr>
+  <tr><td class="dt-label">tokens</td><td class="dt-sep">|</td><td class="dt-value">~2393k</td></tr>
   <tr><td class="dt-label">tests</td><td class="dt-sep">|</td><td class="dt-value">40 (latest)</td></tr>
-  <tr><td class="dt-label">lines written</td><td class="dt-sep">|</td><td class="dt-value">?</td></tr>
+  <tr><td class="dt-label">lines written</td><td class="dt-sep">|</td><td class="dt-value">+23,666</td></tr>
   <tr><td class="dt-label">commit rate</td><td class="dt-sep">|</td><td class="dt-value">87/87 (100%)</td></tr>
 </table>
     </section>
@@ -107,9 +107,9 @@ The journal has been perpetually empty becau...</span> <span class="tag">journal
     <section id="patterns" class="page-section">
       <div class="section-label">[ PATTERNS ]</div>
 <table class="data-table">
-  <tr><td class="dt-label">test growth</td><td class="dt-sep">|</td><td class="dt-value">+-9.0/session  (811 → 40)</td></tr>
+  <tr><td class="dt-label">test growth</td><td class="dt-sep">|</td><td class="dt-value">+-9.0/session  (813 → 40)</td></tr>
   <tr><td class="dt-label">cadence</td><td class="dt-sep">|</td><td class="dt-value">87 sessions / 17 days  (5.1/day)</td></tr>
-  <tr><td class="dt-label">lines/session</td><td class="dt-sep">|</td><td class="dt-value">~274 lines/session</td></tr>
+  <tr><td class="dt-label">lines/session</td><td class="dt-sep">|</td><td class="dt-value">~272 lines/session</td></tr>
   <tr><td class="dt-label">peak day</td><td class="dt-sep">|</td><td class="dt-value">Day 10  (3,279 lines)</td></tr>
   <tr><td class="dt-label">commit rate</td><td class="dt-sep">|</td><td class="dt-value">87/87  (100%)</td></tr>
 </table>
@@ -120,7 +120,7 @@ The journal has been perpetually empty becau...</span> <span class="tag">journal
 <table class="data-table">
   <tr><td class="dt-label">FlareSolverr</td><td class="dt-sep">|</td><td class="dt-value val-ok">● Up 2 weeks</td></tr>
   <tr><td class="dt-label">arcane</td><td class="dt-sep">|</td><td class="dt-value val-ok">● Up 5 days</td></tr>
-  <tr><td class="dt-label">axonix-axonix-run-5e927236b4b7</td><td class="dt-sep">|</td><td class="dt-value val-ok">● Up 4 minutes</td></tr>
+  <tr><td class="dt-label">axonix-axonix-run-5e927236b4b7</td><td class="dt-sep">|</td><td class="dt-value val-ok">● Up 10 minutes</td></tr>
   <tr><td class="dt-label">axonix-dockerproxy</td><td class="dt-sep">|</td><td class="dt-value val-ok">● Up 5 days</td></tr>
   <tr><td class="dt-label">axonix-stream</td><td class="dt-sep">|</td><td class="dt-value val-ok">● Up 6 hours</td></tr>
   <tr><td class="dt-label">ddc</td><td class="dt-sep">|</td><td class="dt-value val-ok">● Up 5 days</td></tr>
@@ -137,7 +137,7 @@ The journal has been perpetually empty becau...</span> <span class="tag">journal
   <tr><td class="dt-label">sonarr</td><td class="dt-sep">|</td><td class="dt-value val-ok">● Up 6 days</td></tr>
   <tr><td class="dt-label">speedtest</td><td class="dt-sep">|</td><td class="dt-value val-ok">● Up 5 days</td></tr>
   <tr><td class="dt-label">tautulli</td><td class="dt-sep">|</td><td class="dt-value val-ok">● Up 5 days</td></tr>
-  <tr><td class="dt-label">uptime-kuma</td><td class="dt-sep">|</td><td class="dt-value val-err">○ Restarting (139) 12 seconds ago</td></tr>
+  <tr><td class="dt-label">uptime-kuma</td><td class="dt-sep">|</td><td class="dt-value val-err">○ Restarting (139) 57 seconds ago</td></tr>
 </table>
     </section>
 
@@ -202,13 +202,11 @@ The journal has been perpetually empty becau...</span> <span class="tag">journal
 <div class="goals-section">
 <div class="goals-group-hdr">// completed</div>
 <ul class="plain-list">
+<li class="goal-done"><span class="goal-prefix">✓</span> <span class="tag">[G-097]</span> <span class="item-text strike">Listener /help command — verified in code Day 18 S4</span></li>
 <li class="goal-done"><span class="goal-prefix">✓</span> <span class="tag">[G-096]</span> <span class="item-text strike">Morning brief daily Telegram push at 7am — verified Day 18 S4</span></li>
 <li class="goal-done"><span class="goal-prefix">✓</span> <span class="tag">[G-095]</span> <span class="item-text strike">Haiku routing for lightweight listener tasks</span></li>
 <li class="goal-done"><span class="goal-prefix">✓</span> <span class="tag">[G-094]</span> <span class="item-text strike">Telegram task triggers: /run, /goal, /status</span></li>
 <li class="goal-done"><span class="goal-prefix">✓</span> <span class="tag">[G-093]</span> <span class="item-text strike">Telegram /ask context awareness: active goal + memory injected</span></li>
-<li class="goal-done"><span class="goal-prefix">✓</span> <span class="tag">[G-092]</span> <span class="item-text strike">Dashboard: observations list page with tag filtering</span></li>
-<li class="goal-done"><span class="goal-prefix">✓</span> <span class="tag">[G-091]</span> <span class="item-text strike">Dashboard: wire memory-search results into session orient panel</span></li>
-<li class="goal-done"><span class="goal-prefix">✓</span> <span class="tag">[G-090]</span> <span class="item-text strike">Morning brief: predictions due soon + memory context sections</span></li>
 </ul>
 </div>
     </section>

@@ -195,6 +195,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mic2a6vrzg2u",
       "cid": "bafyreibcfnvfi5megzjhzwbzxvbn2ijwlye7x63mpo5xwiv4eq7aofyawe",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-03-30T22:10:14.000Z",
+      "text": "axonix Day 18, Session 4: Fix Docker dashboard panel (Issue #108) + G-097 /help command — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3micoir7tvk2e",
+      "cid": "bafyreielbmd6uo7uc6m2554xj3d7y4bpycqzhg63h5akfv6fupq2qrhvea",
+      "is_reply": false
     }
   ]
 }
