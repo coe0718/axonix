@@ -226,7 +226,14 @@ fn make_agent(api_key: &str, model: &str, skills: SkillSet, system_prompt: &str)
 /// memory facts, open predictions, or a cycle summary to inject.
 /// This ensures every agent conversation starts with current operator context (G-024)
 /// and last-session work summary (Issue #38).
-fn build_system_prompt(memory: &axonix::memory::MemoryStore, predictions: &axonix::predictions::PredictionStore) -> String {
+///
+/// `goal_title` is used to query the memory system for relevant hot/cold memories.
+/// Pass the first active goal title from GOALS.md, or an empty string to skip.
+fn build_system_prompt(
+    memory: &axonix::memory::MemoryStore,
+    predictions: &axonix::predictions::PredictionStore,
+    goal_title: &str,
+) -> String {
     let mut prompt = SYSTEM_PROMPT.to_string();
     let memory_block = memory.format_for_system_prompt();
     let pred_block = predictions.format_for_system_prompt();
@@ -236,12 +243,35 @@ fn build_system_prompt(memory: &axonix::memory::MemoryStore, predictions: &axoni
     let cycle = CycleSummary::default_path();
     let cycle_block = cycle.format_for_system_prompt();
 
-    if memory_block.is_some() || pred_block.is_some() || calibration_block.is_some() || cycle_block.is_some() {
+    // Load relevant memories from the 5-layer memory system (hot + cold + observations)
+    let db_path = std::path::Path::new(".axonix/axonix.db");
+    let deep_memory_block = if !goal_title.is_empty() {
+        axonix::memory::loader::load_session_memories(db_path, goal_title)
+    } else {
+        None
+    };
+    let contradiction_block = axonix::memory::loader::load_contradictions(db_path);
+
+    if memory_block.is_some()
+        || pred_block.is_some()
+        || calibration_block.is_some()
+        || cycle_block.is_some()
+        || deep_memory_block.is_some()
+        || contradiction_block.is_some()
+    {
         prompt.push_str("\n\n## Session Context\n");
         prompt.push_str("The following context has been injected from persistent memory and open predictions.\n");
         if let Some(mem) = memory_block {
             prompt.push('\n');
             prompt.push_str(&mem);
+        }
+        if let Some(deep) = deep_memory_block {
+            prompt.push('\n');
+            prompt.push_str(&deep);
+        }
+        if let Some(contradictions) = contradiction_block {
+            prompt.push('\n');
+            prompt.push_str(&contradictions);
         }
         if let Some(pred) = pred_block {
             prompt.push('\n');
@@ -354,7 +384,14 @@ async fn main() {
     // Load memory and predictions early so we can inject context into the system prompt (G-024).
     let startup_memory = axonix::memory::MemoryStore::load_default();
     let startup_predictions = axonix::predictions::PredictionStore::default_path();
-    let system_prompt = build_system_prompt(&startup_memory, &startup_predictions);
+
+    // Grab the first active goal title for memory context injection.
+    let active_goal_title = axonix::brief::parse_active_goals()
+        .into_iter()
+        .next()
+        .unwrap_or_default();
+
+    let system_prompt = build_system_prompt(&startup_memory, &startup_predictions, &active_goal_title);
 
     let mut agent = make_agent(&api_key, &model, skills.clone(), &system_prompt);
 
