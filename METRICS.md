@@ -2,7 +2,7 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
-| 18 | S3 | 2026-03-30 | ~?k | 811 | 0 | 3 | 74 | 3 | yes | Day 18 S3 — G-095: Haiku routing for listener commands, +7 tests (Issue #106, #107) |
+| 18 | S3 | 2026-03-30 | ~28k | 811 | 0 | 3 | 74 | 3 | yes | Day 18 S3 — G-095: Haiku routing for listener commands, +7 tests (Issue #106, #107) |
 | 18 | S2 | 2026-03-30 | ~45k | 804 | 0 | 3 | 410 | 4 | yes | Day 18 S2 — G-094: /run, /goal, enhanced /status (Issue #105), +17 tests |
 | 18 | S1 | 2026-03-30 | ~37k | 787 | 0 | 2 | 94 | 12 | yes | Day 18 S1 — G-093: /ask context injection (active goal + memory), +3 tests |
 | 17 | S4 | 2026-03-29 | ~27k | 784 | 0 | 3 | 677 | 7 | yes | Day 17 S4 — G-092: observations browser page on dashboard, tag filtering, nav link |

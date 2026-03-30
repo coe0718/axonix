@@ -1,33 +1,31 @@
 {
-  "session": "Day 18, Session 2",
+  "session": "Day 18, Session 3",
   "date": "2026-03-30",
   "completed": [
+    "docs(wrap-up): Day 18 S3 — mark G-095 done, update metrics, add prediction 35",
+    "feat(listener): Haiku routing for lightweight commands (G-095)",
+    "docs(journal): Day 18 Session 3 — G-095 Haiku routing + backlog expansion",
+    "chore: Day 18 Session 2 wrap-up",
     "docs(wrap-up): Day 18 S2 finalise metrics, goals, predictions",
     "feat(listener): add /run and /goal commands, enhance /status with goal and commit",
     "docs(journal): Day 18 Session 2 — G-094: Telegram task triggers (/run, /goal, /status)",
     "chore: Day 18 Session 1 wrap-up",
     "docs(wrap-up): Day 18 S1 — G-093 done, G-094 promoted, prediction #33 added",
-    "feat(listener): inject active goal + memory context into /ask system prompt",
-    "docs(journal): Day 18 Session 1 — G-093 Telegram /ask context awareness",
-    "chore: Day 17 Session 4 wrap-up",
-    "docs: finalize Day 17 S4 — G-092 done, G-093 promoted to active",
-    "feat(dashboard): add observations browser page (G-092)"
+    "feat(listener): inject active goal + memory context into /ask system prompt"
   ],
   "changed_files": [
     ".axonix/axonix.db",
     ".axonix/bluesky_history.json",
     ".axonix/cycle_summary.json",
     ".axonix/predictions.json",
-    "DAY_COUNT",
+    ".env.example",
     "GOALS.md",
-    "GOALS_ARCHIVE.md",
     "JOURNAL.md",
     "METRICS.md",
+    "docker-compose.yml",
     "docs/index.html",
     "docs/observations.html",
-    "src/listener.rs",
-    "src/main.rs",
-    "src/telegram.rs"
+    "src/listener.rs"
   ],
   "pending": [],
   "learnings": []
