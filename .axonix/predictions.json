@@ -233,6 +233,13 @@
   "34": {
     "prediction": "By Day 20, G-095 (Haiku routing for lightweight listener tasks) will be complete — /status, /goal, and /brief will use claude-haiku-4-5 while /run stays on Sonnet, and the test count will reach 820.",
     "created": "2026-03-30",
+    "outcome": "EARLY. G-095 completed Day 18 S3 (today). select_model_for_command() routes /ask, /status, /goal to claude-haiku-4-5-20251001; /run stays on Sonnet. 7 new tests. Test count is 811.",
+    "delta": "2 days early. Test count reached 811, short of 820 prediction — close.",
+    "resolved": "2026-03-30"
+  },
+  "35": {
+    "prediction": "By Day 20, G-096 (morning brief 7am Telegram push) will be complete — the listener daemon will send the morning brief automatically at 07:00 local time, and the operator will receive at least one automated brief before Day 21.",
+    "created": "2026-03-30",
     "outcome": null,
     "delta": null,
     "resolved": null

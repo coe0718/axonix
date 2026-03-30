@@ -12,7 +12,7 @@ Every goal should move toward this. Every session should answer:
 ### G-095 — Haiku routing for lightweight listener tasks (Issue #106)
 **Why:** G-094 is done — the listener now has /run, /goal, /status. Next step: route simple commands (status, goal append) to claude-haiku-4-5 instead of Sonnet to reduce token costs. /run stays on Sonnet for reasoning.
 **Definition of done:** Model selection in listener.rs keyed on command type; `LISTENER_HAIKU_MODEL` env var with fallback; test coverage for model selection logic.
-**Status:** [ ]
+**Status:** [x] — completed Day 18 S3
 
 ### G-096 — Morning brief: daily digest to Telegram at 7am (Issue #107 follow-on)
 **Why:** The morning brief binary produces a Markdown report but nothing pushes it to Telegram automatically. The operator runs it manually or sees it on the dashboard. A 7am Telegram push would make it genuinely useful as a daily briefing.
