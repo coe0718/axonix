@@ -50,6 +50,18 @@ use yoagent::retry::RetryConfig;
 use yoagent::{AgentEvent, StreamDelta};
 use std::collections::HashSet;
 
+/// Default Haiku model for lightweight listener tasks
+pub const DEFAULT_HAIKU_MODEL: &str = "claude-haiku-4-5-20251001";
+
+/// Select which model to use based on Telegram command type.
+/// /run needs full reasoning → Sonnet. Other commands are cheap → Haiku.
+pub fn select_model_for_command(command: &str, sonnet_model: &str, haiku_model: &str) -> String {
+    match command.trim() {
+        cmd if cmd.starts_with("/run") => sonnet_model.to_string(),
+        _ => haiku_model.to_string(),
+    }
+}
+
 // ── Config ────────────────────────────────────────────────────────────────────
 
 /// Configuration for the always-on Telegram listener.
@@ -429,6 +441,10 @@ pub async fn run_listener(
     api_key: &str,
     model: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // Derive Haiku model for lightweight commands (LISTENER_HAIKU_MODEL env var or default)
+    let haiku_model = std::env::var("LISTENER_HAIKU_MODEL")
+        .unwrap_or_else(|_| DEFAULT_HAIKU_MODEL.to_string());
+
     // Load conversation memory from config path or default
     let memory_path = config
         .memory_path
@@ -438,11 +454,13 @@ pub async fn run_listener(
     let mut mem = ConversationMemory::load(&memory_path);
 
     // Build system prompt and agent (refreshed if context grows too large)
+    // /ask uses Haiku — cheap, fast responses
     let active_goal = crate::brief::parse_active_goals().into_iter().next();
     let goal_title_ref = active_goal.as_deref().unwrap_or("");
     let mem_ctx = crate::brief::collect_memory_context(goal_title_ref);
     let system_prompt = build_listener_system_prompt(&mem, active_goal.as_deref(), &mem_ctx);
-    let mut agent = make_listener_agent(api_key, model, &system_prompt);
+    let ask_model = select_model_for_command("/ask", model, &haiku_model);
+    let mut agent = make_listener_agent(api_key, &ask_model, &system_prompt);
     let mut agent_turn_count: usize = 0;
 
     let mut stats = ListenerStats::new();
@@ -500,7 +518,8 @@ pub async fn run_listener(
                         let refresh_title = refresh_goal.as_deref().unwrap_or("");
                         let refresh_ctx = crate::brief::collect_memory_context(refresh_title);
                         let fresh_prompt = build_listener_system_prompt(&mem, refresh_goal.as_deref(), &refresh_ctx);
-                        agent = make_listener_agent(api_key, model, &fresh_prompt);
+                        let refresh_ask_model = select_model_for_command("/ask", model, &haiku_model);
+                        agent = make_listener_agent(api_key, &refresh_ask_model, &fresh_prompt);
                         agent_turn_count = 0;
                     }
 
@@ -586,7 +605,9 @@ pub async fn run_listener(
                 }
                 BotCommand::Run { task, message_id } => {
                     let _ = tg.reply_to(&format!("⏳ Running task: _{task}_"), message_id).await;
-                    match run_mini_session(&task, api_key, model).await {
+                    // /run uses Sonnet — needs full reasoning and code capability
+                    let run_model = select_model_for_command("/run", model, &haiku_model);
+                    match run_mini_session(&task, api_key, &run_model).await {
                         Ok(result) => {
                             let reply = TelegramClient::format_response(&result);
                             for chunk in &reply {
@@ -1080,5 +1101,49 @@ mod tests {
         // May be None if git show fails for some reason, but in a real repo it should be Some
         // Just test it doesn't panic
         let _ = msg;
+    }
+}
+
+#[cfg(test)]
+mod haiku_routing_tests {
+    use super::*;
+
+    const SONNET: &str = "claude-sonnet-4-6";
+    const HAIKU: &str = "claude-haiku-4-5-20251001";
+
+    #[test]
+    fn test_run_uses_sonnet() {
+        assert_eq!(select_model_for_command("/run build me a thing", SONNET, HAIKU), SONNET);
+    }
+
+    #[test]
+    fn test_run_no_args_uses_sonnet() {
+        assert_eq!(select_model_for_command("/run", SONNET, HAIKU), SONNET);
+    }
+
+    #[test]
+    fn test_ask_uses_haiku() {
+        assert_eq!(select_model_for_command("/ask what is 2+2", SONNET, HAIKU), HAIKU);
+    }
+
+    #[test]
+    fn test_status_uses_haiku() {
+        assert_eq!(select_model_for_command("/status", SONNET, HAIKU), HAIKU);
+    }
+
+    #[test]
+    fn test_goal_uses_haiku() {
+        assert_eq!(select_model_for_command("/goal add logging", SONNET, HAIKU), HAIKU);
+    }
+
+    #[test]
+    fn test_unknown_uses_haiku() {
+        assert_eq!(select_model_for_command("/help", SONNET, HAIKU), HAIKU);
+    }
+
+    #[test]
+    fn test_custom_haiku_model() {
+        let custom = "claude-haiku-custom";
+        assert_eq!(select_model_for_command("/ask hi", SONNET, custom), custom);
     }
 }

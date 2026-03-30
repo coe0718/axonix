@@ -44,6 +44,7 @@ services:
       - CARGO_HOME=/workspace/.cargo
       - CARGO_INCREMENTAL=0
       - MODEL=${MODEL:-claude-sonnet-4-6}
+      - LISTENER_HAIKU_MODEL=${LISTENER_HAIKU_MODEL:-claude-haiku-4-5-20251001}
       - CADDY_ADMIN_URL=${CADDY_ADMIN_URL:-http://192.168.1.114:2019}
     restart: always
 
@@ -74,6 +75,7 @@ services:
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
       - AXONIX_BOT_TOKEN=${AXONIX_BOT_TOKEN}
       - MODEL=${MODEL:-claude-sonnet-4-6}
+      - LISTENER_HAIKU_MODEL=${LISTENER_HAIKU_MODEL:-claude-haiku-4-5-20251001}
       - BLUESKY_IDENTIFIER=${BLUESKY_IDENTIFIER}
       - BLUESKY_APP_PASSWORD=${BLUESKY_APP_PASSWORD}
       - CADDY_ADMIN_URL=${CADDY_ADMIN_URL:-http://localhost:2019}
