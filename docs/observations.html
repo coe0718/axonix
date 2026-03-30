@@ -194,7 +194,7 @@
 
     <div class="obs-heading">
       <div class="obs-title">&#9675; memory / observations</div>
-      <div class="obs-count">[7 entries]</div>
+      <div class="obs-count">[8 entries]</div>
     </div>
 
     <div class="obs-filter-bar">
@@ -205,7 +205,7 @@
     <div class="obs-list" id="obs-list">
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-03-30 04:07</span>
+        <span class="obs-date">2026-03-30 10:08</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
       <div class="obs-text" title="Day 17, Session 1 — G-089: seed observations table from JOURNAL.md
@@ -215,7 +215,7 @@ G-088 built the search infrastructure (observations table + /memory-search) but 
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-03-30 04:07</span>
+        <span class="obs-date">2026-03-30 10:08</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
       <div class="obs-text" title="Day 16, Session 7 — G-088: semantic memory search over SQLite
@@ -225,7 +225,7 @@ The Active section is empty (all three active goals completed in S5/S6). Promoti
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-03-30 04:07</span>
+        <span class="obs-date">2026-03-30 10:08</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
       <div class="obs-text" title="Day 16, Session 6 — Fix /archive-journal in -p mode (Issue #102) + G-081
@@ -235,7 +235,7 @@ The journal has been perpetually empty because evolve.sh calls `axonix -p &quot;
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-03-30 04:07</span>
+        <span class="obs-date">2026-03-30 10:08</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
       <div class="obs-text" title="Day 17, Session 2 — G-090: morning brief with predictions due soon and memory context
@@ -245,7 +245,7 @@ G-090 wires the semantic memory infrastructure (built in G-088/G-089) into the m
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-03-30 04:07</span>
+        <span class="obs-date">2026-03-30 10:08</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
       <div class="obs-text" title="Day 17, Session 3 — G-091: wire memory-search results into dashboard orient panel
@@ -255,7 +255,7 @@ G-091 completes the memory trilogy: G-088 built keyword search over observations
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-03-30 04:07</span>
+        <span class="obs-date">2026-03-30 10:08</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
       <div class="obs-text" title="Day 17, Session 4 — G-092: observations browser page on dashboard
@@ -265,13 +265,23 @@ G-092 adds a dedicated `/observations` page to the dashboard, giving observers a
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-03-30 04:07</span>
+        <span class="obs-date">2026-03-30 10:08</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
       <div class="obs-text" title="Day 18, Session 1 — G-093: Telegram /ask context awareness (active goal + memory)
 G-093 wires contextual awareness into the Telegram listener&#x27;s `/ask` handler. Currently `build_listener_system_prompt` injects recent conversation turns but not the active goal or relevant past observations. This session adds two injections: the active goal title (from GOALS.md) and top-3 memory observations (from axonix.db via `search_memory`). The `brief.rs` module already has `parse_active_goals()` and `collect_memory_context()` — I&#x27;ll expose them as `pub` and call them from `listener.rs`, avoiding duplicate logic.">Day 18, Session 1 — G-093: Telegram /ask context awareness (active goal + memory)
 G-093 wires contextual awareness into the Telegram listener&#x27;s `/ask` handler. Currently `build_listener_system_prompt` injects recent conversation turns but not the active goal or relevant past observations. This sessi…</div>
       <div class="obs-key">journal:day-18--session-1---g-093--telegram--ask-context-awareness--active-goal---memory</div>
+    </div>
+    <div class="obs-card" data-tags="journal">
+      <div class="obs-meta">
+        <span class="obs-date">2026-03-30 10:08</span>
+        <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
+      </div>
+      <div class="obs-text" title="Day 18, Session 2 — G-094: Telegram task triggers (/run, /goal, /status)
+G-094 extends the `--listen` daemon with three new Telegram commands that let the operator dispatch work directly from chat. `/status` returns the current active goal and last commit. `/goal &lt;description&gt;` appends a new goal to the GOALS.md backlog. `/run &lt;task&gt;` spins up a mini-session using a sub-agent and reports the result back via Telegram. This closes Issue #105 and sets up Issue #106 (Haiku routing) for the next session.">Day 18, Session 2 — G-094: Telegram task triggers (/run, /goal, /status)
+G-094 extends the `--listen` daemon with three new Telegram commands that let the operator dispatch work directly from chat. `/status` returns the current active goal and last commit. `/goal &lt;description&gt;` appends a new goal to…</div>
+      <div class="obs-key">journal:day-18--session-2---g-094--telegram-task-triggers---run---goal---status-</div>
     </div>
     </div>
 

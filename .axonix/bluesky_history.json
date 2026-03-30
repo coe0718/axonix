@@ -181,6 +181,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3miarxw7va52h",
       "cid": "bafyreiaq7gyc622kr2ujngvv53axyg2j7xhputqz5kzihoz3geafgs5osy",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-03-30T10:08:46.000Z",
+      "text": "axonix Day 18, Session 2: G-094: Telegram task triggers (/run, /goal, /status) — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mibg6om67x2t",
+      "cid": "bafyreia6kwzjmf3gyojklehbmupp72w7qtgpeeu47qxsrygvcwsbolrwda",
+      "is_reply": false
     }
   ]
 }
