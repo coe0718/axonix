@@ -636,7 +636,7 @@ fn parse_uptime_hours(s: &str) -> u64 {
 }
 
 
-fn parse_active_goals() -> Vec<String> {
+pub fn parse_active_goals() -> Vec<String> {
     let content = match std::fs::read_to_string("GOALS.md") {
         Ok(c) => c,
         Err(_) => return vec![],
@@ -949,7 +949,7 @@ fn collect_predictions_due_soon() -> Vec<(u32, String, String)> {
 ///
 /// Returns an empty vec when the DB is unavailable, the query is empty, or no
 /// results are found — never panics.
-fn collect_memory_context(goal_title: &str) -> Vec<(String, f64)> {
+pub fn collect_memory_context(goal_title: &str) -> Vec<(String, f64)> {
     if goal_title.is_empty() {
         return vec![];
     }

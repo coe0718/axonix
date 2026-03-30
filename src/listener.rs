@@ -35,7 +35,7 @@
 //!
 //! let dir = tempfile::tempdir().unwrap();
 //! let mem = ConversationMemory::new(dir.path().join("conv.json"));
-//! let prompt = build_listener_system_prompt(&mem);
+//! let prompt = build_listener_system_prompt(&mem, None, &[]);
 //! assert!(!prompt.is_empty());
 //! ```
 
@@ -226,7 +226,11 @@ fn format_duration(secs: u64) -> String {
 /// - **Concise**: listener responses should fit in a Telegram message (~3000 chars max).
 /// - **Helpful**: focus on answering the question, not on agent self-improvement.
 /// - **Context-aware**: inject recent conversation turns so the agent isn't starting cold.
-pub fn build_listener_system_prompt(memory: &ConversationMemory) -> String {
+pub fn build_listener_system_prompt(
+    memory: &ConversationMemory,
+    active_goal: Option<&str>,
+    memory_context: &[(String, f64)],
+) -> String {
     let mut parts = vec![
         "You are Axonix, a personal assistant running as an always-on listener.".to_string(),
         String::new(),
@@ -246,6 +250,23 @@ pub fn build_listener_system_prompt(memory: &ConversationMemory) -> String {
         "- If you don't know something, say so clearly rather than guessing.".to_string(),
         "- If a task needs a full session (code changes, file writes), say so.".to_string(),
     ];
+
+    // Inject active goal context if present
+    if let Some(goal) = active_goal {
+        parts.push(String::new());
+        parts.push("## Current active goal".to_string());
+        parts.push(goal.to_string());
+    }
+
+    // Inject top memory observations if present
+    if !memory_context.is_empty() {
+        parts.push(String::new());
+        parts.push("## Relevant past observations".to_string());
+        for (text, score) in memory_context {
+            // Extract tag from text if present in format "text (tag: X)"
+            parts.push(format!("- [{score:.2}] {text}"));
+        }
+    }
 
     // Inject recent conversation context if available
     let context = memory.format_for_context(10);
@@ -304,7 +325,10 @@ pub async fn run_listener(
     let mut mem = ConversationMemory::load(&memory_path);
 
     // Build system prompt and agent (refreshed if context grows too large)
-    let system_prompt = build_listener_system_prompt(&mem);
+    let active_goal = crate::brief::parse_active_goals().into_iter().next();
+    let goal_title_ref = active_goal.as_deref().unwrap_or("");
+    let mem_ctx = crate::brief::collect_memory_context(goal_title_ref);
+    let system_prompt = build_listener_system_prompt(&mem, active_goal.as_deref(), &mem_ctx);
     let mut agent = make_listener_agent(api_key, model, &system_prompt);
     let mut agent_turn_count: usize = 0;
 
@@ -359,7 +383,10 @@ pub async fn run_listener(
 
                     // Rebuild agent if it has processed too many turns (context hygiene)
                     if agent_turn_count > 50 {
-                        let fresh_prompt = build_listener_system_prompt(&mem);
+                        let refresh_goal = crate::brief::parse_active_goals().into_iter().next();
+                        let refresh_title = refresh_goal.as_deref().unwrap_or("");
+                        let refresh_ctx = crate::brief::collect_memory_context(refresh_title);
+                        let fresh_prompt = build_listener_system_prompt(&mem, refresh_goal.as_deref(), &refresh_ctx);
                         agent = make_listener_agent(api_key, model, &fresh_prompt);
                         agent_turn_count = 0;
                     }
@@ -624,7 +651,7 @@ mod tests {
     fn test_build_prompt_with_empty_memory_returns_non_empty_string() {
         let dir = tempfile::tempdir().unwrap();
         let mem = ConversationMemory::new(dir.path().join("conv.json"));
-        let prompt = build_listener_system_prompt(&mem);
+        let prompt = build_listener_system_prompt(&mem, None, &[]);
         assert!(
             !prompt.is_empty(),
             "prompt with empty memory should be non-empty"
@@ -635,7 +662,7 @@ mod tests {
     fn test_build_prompt_contains_core_instructions() {
         let dir = tempfile::tempdir().unwrap();
         let mem = ConversationMemory::new(dir.path().join("conv.json"));
-        let prompt = build_listener_system_prompt(&mem);
+        let prompt = build_listener_system_prompt(&mem, None, &[]);
         assert!(prompt.contains("Axonix"), "prompt should mention Axonix");
         assert!(
             prompt.contains("Telegram"),
@@ -651,7 +678,7 @@ mod tests {
     fn test_build_prompt_mentions_evolve_sessions() {
         let dir = tempfile::tempdir().unwrap();
         let mem = ConversationMemory::new(dir.path().join("conv.json"));
-        let prompt = build_listener_system_prompt(&mem);
+        let prompt = build_listener_system_prompt(&mem, None, &[]);
         assert!(
             prompt.contains("evolve"),
             "prompt should mention evolve.sh background sessions: {prompt}"
@@ -664,7 +691,7 @@ mod tests {
         let mut mem = ConversationMemory::new(dir.path().join("conv.json"));
         mem.push("user", "check the disk usage please", "telegram");
         mem.push("assistant", "Disk is at 45%.", "telegram");
-        let prompt = build_listener_system_prompt(&mem);
+        let prompt = build_listener_system_prompt(&mem, None, &[]);
         assert!(
             prompt.contains("disk usage"),
             "prompt should include turn text: {prompt}"
@@ -680,10 +707,65 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let mut mem = ConversationMemory::new(dir.path().join("conv.json"));
         mem.push("user", "hello", "telegram");
-        let prompt = build_listener_system_prompt(&mem);
+        let prompt = build_listener_system_prompt(&mem, None, &[]);
         assert!(
             prompt.contains("Recent Conversations"),
             "prompt with turns should have context header"
+        );
+    }
+
+    #[test]
+    fn test_build_prompt_with_active_goal_includes_goal() {
+        let dir = tempfile::tempdir().unwrap();
+        let mem = ConversationMemory::new(dir.path().join("conv.json"));
+        let prompt = build_listener_system_prompt(&mem, Some("Implement rate limiting"), &[]);
+        assert!(
+            prompt.contains("Current active goal"),
+            "prompt should include active goal section header: {prompt}"
+        );
+        assert!(
+            prompt.contains("Implement rate limiting"),
+            "prompt should include the active goal title: {prompt}"
+        );
+    }
+
+    #[test]
+    fn test_build_prompt_with_memory_context_includes_observations() {
+        let dir = tempfile::tempdir().unwrap();
+        let mem = ConversationMemory::new(dir.path().join("conv.json"));
+        let ctx = vec![
+            ("rate limiter was too aggressive".to_string(), 0.92),
+            ("use token bucket algorithm".to_string(), 0.85),
+            ("tested with 100 req/s load".to_string(), 0.78),
+        ];
+        let prompt = build_listener_system_prompt(&mem, None, &ctx);
+        assert!(
+            prompt.contains("Relevant past observations"),
+            "prompt should include observations section header: {prompt}"
+        );
+        assert!(
+            prompt.contains("rate limiter was too aggressive"),
+            "prompt should include first observation: {prompt}"
+        );
+        assert!(
+            prompt.contains("token bucket"),
+            "prompt should include second observation: {prompt}"
+        );
+    }
+
+    #[test]
+    fn test_build_prompt_no_goal_no_memory_still_works() {
+        let dir = tempfile::tempdir().unwrap();
+        let mem = ConversationMemory::new(dir.path().join("conv.json"));
+        let prompt = build_listener_system_prompt(&mem, None, &[]);
+        assert!(!prompt.is_empty(), "prompt should be non-empty even with no goal or memory");
+        assert!(
+            !prompt.contains("Current active goal"),
+            "no goal section should appear when active_goal is None"
+        );
+        assert!(
+            !prompt.contains("Relevant past observations"),
+            "no observations section should appear when memory_context is empty"
         );
     }
 
@@ -732,7 +814,7 @@ mod tests {
         let mut mem = ConversationMemory::new(dir.path().join("conv.json"));
         mem.push("user", "what is the weather?", "telegram");
         mem.push("assistant", "I cannot check the weather.", "telegram");
-        let prompt = build_listener_system_prompt(&mem);
+        let prompt = build_listener_system_prompt(&mem, None, &[]);
         assert!(
             prompt.contains("weather"),
             "prompt should include recent turn text: {prompt}"
