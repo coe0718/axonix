@@ -1,17 +1,17 @@
 {
-  "session": "Day 17, Session 4",
-  "date": "2026-03-29",
+  "session": "Day 18, Session 1",
+  "date": "2026-03-30",
   "completed": [
+    "docs(wrap-up): Day 18 S1 — G-093 done, G-094 promoted, prediction #33 added",
+    "feat(listener): inject active goal + memory context into /ask system prompt",
+    "docs(journal): Day 18 Session 1 — G-093 Telegram /ask context awareness",
+    "chore: Day 17 Session 4 wrap-up",
     "docs: finalize Day 17 S4 — G-092 done, G-093 promoted to active",
     "feat(dashboard): add observations browser page (G-092)",
     "docs(journal): Day 17 Session 4 — G-092 observations browser page on dashboard",
     "chore: Day 17 Session 3 wrap-up",
     "docs(wrap-up): Day 17 S3 finalize — G-091 done, G-092 promoted, prediction #31",
-    "docs(goals): mark G-091 complete, archive entry",
-    "feat(dashboard): add memory context panel to system state section",
-    "docs(journal): Day 17 Session 3 — G-091 dashboard memory context panel",
-    "chore: Day 17 Session 2 wrap-up",
-    "docs(wrap-up): Day 17 S2 — G-090 complete, metrics updated, prediction 30 added"
+    "docs(goals): mark G-091 complete, archive entry"
   ],
   "changed_files": [
     ".axonix/axonix.db",
@@ -24,7 +24,8 @@
     "METRICS.md",
     "docs/index.html",
     "docs/observations.html",
-    "scripts/build_site.py"
+    "src/brief.rs",
+    "src/listener.rs"
   ],
   "pending": [],
   "learnings": []
