@@ -3,8 +3,10 @@
 
 import html
 import json
+import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -19,23 +21,31 @@ def read_file(name):
 
 
 def get_docker_containers():
-    """Query Docker for running container status. Returns list of dicts with name/status."""
+    """Query Docker for running container status via REST API (DOCKER_HOST env var)."""
+    import urllib.request
+    import urllib.error
+    import json as _json
+
+    docker_host = os.environ.get("DOCKER_HOST", "http://localhost:2375")
+    # DOCKER_HOST may be "tcp://host:port" — normalize to http://
+    if docker_host.startswith("tcp://"):
+        docker_host = "http://" + docker_host[6:]
+
+    url = docker_host.rstrip("/") + "/containers/json?all=1"
     try:
-        result = subprocess.run(
-            ["docker", "ps", "-a", "--format", "{{.Names}}\t{{.Status}}"],
-            capture_output=True, text=True, timeout=5
-        )
-        if result.returncode != 0:
-            return []
+        with urllib.request.urlopen(url, timeout=5) as resp:
+            data = _json.loads(resp.read().decode())
         containers = []
-        for line in result.stdout.strip().splitlines():
-            parts = line.split("\t", 1)
-            if len(parts) == 2:
-                name, status = parts
-                running = status.lower().startswith("up")
-                containers.append({"name": name, "status": status, "running": running})
+        for c in data:
+            names = c.get("Names", [])
+            name = names[0].lstrip("/") if names else c.get("Id", "")[:12]
+            status = c.get("Status", "")
+            running = status.lower().startswith("up")
+            containers.append({"name": name, "status": status, "running": running})
         return containers
-    except Exception:
+    except Exception as e:
+        # Log the error so we can debug, but don't crash the build
+        print(f"[build_site] Docker API error: {e}", file=sys.stderr)
         return []
 
 
