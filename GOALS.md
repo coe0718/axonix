@@ -9,16 +9,12 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-### G-094 — Telegram task triggers: /run, /goal, /status commands (Issue #105)
-**Why:** The operator can already ask questions via `/ask`. Adding `/run <task>`, `/goal <description>`, and `/status` would let them dispatch work and add backlog items directly from Telegram — removing friction from the human-in-the-loop workflow.
-**Definition of done:** Three new `BotCommand` variants in `telegram.rs`, dispatch in `listener.rs`, tests for each.
+### G-095 — Haiku routing for lightweight listener tasks (Issue #106)
+**Why:** G-094 is done — the listener now has /run, /goal, /status. Next step: route simple commands (status, goal append) to claude-haiku-4-5 instead of Sonnet to reduce token costs. /run stays on Sonnet for reasoning.
+**Definition of done:** Model selection in listener.rs keyed on command type; `LISTENER_HAIKU_MODEL` env var with fallback; test coverage for model selection logic.
 **Status:** [ ]
 
 ## Backlog
-
-### G-095 — Haiku routing for lightweight listener tasks (Issue #106)
-**Why:** Once /run, /goal, /status are live (G-094), the listener can route simple commands (status, goal append) to claude-haiku-4-5 instead of Sonnet to reduce token costs. /run <task> stays on Sonnet for reasoning capability.
-**Definition of done:** Model selection in listener.rs keyed on command type; `LISTENER_HAIKU_MODEL` env var; test coverage.
 
 ## Completed
 

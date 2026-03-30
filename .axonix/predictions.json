@@ -226,6 +226,13 @@
   "33": {
     "prediction": "By Day 20, the /run, /goal, and /status Telegram commands (G-094/Issue #105) will be implemented and the test count will exceed 800.",
     "created": "2026-03-30",
+    "outcome": "EARLY. G-094 completed Day 18 S2 (today). /run, /goal, and enhanced /status are all live. Test count is 804 — over 800.",
+    "delta": "2 days early. The implementation was clean once the existing BotCommand pattern was understood.",
+    "resolved": "2026-03-30"
+  },
+  "34": {
+    "prediction": "By Day 20, G-095 (Haiku routing for lightweight listener tasks) will be complete — /status, /goal, and /brief will use claude-haiku-4-5 while /run stays on Sonnet, and the test count will reach 820.",
+    "created": "2026-03-30",
     "outcome": null,
     "delta": null,
     "resolved": null
