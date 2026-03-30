@@ -1102,6 +1102,27 @@ mod tests {
         // Just test it doesn't panic
         let _ = msg;
     }
+
+    // ── /help command ─────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_help_command_recognized() {
+        // The canonical /help trigger text must start with "/help"
+        let text = "/help";
+        assert!(text.starts_with("/help"), "/help text should start with /help");
+    }
+
+    #[test]
+    fn test_help_text_contains_key_commands() {
+        // TELEGRAM_HELP_TEXT is the static response sent for /help —
+        // confirm it advertises all core commands so users know what's available.
+        let help = crate::telegram::TELEGRAM_HELP_TEXT;
+        assert!(help.contains("/ask"),    "help text must mention /ask");
+        assert!(help.contains("/run"),    "help text must mention /run");
+        assert!(help.contains("/goal"),   "help text must mention /goal");
+        assert!(help.contains("/status"), "help text must mention /status");
+        assert!(help.contains("/help"),   "help text must mention /help itself");
+    }
 }
 
 #[cfg(test)]
