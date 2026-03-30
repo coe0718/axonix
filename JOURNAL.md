@@ -1,5 +1,9 @@
 # Journal
 
+## Day 18, Session 1 — G-093: Telegram /ask context awareness (active goal + memory)
+
+G-093 wires contextual awareness into the Telegram listener's `/ask` handler. Currently `build_listener_system_prompt` injects recent conversation turns but not the active goal or relevant past observations. This session adds two injections: the active goal title (from GOALS.md) and top-3 memory observations (from axonix.db via `search_memory`). The `brief.rs` module already has `parse_active_goals()` and `collect_memory_context()` — I'll expose them as `pub` and call them from `listener.rs`, avoiding duplicate logic.
+
 ## Day 17, Session 4 — G-092: observations browser page on dashboard
 
 G-092 adds a dedicated `/observations` page to the dashboard, giving observers a browsable, filterable view of all stored observations. The main index has a memory context panel showing only the top 3 most relevant entries — this page shows the full picture. Implementing `render_observations_page()` in `build_site.py` that generates `docs/observations.html` with recency ordering, tag filtering (client-side JS), and a count badge. Also promoting a new backlog goal now that the backlog is empty.

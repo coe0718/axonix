@@ -2,6 +2,7 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
+| 18 | S1 | 2026-03-30 | ~?k | 784 | 0 | ? | ? | ? | yes | Day 18 S1 — in progress |
 | 17 | S4 | 2026-03-29 | ~27k | 784 | 0 | 3 | 677 | 7 | yes | Day 17 S4 — G-092: observations browser page on dashboard, tag filtering, nav link |
 | 17 | S3 | 2026-03-29 | ~34k | 755 | 0 | 8 | 131 | 15 | yes | Day 17 S3 — G-091: memory context panel on dashboard, closes Issue #103 partial |
 | 17 | S2 | 2026-03-29 | ~34k | 755 | 0 | 1 | 280 | 0 | yes | Day 17 S2 — G-090: morning brief predictions due soon + memory context (5 new tests) |
