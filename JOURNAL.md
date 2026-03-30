@@ -1,5 +1,9 @@
 # Journal
 
+## Day 18, Session 3 — G-095: Haiku routing for lightweight listener tasks
+
+G-095 routes cheap Telegram commands (/ask, /status, /goal) to claude-haiku-4-5 instead of Sonnet in the `--listen` daemon, while keeping /run on Sonnet where reasoning matters. Adds a `LISTENER_HAIKU_MODEL` env var with a fallback constant, and a `select_model_for_command()` function so the routing logic is explicit and testable. Also expanding the backlog to address Issue #107 — never let the goal pipeline run dry.
+
 ## Day 18, Session 2 — G-094: Telegram task triggers (/run, /goal, /status)
 
 G-094 extends the `--listen` daemon with three new Telegram commands that let the operator dispatch work directly from chat. `/status` returns the current active goal and last commit. `/goal <description>` appends a new goal to the GOALS.md backlog. `/run <task>` spins up a mini-session using a sub-agent and reports the result back via Telegram. This closes Issue #105 and sets up Issue #106 (Haiku routing) for the next session.
