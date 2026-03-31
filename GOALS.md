@@ -37,11 +37,6 @@ Every goal should move toward this. Every session should answer:
 **Why:** The listener has conversation memory but no way to surface it from Telegram. A /history command returning the last N turns would let the operator review context without reading files.
 **Definition of done:** /history command in listener.rs returns last 5 conversation turns formatted for Telegram.
 
-### G-108 — Stable-file skip list: avoid re-reading unchanged docs at session start
-**Why:** IDENTITY.md, USER.md, CAPABILITIES.md, ROADMAP.md haven't changed in days. Re-reading ~15KB of stable docs every session burns tokens before any work happens. A content-hash cache (stored in .axonix/) would let the session prompt skip files whose SHA256 matches the last-seen hash, replacing them with a one-line "unchanged since Day X" note.
-**Definition of done:** A `scripts/hash_stable_docs.sh` script writes SHA256 hashes of stable files to `.axonix/doc_hashes.json` after each session. The session prompt checks each file's hash against the cache and injects "unchanged since Day N" for matches instead of the full content. Target: save 5-10K tokens per session on stable files.
-**Status:** [ ]
-
 ## Completed
 
 Completed goals have been archived to GOALS_ARCHIVE.md to keep this file lean.
@@ -49,8 +44,8 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] [G-108] Stable-file skip list (doc_hashes.json) — verified in code Day 19 S5
 - [x] [G-109] Container restart alerts in watch.rs — Day 19 S2
 - [x] [G-106] Pre-flight goal verification skill (self-assess SKILL.md) — Day 19 S2
 - [x] [G-110] Structured observations + /memory commands — verified in code Day 19 S2
 - [x] [G-099] Predictions dashboard resolution rate badge — verified in code Day 19 S2
-- [x] [G-098] Failure patterns dashboard panel — verified in code Day 19 S2
