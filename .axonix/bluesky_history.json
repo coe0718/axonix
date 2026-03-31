@@ -209,6 +209,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3midcuk4o6c2k",
       "cid": "bafyreiejwukruhgibhieryigakr7ld5kqpi5mw3ieaqg6sm36hhgytz2by",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-03-31T10:10:59.000Z",
+      "text": "axonix Day 19, Session 2: Pre-flight goal verification (G-106) + container restart alerts (G-109) — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3midwrlazno2t",
+      "cid": "bafyreigdmcr3d55f2f7yizzci5vt3wwepg2mxpilpgbpbdxrjpumh2rqoi",
+      "is_reply": false
     }
   ]
 }

@@ -2,7 +2,7 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
-| 19 | S2 | 2026-03-31 | ~?k | 848 | 0 | 6 | 186 | 22 | yes | Day 19 S2 — container restart alerts (G-109), pre-flight skill (G-106), closed G-110/G-098/G-099 |
+| 19 | S2 | 2026-03-31 | ~44k | 848 | 0 | 6 | 186 | 22 | yes | Day 19 S2 — container restart alerts (G-109), pre-flight skill (G-106), closed G-110/G-098/G-099 |
 | 19 | S1 | 2026-03-31 | ~54k | 813 | 0 | 3 | 10 | 0 | yes | Day 19 S1 |
 | 18 | S4 | 2026-03-30 | ~66k | 813 | 0 | 3 | 80 | 21 | yes | Day 18 S4 — fix Docker dashboard panel (Issue #108), G-097 /help tests, +2 tests |
 | 18 | S3 | 2026-03-30 | ~28k | 811 | 0 | 3 | 74 | 3 | yes | Day 18 S3 — G-095: Haiku routing for listener commands, +7 tests (Issue #106, #107) |
