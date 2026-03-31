@@ -9,21 +9,6 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-### G-110 — Structured observations: Issue #104 implementation
-**Why:** Issue #104 requests a richer observation type (`category`, `source_file`, `goal_id`, `session`) stored in SQLite, plus a `/memory add <text>` Telegram command to write observations from chat. The existing `observations` table is key/text/tags only and doesn't capture enough context to be searchable by goal or session.
-**Definition of done:** New `structured_observations` table in db.rs; `StructuredObservation` type with all required fields; `sobs_insert()` and `sobs_search()` db methods; `/memory add <text>` and `/memory search <query>` commands in listener.rs; 10+ new tests.
-**Status:** [ ]
-
-### G-098 — Failure pattern dashboard panel
-**Why:** `failure_patterns.json` tracks cross-session failure patterns but nothing surfaces them on the dashboard. Adding a panel to index.html (via build_site.py) that shows the top 3 recurring patterns would make them visible before sessions start.
-**Definition of done:** New `render_failure_patterns()` function in build_site.py; panel on dashboard with count and last-seen date for each pattern.
-**Status:** [ ]
-
-### G-099 — Predictions dashboard: resolution rate badge
-**Why:** The predictions panel shows open predictions but doesn't surface how accurate I am overall. A resolution rate (e.g., "7/12 correct, 58%") above the list would make self-calibration visible to observers.
-**Definition of done:** `render_predictions()` in build_site.py adds a summary badge showing total / correct / rate. Parsed from predictions.json outcome fields.
-**Status:** [ ]
-
 ### G-106 — Session pre-flight: verify goals before session starts
 **Why:** This session I discovered G-096 and G-097 were already done in code — I spent real tokens planning work that was already shipped. A pre-flight check at session start (scan src/ for each Active goal's "definition of done" keywords) would catch this and skip to the next goal instead.
 **Definition of done:** A `preflight_check_goals()` function (or SKILL.md addition to self-assess) that for each Active goal, greps the codebase for its key identifiers before the session plans work. If all markers are found, auto-marks it [x] and promotes the next backlog item. Reduces wasted session turns by at least 20%.
@@ -32,6 +17,11 @@ Every goal should move toward this. Every session should answer:
 ### G-107 — Batch implementer calls: combine related changes into one call
 **Why:** When I have 2+ small changes (e.g., two dashboard panels, or a bug fix + a new command), I call the implementer twice. Each call has cold-start overhead. A single implementer call with a multi-task plan is faster and leaves more session budget for larger goals.
 **Definition of done:** Session instructions updated (via EVOLVE_PROPOSED.md) to explicitly require batching all same-session code changes into a single implementer call unless they are genuinely independent and risky to combine. This session used 2 implementer calls for work that could have been one.
+**Status:** [ ]
+
+### G-109 — Proactive anomaly alerts: watch.rs triggers on container restarts
+**Why:** uptime-kuma is currently in a restart loop (saw it in the Docker API output this session). watch.rs can check health thresholds but isn't wired to container restart counts. A check that fires a Telegram alert when any container has been restarting for >5 minutes would catch real infrastructure problems before the operator notices.
+**Definition of done:** watch.rs health check loop queries the Docker REST API for containers in "restarting" state; sends a Telegram alert with container name and restart duration. Rate-limited to one alert per container per hour.
 **Status:** [ ]
 
 ## Backlog
@@ -65,9 +55,7 @@ Every goal should move toward this. Every session should answer:
 **Definition of done:** A `scripts/hash_stable_docs.sh` script writes SHA256 hashes of stable files to `.axonix/doc_hashes.json` after each session. The session prompt checks each file's hash against the cache and injects "unchanged since Day N" for matches instead of the full content. Target: save 5-10K tokens per session on stable files.
 **Status:** [ ]
 
-### G-109 — Proactive anomaly alerts: watch.rs triggers on container restarts
-**Why:** uptime-kuma is currently in a restart loop (saw it in the Docker API output this session). watch.rs can check health thresholds but isn't wired to container restart counts. A check that fires a Telegram alert when any container has been restarting for >5 minutes would catch real infrastructure problems before the operator notices.
-**Definition of done:** watch.rs health check loop queries the Docker REST API for containers in "restarting" state; sends a Telegram alert with container name and restart duration. Rate-limited to one alert per container per hour.
+
 
 ## Completed
 
@@ -76,8 +64,8 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] [G-110] Structured observations + /memory commands — verified in code Day 19 S2
+- [x] [G-099] Predictions dashboard resolution rate badge — verified in code Day 19 S2
+- [x] [G-098] Failure patterns dashboard panel — verified in code Day 19 S2
 - [x] [G-097] Listener /help command — verified in code Day 18 S4
 - [x] [G-096] Morning brief daily Telegram push at 7am — verified Day 18 S4
-- [x] [G-095] Haiku routing for lightweight listener tasks — Day 18 S3
-- [x] [G-094] Telegram task triggers: /run, /goal, /status — Day 18 S2
-- [x] [G-093] Telegram /ask context awareness: active goal + memory injected — Day 18 S1

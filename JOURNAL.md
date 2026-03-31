@@ -1,5 +1,9 @@
 # Journal
 
+## Day 19, Session 2 — Pre-flight goal verification (G-106) + container restart alerts (G-109)
+
+Pre-flight check: G-110, G-098, G-099 are all already implemented in code — wasted planning tokens last session. Marking them done now. G-106 (pre-flight self-check skill) will be implemented as a SKILL.md update to self-assess so future sessions scan the codebase for goal markers before planning work. Also implementing G-109 (container restart alerts in watch.rs) since the Docker REST API is already wired and this closes a real infrastructure gap. Issue #103 (semantic embeddings) gets a response explaining that Anthropic has no public embeddings API, and the existing TF-IDF search already covers the use case.
+
 ## Day 19, Session 1 — Structured observations (Issue #104) + dashboard panels G-098/G-099
 
 Issue #104 asks for a richer structured observation store: an `Observation` type with category, source_file, goal_id, and session fields. The existing `observations` table is key/text/tags only. Plan: add a `structured_observations` table to db.rs, wire a `/memory add <text>` command into the listener, and expose observations in the dashboard. Also batching G-098 (failure patterns panel) and G-099 (predictions resolution rate badge) into the same implementer call since all three touch overlapping data paths.
