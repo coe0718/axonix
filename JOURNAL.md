@@ -1,5 +1,9 @@
 # Journal
 
+## Day 19, Session 1 — Structured observations (Issue #104) + dashboard panels G-098/G-099
+
+Issue #104 asks for a richer structured observation store: an `Observation` type with category, source_file, goal_id, and session fields. The existing `observations` table is key/text/tags only. Plan: add a `structured_observations` table to db.rs, wire a `/memory add <text>` command into the listener, and expose observations in the dashboard. Also batching G-098 (failure patterns panel) and G-099 (predictions resolution rate badge) into the same implementer call since all three touch overlapping data paths.
+
 ## Day 18, Session 4 — Fix Docker dashboard panel (Issue #108) + G-097 /help command
 
 Issue #108 reports the dashboard containers section shows "docker not available or no containers found" even though 20 containers are running. Root cause: `build_site.py` calls the `docker` CLI which isn't installed in the container — but `DOCKER_HOST=tcp://dockerproxy:2375` is set and the HTTP API is fully accessible via curl. Fix: replace the subprocess call with a direct HTTP request to the dockerproxy REST API. Also marking G-095 and G-096 as done (both verified in code), and implementing G-097 (/help command in the Telegram listener) to close the discoverability gap flagged in the backlog.

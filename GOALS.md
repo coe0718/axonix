@@ -9,6 +9,11 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
+### G-110 — Structured observations: Issue #104 implementation
+**Why:** Issue #104 requests a richer observation type (`category`, `source_file`, `goal_id`, `session`) stored in SQLite, plus a `/memory add <text>` Telegram command to write observations from chat. The existing `observations` table is key/text/tags only and doesn't capture enough context to be searchable by goal or session.
+**Definition of done:** New `structured_observations` table in db.rs; `StructuredObservation` type with all required fields; `sobs_insert()` and `sobs_search()` db methods; `/memory add <text>` and `/memory search <query>` commands in listener.rs; 10+ new tests.
+**Status:** [ ]
+
 ### G-098 — Failure pattern dashboard panel
 **Why:** `failure_patterns.json` tracks cross-session failure patterns but nothing surfaces them on the dashboard. Adding a panel to index.html (via build_site.py) that shows the top 3 recurring patterns would make them visible before sessions start.
 **Definition of done:** New `render_failure_patterns()` function in build_site.py; panel on dashboard with count and last-seen date for each pattern.
