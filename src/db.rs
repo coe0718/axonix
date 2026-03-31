@@ -1,14 +1,15 @@
 //! SQLite-backed structured memory for Axonix (G-075, Issue #91).
 //!
-//! Provides eight tables:
-//! - `kv`                    — key/value store for agent state
-//! - `sessions`              — per-session records (day, tokens, tests, notes)
-//! - `goals`                 — goal tracking (active / backlog / done)
-//! - `predictions`           — prediction tracking with outcome/delta/resolved (G-077)
-//! - `observations`          — keyword-searchable observations with tags (G-088)
-//! - `hot_memories`          — recent extracted memories with TTL (30 days)
-//! - `cold_memories`         — synthesized memories with TTL (90 days)
-//! - `memory_contradictions` — conflict tracking between cold memories
+//! Provides nine tables:
+//! - `kv`                      — key/value store for agent state
+//! - `sessions`                — per-session records (day, tokens, tests, notes)
+//! - `goals`                   — goal tracking (active / backlog / done)
+//! - `predictions`             — prediction tracking with outcome/delta/resolved (G-077)
+//! - `observations`            — keyword-searchable observations with tags (G-088)
+//! - `hot_memories`            — recent extracted memories with TTL (30 days)
+//! - `cold_memories`           — synthesized memories with TTL (90 days)
+//! - `memory_contradictions`   — conflict tracking between cold memories
+//! - `structured_observations` — categorised observations with goal/session metadata (Issue #104)
 //!
 //! # Example
 //! ```rust,no_run
@@ -58,6 +59,24 @@ pub struct ObservationRow {
     pub created_at: String,
     /// Relevance score set by `search_memory`; not stored in DB.
     pub score: f64,
+}
+
+/// A row from the `structured_observations` table.
+#[derive(Debug, Clone)]
+pub struct StructuredObservation {
+    pub id: i64,
+    pub content: String,
+    /// One of: learned | tried_and_failed | blocked_by | dependency_discovered | pattern_noticed
+    pub category: String,
+    /// Source file, or empty string if unknown.
+    pub source_file: String,
+    /// Goal ID, e.g. "G-110", or empty string if unknown.
+    pub goal_id: String,
+    /// Session label, e.g. "Day 19 S1".
+    pub session: String,
+    /// Comma-separated tags.
+    pub tags: String,
+    pub created_at: String,
 }
 
 /// A row from the `hot_memories` table.
@@ -201,6 +220,17 @@ impl AxonixDb {
                 new_memory     TEXT NOT NULL,
                 created_at     TEXT NOT NULL,
                 resolved       INTEGER NOT NULL DEFAULT 0
+            );
+
+            CREATE TABLE IF NOT EXISTS structured_observations (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                content     TEXT NOT NULL,
+                category    TEXT NOT NULL DEFAULT 'learned',
+                source_file TEXT NOT NULL DEFAULT '',
+                goal_id     TEXT NOT NULL DEFAULT '',
+                session     TEXT NOT NULL DEFAULT '',
+                tags        TEXT NOT NULL DEFAULT '',
+                created_at  TEXT NOT NULL
             );
         ")
     }
@@ -818,6 +848,103 @@ impl AxonixDb {
         })?;
         rows.collect()
     }
+
+    // ─── Structured observation helpers ──────────────────────────────────────
+
+    /// Valid categories for structured observations.
+    /// If the supplied category is not in this list, "learned" is used.
+    const VALID_CATEGORIES: &'static [&'static str] = &[
+        "learned",
+        "tried_and_failed",
+        "blocked_by",
+        "dependency_discovered",
+        "pattern_noticed",
+    ];
+
+    /// Insert a structured observation and return its new row id.
+    pub fn sobs_insert(
+        &self,
+        content: &str,
+        category: &str,
+        source_file: &str,
+        goal_id: &str,
+        session: &str,
+        tags: &str,
+    ) -> Result<i64> {
+        let effective_category = if Self::VALID_CATEGORIES.contains(&category) {
+            category
+        } else {
+            "learned"
+        };
+        let now = now_utc();
+        self.conn.execute(
+            "INSERT INTO structured_observations
+             (content, category, source_file, goal_id, session, tags, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![content, effective_category, source_file, goal_id, session, tags, now],
+        )?;
+        Ok(self.conn.last_insert_rowid())
+    }
+
+    /// Search structured observations by keyword match on content + tags.
+    /// Returns up to `limit` results ordered by relevance then created_at DESC.
+    /// Only rows with score > 0 are returned.
+    pub fn sobs_search(&self, query: &str, limit: usize) -> Result<Vec<StructuredObservation>> {
+        let query_tokens = tokenize(query);
+        if query_tokens.is_empty() || limit == 0 {
+            return Ok(vec![]);
+        }
+
+        let all = self.sobs_list(usize::MAX)?;
+        let mut scored: Vec<(f64, StructuredObservation)> = all
+            .into_iter()
+            .filter_map(|row| {
+                let content_tokens = tokenize(&row.content);
+                let tag_tokens = tokenize(&row.tags);
+                let mut score = 0.0f64;
+                for qt in &query_tokens {
+                    if content_tokens.contains(qt) {
+                        score += 1.0;
+                    }
+                    if tag_tokens.contains(qt) {
+                        score += 2.0;
+                    }
+                }
+                if score > 0.0 { Some((score, row)) } else { None }
+            })
+            .collect();
+
+        scored.sort_by(|a, b| {
+            b.0.partial_cmp(&a.0)
+                .unwrap_or(std::cmp::Ordering::Equal)
+                .then_with(|| b.1.created_at.cmp(&a.1.created_at))
+        });
+        scored.truncate(limit);
+        Ok(scored.into_iter().map(|(_, row)| row).collect())
+    }
+
+    /// List structured observations, most recent first, up to `limit`.
+    pub fn sobs_list(&self, limit: usize) -> Result<Vec<StructuredObservation>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, content, category, source_file, goal_id, session, tags, created_at
+             FROM structured_observations
+             ORDER BY created_at DESC, id DESC
+             LIMIT ?1",
+        )?;
+        let rows = stmt.query_map(params![limit as i64], |row| {
+            Ok(StructuredObservation {
+                id: row.get(0)?,
+                content: row.get(1)?,
+                category: row.get(2)?,
+                source_file: row.get(3)?,
+                goal_id: row.get(4)?,
+                session: row.get(5)?,
+                tags: row.get(6)?,
+                created_at: row.get(7)?,
+            })
+        })?;
+        rows.collect()
+    }
 }
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
@@ -1365,5 +1492,112 @@ mod tests {
         let result = add_days_to_utc(ts, 30);
         // Jan 20 + 30 days = Feb 19
         assert!(result.starts_with("2026-02-19"), "should be Feb 19: {result}");
+    }
+
+    // ── Structured observations ───────────────────────────────────────────────
+
+    #[test]
+    fn test_sobs_insert_returns_id() {
+        let db = open_tmp();
+        let id = db.sobs_insert("learned something new", "learned", "", "", "", "").unwrap();
+        assert!(id > 0, "insert should return a positive row id");
+    }
+
+    #[test]
+    fn test_sobs_insert_invalid_category_defaults_to_learned() {
+        let db = open_tmp();
+        let id = db.sobs_insert("some content", "garbage", "", "", "", "").unwrap();
+        assert!(id > 0);
+        let rows = db.sobs_list(10).unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].category, "learned", "invalid category should default to 'learned'");
+    }
+
+    #[test]
+    fn test_sobs_list_returns_most_recent_first() {
+        let db = open_tmp();
+        // Insert 3 observations
+        let id1 = db.sobs_insert("first observation", "learned", "", "", "", "").unwrap();
+        let id2 = db.sobs_insert("second observation", "learned", "", "", "", "").unwrap();
+        let id3 = db.sobs_insert("third observation", "learned", "", "", "", "").unwrap();
+        assert!(id3 > id2 && id2 > id1);
+
+        // List only 2 — should return the two most recent (ORDER BY created_at DESC, id DESC)
+        let rows = db.sobs_list(2).unwrap();
+        assert_eq!(rows.len(), 2, "limit=2 should return at most 2 rows");
+        // When timestamps are equal, ordering falls back to id DESC, so id3 and id2 come first
+        assert_eq!(rows[0].id, id3, "most recent by id should be first");
+        assert_eq!(rows[1].id, id2, "second most recent by id should be second");
+    }
+
+    #[test]
+    fn test_sobs_search_finds_by_content_keyword() {
+        let db = open_tmp();
+        db.sobs_insert("rusqlite connection pool setup", "learned", "", "", "", "").unwrap();
+        let results = db.sobs_search("connection", 10).unwrap();
+        assert!(!results.is_empty(), "search for 'connection' should find the observation");
+        assert!(results[0].content.contains("connection"));
+    }
+
+    #[test]
+    fn test_sobs_search_finds_by_tag() {
+        let db = open_tmp();
+        db.sobs_insert("setting up the bot", "learned", "", "", "", "telegram,bot").unwrap();
+        let results = db.sobs_search("telegram", 10).unwrap();
+        assert!(!results.is_empty(), "search for 'telegram' should match via tags");
+        assert!(results[0].tags.contains("telegram"));
+    }
+
+    #[test]
+    fn test_sobs_search_no_match_returns_empty() {
+        let db = open_tmp();
+        db.sobs_insert("completely unrelated content", "learned", "", "", "", "unrelated").unwrap();
+        let results = db.sobs_search("zzz_nomatch", 10).unwrap();
+        assert!(results.is_empty(), "search for 'zzz_nomatch' should return empty");
+    }
+
+    #[test]
+    fn test_sobs_search_respects_limit() {
+        let db = open_tmp();
+        for i in 0..5 {
+            db.sobs_insert(&format!("memory about connection {i}"), "learned", "", "", "", "").unwrap();
+        }
+        let results = db.sobs_search("connection", 2).unwrap();
+        assert_eq!(results.len(), 2, "limit=2 should cap results at 2");
+    }
+
+    #[test]
+    fn test_sobs_category_field_preserved() {
+        let db = open_tmp();
+        db.sobs_insert("hit a wall on this feature", "blocked_by", "", "", "", "").unwrap();
+        let rows = db.sobs_list(10).unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].category, "blocked_by", "category should be preserved as stored");
+    }
+
+    #[test]
+    fn test_sobs_goal_id_and_session_preserved() {
+        let db = open_tmp();
+        db.sobs_insert("discovered dep", "dependency_discovered", "", "G-110", "Day 19 S1", "").unwrap();
+        let rows = db.sobs_list(10).unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].goal_id, "G-110", "goal_id should be preserved");
+        assert_eq!(rows[0].session, "Day 19 S1", "session should be preserved");
+    }
+
+    #[test]
+    fn test_sobs_search_ranks_tag_match_higher() {
+        let db = open_tmp();
+        // content-only match: score 1.0
+        db.sobs_insert("we use sqlite heavily", "learned", "", "", "", "database").unwrap();
+        // tag match: score 2.0 (tag "sqlite" matches)
+        db.sobs_insert("persistence layer redesign", "learned", "", "", "", "sqlite,storage").unwrap();
+        let results = db.sobs_search("sqlite", 10).unwrap();
+        assert_eq!(results.len(), 2, "both observations should match");
+        // The tag-match result should come first (higher score)
+        assert_eq!(
+            results[0].tags, "sqlite,storage",
+            "tag-match observation should rank first"
+        );
     }
 }

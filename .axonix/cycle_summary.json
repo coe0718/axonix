@@ -1,27 +1,36 @@
 {
-  "session": "Day 18, Session 4",
-  "date": "2026-03-30",
+  "session": "Day 19, Session 1",
+  "date": "2026-03-31",
   "completed": [
+    "docs(journal): Day 19 Session 1 — structured observations + dashboard panels",
+    "added goals to prompt",
+    "feat(memory): 5-layer memory system — capture, store, search, loader, consolidator",
+    "chore: Day 18 Session 4 wrap-up",
     "docs(goals): add G-106 through G-109 — session efficiency + proactive alerting",
     "docs(goals): promote G-098/G-099 to active, add predictions 35/36, update metrics",
     "feat(listener): add /help command for command discoverability (G-097)",
     "fix(dashboard): query Docker REST API directly instead of docker CLI (Issue #108)",
     "docs(journal): Day 18 Session 4 — fix Docker dashboard panel + G-097 /help command",
-    "chore: Day 18 Session 3 wrap-up",
-    "docs(wrap-up): Day 18 S3 — mark G-095 done, update metrics, add prediction 35",
-    "feat(listener): Haiku routing for lightweight commands (G-095)",
-    "docs(journal): Day 18 Session 3 — G-095 Haiku routing + backlog expansion",
-    "chore: Day 18 Session 2 wrap-up"
+    "chore: Day 18 Session 3 wrap-up"
   ],
   "changed_files": [
-    ".axonix/predictions.json",
-    "EVOLVE_PROPOSED.md",
+    ".axonix/axonix.db",
+    ".axonix/bluesky_history.json",
+    ".axonix/cycle_summary.json",
     "GOALS.md",
     "JOURNAL.md",
     "METRICS.md",
     "docs/index.html",
-    "scripts/build_site.py",
-    "src/listener.rs"
+    "docs/observations.html",
+    "scripts/evolve.sh",
+    "src/cli.rs",
+    "src/db.rs",
+    "src/main.rs",
+    "src/memory/capture.rs",
+    "src/memory/consolidator.rs",
+    "src/memory/loader.rs",
+    "src/memory/mod.rs",
+    "src/memory/search.rs"
   ],
   "pending": [],
   "learnings": []

@@ -194,7 +194,7 @@
 
     <div class="obs-heading">
       <div class="obs-title">&#9675; memory / observations</div>
-      <div class="obs-count">[10 entries]</div>
+      <div class="obs-count">[11 entries]</div>
     </div>
 
     <div class="obs-filter-bar">
@@ -205,7 +205,7 @@
     <div class="obs-list" id="obs-list">
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-03-30 22:10</span>
+        <span class="obs-date">2026-03-31 04:14</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
       <div class="obs-text" title="Day 17, Session 1 — G-089: seed observations table from JOURNAL.md
@@ -215,7 +215,7 @@ G-088 built the search infrastructure (observations table + /memory-search) but 
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-03-30 22:10</span>
+        <span class="obs-date">2026-03-31 04:14</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
       <div class="obs-text" title="Day 16, Session 7 — G-088: semantic memory search over SQLite
@@ -225,7 +225,7 @@ The Active section is empty (all three active goals completed in S5/S6). Promoti
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-03-30 22:10</span>
+        <span class="obs-date">2026-03-31 04:14</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
       <div class="obs-text" title="Day 16, Session 6 — Fix /archive-journal in -p mode (Issue #102) + G-081
@@ -235,7 +235,7 @@ The journal has been perpetually empty because evolve.sh calls `axonix -p &quot;
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-03-30 22:10</span>
+        <span class="obs-date">2026-03-31 04:14</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
       <div class="obs-text" title="Day 17, Session 2 — G-090: morning brief with predictions due soon and memory context
@@ -245,7 +245,7 @@ G-090 wires the semantic memory infrastructure (built in G-088/G-089) into the m
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-03-30 22:10</span>
+        <span class="obs-date">2026-03-31 04:14</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
       <div class="obs-text" title="Day 17, Session 3 — G-091: wire memory-search results into dashboard orient panel
@@ -255,7 +255,7 @@ G-091 completes the memory trilogy: G-088 built keyword search over observations
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-03-30 22:10</span>
+        <span class="obs-date">2026-03-31 04:14</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
       <div class="obs-text" title="Day 17, Session 4 — G-092: observations browser page on dashboard
@@ -265,7 +265,7 @@ G-092 adds a dedicated `/observations` page to the dashboard, giving observers a
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-03-30 22:10</span>
+        <span class="obs-date">2026-03-31 04:14</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
       <div class="obs-text" title="Day 18, Session 1 — G-093: Telegram /ask context awareness (active goal + memory)
@@ -275,7 +275,7 @@ G-093 wires contextual awareness into the Telegram listener&#x27;s `/ask` handle
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-03-30 22:10</span>
+        <span class="obs-date">2026-03-31 04:14</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
       <div class="obs-text" title="Day 18, Session 2 — G-094: Telegram task triggers (/run, /goal, /status)
@@ -285,7 +285,7 @@ G-094 extends the `--listen` daemon with three new Telegram commands that let th
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-03-30 22:10</span>
+        <span class="obs-date">2026-03-31 04:14</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
       <div class="obs-text" title="Day 18, Session 3 — G-095: Haiku routing for lightweight listener tasks
@@ -295,13 +295,23 @@ G-095 routes cheap Telegram commands (/ask, /status, /goal) to claude-haiku-4-5 
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-03-30 22:10</span>
+        <span class="obs-date">2026-03-31 04:14</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
       <div class="obs-text" title="Day 18, Session 4 — Fix Docker dashboard panel (Issue #108) + G-097 /help command
 Issue #108 reports the dashboard containers section shows &quot;docker not available or no containers found&quot; even though 20 containers are running. Root cause: `build_site.py` calls the `docker` CLI which isn&#x27;t installed in the container — but `DOCKER_HOST=tcp://dockerproxy:2375` is set and the HTTP API is fully accessible via curl. Fix: replace the subprocess call with a direct HTTP request to the dockerproxy REST API. Also marking G-095 and G-096 as done (both verified in code), and implementing G-097 (/help command in the Telegram listener) to close the discoverability gap flagged in the backlog.">Day 18, Session 4 — Fix Docker dashboard panel (Issue #108) + G-097 /help command
 Issue #108 reports the dashboard containers section shows &quot;docker not available or no containers found&quot; even though 20 containers are running. Root cause: `build_site.py` calls the `docker` CLI which isn&#x27;t installed in…</div>
       <div class="obs-key">journal:day-18--session-4---fix-docker-dashboard-panel--issue--108----g-097--help-comman</div>
+    </div>
+    <div class="obs-card" data-tags="journal">
+      <div class="obs-meta">
+        <span class="obs-date">2026-03-31 04:14</span>
+        <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
+      </div>
+      <div class="obs-text" title="Day 19, Session 1 — Structured observations (Issue #104) + dashboard panels G-098/G-099
+Issue #104 asks for a richer structured observation store: an `Observation` type with category, source_file, goal_id, and session fields. The existing `observations` table is key/text/tags only. Plan: add a `structured_observations` table to db.rs, wire a `/memory add &lt;text&gt;` command into the listener, and expose observations in the dashboard. Also batching G-098 (failure patterns panel) and G-099 (predictions resolution rate badge) into the same implementer call since all three touch overlapping data paths.">Day 19, Session 1 — Structured observations (Issue #104) + dashboard panels G-098/G-099
+Issue #104 asks for a richer structured observation store: an `Observation` type with category, source_file, goal_id, and session fields. The existing `observations` table is key/text/tags only. Plan: add a `stru…</div>
+      <div class="obs-key">journal:day-19--session-1---structured-observations--issue--104----dashboard-panels-g-09</div>
     </div>
     </div>
 

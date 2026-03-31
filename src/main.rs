@@ -1376,6 +1376,12 @@ async fn main() {
                             tg_client.reply_to("⚠️ /goal is handled by the listener daemon.", message_id).await.ok();
                         }
                     }
+                    axonix::telegram::BotCommand::Memory { action: _, message_id } => {
+                        println!("\n{DIM}  📱 Telegram /memory{RESET}");
+                        if let Some(ref tg_client) = tg {
+                            tg_client.reply_to("⚠️ /memory is handled by the listener daemon.", message_id).await.ok();
+                        }
+                    }
                 }
             }
         }
@@ -1449,6 +1455,9 @@ fn spawn_telegram_cron_poll(
                                 }
                                 axonix::telegram::BotCommand::Goal { description: _, message_id } => {
                                     tg_poll.reply_to("⚠️ /goal is handled by the listener daemon.", message_id).await.ok();
+                                }
+                                axonix::telegram::BotCommand::Memory { action: _, message_id } => {
+                                    tg_poll.reply_to("⚠️ /memory is handled by the listener daemon.", message_id).await.ok();
                                 }
                             }
                         }

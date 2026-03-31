@@ -328,6 +328,70 @@ pub fn is_goal_command(text: &str) -> bool {
     parse_goal_command(text).is_some()
 }
 
+/// Action for the `/memory` command.
+#[derive(Debug, PartialEq, Clone)]
+pub enum MemoryAction {
+    /// `/memory add <text>` or `/memory add:<category> <text>` — store an observation.
+    Add { text: String, category: String },
+    /// `/memory search <query>` — search past observations.
+    Search { query: String },
+    /// `/memory list` — list recent observations.
+    List,
+}
+
+/// Parse a `/memory ...` command text into a `MemoryAction`.
+///
+/// Formats:
+/// - `/memory add <text>`             → Add { category: "learned" }
+/// - `/memory add:<category> <text>`  → Add { category }
+/// - `/memory search <query>`         → Search { query }
+/// - `/memory list`                   → List
+///
+/// Returns `None` if the text is not a `/memory` command or is malformed.
+pub fn parse_memory_command(text: &str) -> Option<MemoryAction> {
+    let text = text.trim();
+    let rest = text.strip_prefix("/memory")?.trim_start();
+    if rest.is_empty() {
+        return None;
+    }
+    if rest == "list" {
+        return Some(MemoryAction::List);
+    }
+    if let Some(search_rest) = rest.strip_prefix("search") {
+        let query = search_rest.trim();
+        if !query.is_empty() {
+            return Some(MemoryAction::Search { query: query.to_string() });
+        }
+        return None;
+    }
+    if let Some(add_rest) = rest.strip_prefix("add") {
+        // Could be "add <text>" or "add:<category> <text>"
+        if let Some(cat_and_text) = add_rest.strip_prefix(':') {
+            // "add:<category> <text>"
+            let mut parts = cat_and_text.splitn(2, ' ');
+            let category = parts.next().unwrap_or("learned").trim();
+            let text_part = parts.next().unwrap_or("").trim();
+            if !text_part.is_empty() {
+                return Some(MemoryAction::Add {
+                    text: text_part.to_string(),
+                    category: category.to_string(),
+                });
+            }
+            return None;
+        } else {
+            let body = add_rest.trim();
+            if !body.is_empty() {
+                return Some(MemoryAction::Add {
+                    text: body.to_string(),
+                    category: "learned".to_string(),
+                });
+            }
+            return None;
+        }
+    }
+    None
+}
+
 /// The help text shown to Telegram users.
 ///
 /// Kept as a constant so the poll loop and tests share the same string.
@@ -337,6 +401,9 @@ pub const TELEGRAM_HELP_TEXT: &str = "\
 /ask <prompt> — Send a prompt to the agent and get a response
 /run <task> — Execute a task as a mini-session and report the result
 /goal <description> — Add a goal to the backlog immediately
+/memory add <text>       — store an observation (optionally /memory add:<category>)
+/memory search <query>   — search past observations
+/memory list             — list recent observations
 /status — Show current session status (model, mode, uptime)
 /health — Show system health (CPU, memory, disk, uptime)
 /brief — Morning brief: active goals, open predictions, recent sessions
@@ -373,6 +440,10 @@ pub enum BotCommand {
     Run { task: String, message_id: i64 },
     /// `/goal <description>` — append a goal to GOALS.md backlog.
     Goal { description: String, message_id: i64 },
+    /// `/memory add <text>` — store a structured observation.
+    /// `/memory search <query>` — search structured observations.
+    /// `/memory list` — list recent observations.
+    Memory { action: MemoryAction, message_id: i64 },
 }
 
 impl TelegramClient {
@@ -404,6 +475,9 @@ impl TelegramClient {
                 }
                 if let Some(desc) = parse_goal_command(text) {
                     return Some(BotCommand::Goal { description: desc.to_string(), message_id: msg.message_id });
+                }
+                if let Some(action) = parse_memory_command(text) {
+                    return Some(BotCommand::Memory { action, message_id: msg.message_id });
                 }
                 let prompt = parse_ask_command(text)?;
                 Some(BotCommand::Ask(AskCommand {
@@ -1150,5 +1224,50 @@ mod tests {
     fn test_format_enhanced_status_reply_uptime_minutes() {
         let reply = TelegramClient::format_enhanced_status_reply("m", 185, None, None);
         assert!(reply.contains("3m"), "185s should show as 3m: {reply}");
+    }
+
+    // ── /memory command parsing ────────────────────────────────────────────────
+
+    #[test]
+    fn test_memory_add_command_parsed() {
+        let result = parse_memory_command("/memory add hello world");
+        assert!(matches!(
+            result,
+            Some(MemoryAction::Add { ref text, ref category })
+            if text == "hello world" && category == "learned"
+        ), "expected Add{{text='hello world', category='learned'}}, got {result:?}");
+    }
+
+    #[test]
+    fn test_memory_add_with_category_parsed() {
+        let result = parse_memory_command("/memory add:tried_and_failed couldn't compile");
+        assert!(matches!(
+            result,
+            Some(MemoryAction::Add { ref text, ref category })
+            if text == "couldn't compile" && category == "tried_and_failed"
+        ), "expected Add with tried_and_failed category, got {result:?}");
+    }
+
+    #[test]
+    fn test_memory_search_command_parsed() {
+        let result = parse_memory_command("/memory search sqlite");
+        assert!(matches!(
+            result,
+            Some(MemoryAction::Search { ref query }) if query == "sqlite"
+        ), "expected Search{{query='sqlite'}}, got {result:?}");
+    }
+
+    #[test]
+    fn test_memory_list_command_parsed() {
+        let result = parse_memory_command("/memory list");
+        assert_eq!(result, Some(MemoryAction::List), "expected List, got {result:?}");
+    }
+
+    #[test]
+    fn test_help_text_contains_memory() {
+        assert!(
+            TELEGRAM_HELP_TEXT.contains("/memory"),
+            "TELEGRAM_HELP_TEXT should mention /memory"
+        );
     }
 }

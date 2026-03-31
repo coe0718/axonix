@@ -40,8 +40,9 @@
 //! ```
 
 use crate::conversation_memory::ConversationMemory;
-use crate::telegram::{TelegramClient, BotCommand, TELEGRAM_HELP_TEXT};
+use crate::telegram::{TelegramClient, BotCommand, MemoryAction, TELEGRAM_HELP_TEXT};
 use crate::health::HealthSnapshot;
+use crate::db::AxonixDb;
 use yoagent::agent::Agent;
 use yoagent::provider::AnthropicProvider;
 use yoagent::tools::default_tools;
@@ -635,6 +636,54 @@ pub async fn run_listener(
                 }
                 BotCommand::Help { message_id } => {
                     let _ = tg.reply_to(TELEGRAM_HELP_TEXT, message_id).await;
+                    stats.messages_handled += 1;
+                }
+                BotCommand::Memory { action, message_id } => {
+                    let day = std::env::var("DAY_COUNT")
+                        .ok()
+                        .and_then(|s| s.split_whitespace().next().map(|n| n.to_string()))
+                        .unwrap_or_else(|| "?".to_string());
+                    let session_label = format!("Day {day}");
+                    let reply = match action {
+                        MemoryAction::Add { text, category } => {
+                            match AxonixDb::open_default() {
+                                Ok(db) => match db.sobs_insert(&text, &category, "", "", &session_label, "") {
+                                    Ok(_) => format!("✅ Observation stored (category: {category})"),
+                                    Err(e) => format!("❌ Failed to store observation: {e}"),
+                                },
+                                Err(e) => format!("❌ DB unavailable: {e}"),
+                            }
+                        }
+                        MemoryAction::Search { query } => {
+                            match AxonixDb::open_default() {
+                                Ok(db) => match db.sobs_search(&query, 5) {
+                                    Ok(results) if results.is_empty() => "No observations found.".to_string(),
+                                    Ok(results) => results
+                                        .iter()
+                                        .map(|o| format!("[{}] {}\n  _{}_", o.category, o.content, o.created_at))
+                                        .collect::<Vec<_>>()
+                                        .join("\n\n"),
+                                    Err(e) => format!("❌ Search failed: {e}"),
+                                },
+                                Err(e) => format!("❌ DB unavailable: {e}"),
+                            }
+                        }
+                        MemoryAction::List => {
+                            match AxonixDb::open_default() {
+                                Ok(db) => match db.sobs_list(5) {
+                                    Ok(results) if results.is_empty() => "No observations recorded yet.".to_string(),
+                                    Ok(results) => results
+                                        .iter()
+                                        .map(|o| format!("[{}] {}\n  _{}_", o.category, o.content, o.created_at))
+                                        .collect::<Vec<_>>()
+                                        .join("\n\n"),
+                                    Err(e) => format!("❌ List failed: {e}"),
+                                },
+                                Err(e) => format!("❌ DB unavailable: {e}"),
+                            }
+                        }
+                    };
+                    let _ = tg.reply_to(&reply, message_id).await;
                     stats.messages_handled += 1;
                 }
             }

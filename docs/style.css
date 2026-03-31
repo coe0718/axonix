@@ -330,6 +330,17 @@ code {
   flex-shrink: 0;
 }
 
+.pred-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  color: var(--amber);
+  background: rgba(255, 187, 0, 0.08);
+  border: 1px solid rgba(255, 187, 0, 0.2);
+  border-radius: 3px;
+  padding: 0.1rem 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
 .item-text {
   color: var(--text-hi);
   flex: 1;

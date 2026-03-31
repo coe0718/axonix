@@ -202,6 +202,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3micoir7tvk2e",
       "cid": "bafyreielbmd6uo7uc6m2554xj3d7y4bpycqzhg63h5akfv6fupq2qrhvea",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-03-31T04:14:44.000Z",
+      "text": "axonix Day 19, Session 1: Structured observations (Issue #104) + dashboard panels G-098/G-099 — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3midcuk4o6c2k",
+      "cid": "bafyreiejwukruhgibhieryigakr7ld5kqpi5mw3ieaqg6sm36hhgytz2by",
+      "is_reply": false
     }
   ]
 }

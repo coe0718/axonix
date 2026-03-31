@@ -351,7 +351,12 @@ def render_containers(containers):
 
 
 def parse_goals(content):
-    """Parse GOALS.md into active and completed goal lists."""
+    """Parse GOALS.md into active and completed goal lists.
+
+    Handles two goal formats:
+    1. Bullet format:  - [ ] [G-NNN] description
+    2. Header format:  ### G-NNN — description  (with **Status:** [ ] line)
+    """
     active = []
     backlog = []
     completed = []
@@ -366,6 +371,7 @@ def parse_goals(content):
         is_active = header.startswith("active")
         is_backlog = header.startswith("backlog")
 
+        # First pass: bullet-style goals (- [ ] [G-NNN] text)
         for line in lines[1:]:
             m = re.match(r"^\s*-\s+\[([ xX])\]\s+(\[G-\d+\])?\s*(.+)$", line)
             if not m:
@@ -382,7 +388,112 @@ def parse_goals(content):
             elif is_backlog:
                 backlog.append(entry)
 
+        # Second pass: header-style goals (### G-NNN — description)
+        # Find all ### headers in this section, then look for Status: lines
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            hm = re.match(r"^###\s+(G-\d+)\s*[—–-]\s*(.+)$", line)
+            if hm:
+                goal_id = hm.group(1)
+                title = hm.group(2).strip()
+                # Look ahead for **Status:** [ ] or [x]
+                checked = False
+                found_status = False
+                for j in range(i + 1, min(i + 10, len(lines))):
+                    sm = re.match(r"^\*\*Status:\*\*\s*\[([ xX])\]", lines[j])
+                    if sm:
+                        checked = sm.group(1).lower() == "x"
+                        found_status = True
+                        break
+                if found_status:
+                    entry = {"id": goal_id, "text": title}
+                    if checked:
+                        completed.append(entry)
+                    elif is_active:
+                        active.append(entry)
+                    elif is_backlog:
+                        backlog.append(entry)
+            i += 1
+
+    # Deduplicate by id (bullet-style entries take precedence)
+    seen_ids = set()
+    deduped_active = []
+    for e in active:
+        key = e["id"] or e["text"]
+        if key not in seen_ids:
+            seen_ids.add(key)
+            deduped_active.append(e)
+    active = deduped_active
+
     return {"active": active, "backlog": backlog, "completed": completed}
+
+
+def parse_failure_patterns():
+    """Read failure patterns from .axonix/failure_patterns.json.
+
+    Returns a list of dicts: {type_label, description, session, date, count}
+    sorted by count descending.  Returns [] if file missing or empty.
+    """
+    path = ROOT / ".axonix" / "failure_patterns.json"
+    if not path.exists():
+        return []
+    try:
+        events = json.loads(path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return []
+
+    if not isinstance(events, list):
+        return []
+
+    # Count by type label and track the most-recent date per type
+    from collections import defaultdict
+    counts: dict = defaultdict(int)
+    last_seen: dict = {}
+    labels: dict = {}
+
+    for ev in events:
+        ft = ev.get("failure_type", {})
+        # serde's tag/content enum: {"type": "FalseCompletion"} or {"type": "Other", "value": "..."}
+        if isinstance(ft, dict):
+            ftype = ft.get("type", "Unknown")
+            value = ft.get("value", "")
+            label = f"Other({value})" if ftype == "Other" and value else ftype
+        else:
+            label = str(ft)
+
+        counts[label] += 1
+        date = ev.get("date", "")
+        if label not in last_seen or date > last_seen[label]:
+            last_seen[label] = date
+        labels[label] = label
+
+    result = [
+        {"type_label": lbl, "count": cnt, "last_seen": last_seen.get(lbl, "?")}
+        for lbl, cnt in sorted(counts.items(), key=lambda kv: -kv[1])
+    ]
+    return result[:3]  # top 3 only
+
+
+def render_failure_patterns(patterns):
+    """Render failure patterns panel HTML."""
+    parts = ['<div class="state-block">']
+    parts.append('<div class="state-label">⚡ failure patterns</div>')
+    if patterns:
+        parts.append('<ul class="plain-list">')
+        for p in patterns:
+            parts.append(
+                f'<li>'
+                f'<span class="tag">{html.escape(str(p["count"]))}×</span> '
+                f'<span class="item-text">{html.escape(p["type_label"])}</span>'
+                f'<span class="item-date"> last: {html.escape(p["last_seen"])}</span>'
+                f'</li>'
+            )
+        parts.append('</ul>')
+    else:
+        parts.append('<p class="empty-state">no failure patterns recorded yet</p>')
+    parts.append('</div>')
+    return "\n".join(parts)
 
 
 def parse_open_predictions():
@@ -410,7 +521,34 @@ def parse_open_predictions():
     return open_preds
 
 
-def render_live_state(goals, open_predictions, memory_context_html=""):
+def parse_prediction_stats():
+    """Compute resolution rate stats from .axonix/predictions.json.
+
+    Returns a dict: {resolved, correct, rate_pct} or None if file missing.
+    'correct' = outcome starts with TRUE, EARLY, or 'correct' (case-insensitive).
+    """
+    path = ROOT / ".axonix" / "predictions.json"
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return None
+
+    resolved = 0
+    correct = 0
+    for pred in data.values():
+        if pred.get("resolved"):
+            resolved += 1
+            outcome = str(pred.get("outcome", "")).strip().upper()
+            if outcome.startswith("TRUE") or outcome.startswith("EARLY") or outcome.startswith("CORRECT"):
+                correct += 1
+
+    rate_pct = round(correct / resolved * 100) if resolved > 0 else 0
+    return {"resolved": resolved, "correct": correct, "rate_pct": rate_pct}
+
+
+def render_live_state(goals, open_predictions, memory_context_html="", pred_stats=None, failure_patterns=None):
     """Render live state as plain text blocks."""
     active_goals = goals["active"]
     parts = []
@@ -430,9 +568,16 @@ def render_live_state(goals, open_predictions, memory_context_html=""):
         parts.append('<p class="empty-state">no active goals — promote from backlog</p>')
     parts.append('</div>')
 
-    # Open predictions
+    # Open predictions with resolution rate badge
     parts.append('<div class="state-block">')
     parts.append('<div class="state-label">◈ open predictions</div>')
+    if pred_stats:
+        badge = (
+            f'{pred_stats["resolved"]} resolved · '
+            f'{pred_stats["correct"]} correct · '
+            f'{pred_stats["rate_pct"]}% accuracy'
+        )
+        parts.append(f'<span class="pred-badge">{html.escape(badge)}</span>')
     if open_predictions:
         parts.append('<ul class="plain-list">')
         for pred in open_predictions:
@@ -450,6 +595,10 @@ def render_live_state(goals, open_predictions, memory_context_html=""):
     else:
         parts.append('<p class="empty-state">no open predictions</p>')
     parts.append('</div>')
+
+    # Failure patterns panel
+    if failure_patterns is not None:
+        parts.append(render_failure_patterns(failure_patterns))
 
     if memory_context_html:
         parts.append(memory_context_html)
@@ -1433,6 +1582,17 @@ code {
   flex-shrink: 0;
 }
 
+.pred-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  color: var(--amber);
+  background: rgba(255, 187, 0, 0.08);
+  border: 1px solid rgba(255, 187, 0, 0.2);
+  border-radius: 3px;
+  padding: 0.1rem 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
 .item-text {
   color: var(--text-hi);
   flex: 1;
@@ -1681,6 +1841,8 @@ def build():
     metrics = parse_metrics(read_file("METRICS.md"))
     goals = parse_goals(read_file("GOALS.md"))
     open_predictions = parse_open_predictions()
+    pred_stats = parse_prediction_stats()
+    failure_patterns = parse_failure_patterns()
     containers = get_docker_containers()
 
     # Memory context: query for the first active goal title
@@ -1691,7 +1853,7 @@ def build():
 
     stats_html = render_stats(metrics)
     patterns_html = render_metrics_patterns(metrics)
-    live_state_html = render_live_state(goals, open_predictions, memory_context_html)
+    live_state_html = render_live_state(goals, open_predictions, memory_context_html, pred_stats=pred_stats, failure_patterns=failure_patterns)
     containers_html = render_containers(containers)
     journal_html = render_journal(parse_journal(read_file("JOURNAL.md")))
     goals_html = render_goals(goals)
