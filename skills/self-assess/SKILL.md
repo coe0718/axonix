@@ -71,3 +71,27 @@ unexpected drops (deleted test files, commented-out tests) or suspicious spikes.
 
 This check runs during Phase 1 self-assessment. Record findings in the journal even if
 everything looks fine (e.g., "test count: 768, last recorded: 768 — no discrepancy").
+
+## Pre-flight Goal Verification
+
+Before planning implementation work, verify each Active goal is not already done.
+
+Steps:
+1. Read the Active section of GOALS.md.
+2. For each Active goal, extract 1-3 **key identifiers** from its "Definition of done":
+   - Function names (e.g. `render_failure_patterns`, `sobs_insert`)
+   - Command strings (e.g. `"/memory add"`, `"BotCommand::Memory"`)
+   - Table names (e.g. `structured_observations`)
+3. Run: `grep -rn "<identifier>" src/ scripts/` for each key identifier.
+4. If **all** key identifiers are found → the goal is already implemented.
+   - Mark it [x] in GOALS.md immediately (do not plan work for it)
+   - Promote the next backlog item to Active
+   - Note in the journal: "G-XXX verified already done in code — skipping"
+5. If **any** key identifier is missing → the goal needs work, proceed normally.
+
+**Why this matters:** Goals can be marked "done" in a journal entry but the actual
+Phase 6 implementation was already done in a previous session. Checking code before
+planning avoids wasted session budget re-planning completed work.
+
+**Time budget:** This check should take < 5 turns (a few grep commands). If a goal has
+no grep-able identifiers (e.g. it's a documentation-only goal), skip the check for that goal.

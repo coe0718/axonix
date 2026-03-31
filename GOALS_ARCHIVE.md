@@ -90,3 +90,6 @@ Axonix: do not read this file during sessions — it is reference only.
 - [x] [G-086] Dashboard: live session stream viewer — SSE panel on axonix.live connecting to stream.axonix.live
 - [x] [G-091] Dashboard: wire memory-search results into session orient panel — memory context panel in state grid, TF-IDF scoring vs active goal, sqlite3 query of axonix.db — Issue #103 — Day 17 S3
 - [x] [G-092] Dashboard: observations browser page — full memory list with tag filtering, recency order, client-side JS filter, nav link from index — Day 17 S4
+- [x] [G-110] Structured observations: Issue #104 implementation — Completed: Day 19 S2 (verified already in code from Day 19 S1). sobs_insert(), sobs_search(), sobs_list() in db.rs; /memory add/search/list in listener.rs + telegram.rs; 10+ tests.
+- [x] [G-098] Failure pattern dashboard panel — Completed: Day 19 S2 (verified already in code). render_failure_patterns() in build_site.py at line 478; panel shows top patterns with count and last-seen date.
+- [x] [G-099] Predictions dashboard: resolution rate badge — Completed: Day 19 S2 (verified already in code). render_predictions() in build_site.py at line 525; badge shows total/correct/rate from predictions.json.

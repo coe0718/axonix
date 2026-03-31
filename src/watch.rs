@@ -17,8 +17,9 @@
 //! - On startup, sends a "watch started" notification
 //! - Alerts include the metric value and threshold for context
 
-use crate::health::HealthSnapshot;
+use crate::health::{DockerHealth, HealthSnapshot};
 use crate::telegram::TelegramClient;
+use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
 /// Configuration for the health watch.
@@ -35,6 +36,8 @@ pub struct WatchConfig {
     /// Minimum time between alerts for the same metric (default: 300 seconds).
     /// Prevents Telegram flood during sustained high-load conditions.
     pub cooldown: Duration,
+    /// Minimum time between restart alerts for the same container (default: 3600 seconds / 1 hour).
+    pub restart_cooldown: Duration,
 }
 
 impl Default for WatchConfig {
@@ -45,6 +48,7 @@ impl Default for WatchConfig {
             disk_threshold: 85,
             interval: Duration::from_secs(60),
             cooldown: Duration::from_secs(300),
+            restart_cooldown: Duration::from_secs(3600),
         }
     }
 }
@@ -68,6 +72,8 @@ pub struct AlertState {
     last_cpu_alert: Option<Instant>,
     last_mem_alert: Option<Instant>,
     last_disk_alert: Option<Instant>,
+    /// Maps container name → last restart alert time.
+    pub last_restart_alert: HashMap<String, Instant>,
 }
 
 impl AlertState {
@@ -94,6 +100,14 @@ impl AlertState {
     /// Returns true if a disk alert can be sent.
     fn can_alert_disk(&self, cooldown: Duration) -> bool {
         self.last_disk_alert
+            .map(|t| t.elapsed() >= cooldown)
+            .unwrap_or(true)
+    }
+
+    /// Returns true if a restart alert can be sent for the named container.
+    pub fn can_alert_restart(&self, name: &str, cooldown: Duration) -> bool {
+        self.last_restart_alert
+            .get(name)
             .map(|t| t.elapsed() >= cooldown)
             .unwrap_or(true)
     }
@@ -165,6 +179,28 @@ pub fn evaluate_thresholds(snapshot: &HealthSnapshot, config: &WatchConfig, stat
     alerts
 }
 
+/// Check for containers in the "restarting" state and return alert messages.
+///
+/// Takes a `DockerHealth` snapshot (passed in for testability).
+/// Rate-limited by `config.restart_cooldown` per container.
+/// Returns an empty vec if Docker is unavailable or no containers are restarting.
+pub fn check_container_restarts(docker: &DockerHealth, config: &WatchConfig, state: &AlertState) -> Vec<String> {
+    if docker.error.is_some() {
+        return vec![];
+    }
+
+    let mut alerts = Vec::new();
+    for c in &docker.containers {
+        if c.state == "restarting" && state.can_alert_restart(&c.name, config.restart_cooldown) {
+            alerts.push(format!(
+                "⚠️ *Container restarting*: {}\n  Status: {}",
+                c.name, c.status
+            ));
+        }
+    }
+    alerts
+}
+
 /// Run the health watch loop.
 ///
 /// Checks health at `config.interval`, sends Telegram alerts when thresholds are
@@ -181,6 +217,7 @@ pub async fn run_watch(config: WatchConfig, tg: &TelegramClient) {
         "👁 *Axonix health watch started*\n\
          Checking every {}s, cooldown {}s\n\
          Thresholds: CPU>{:.1} | Mem>{}% | Disk>{}%\n\
+         | Restarts: per-container 1h cooldown\n\
          Current: {}",
         config.interval.as_secs(),
         config.cooldown.as_secs(),
@@ -197,10 +234,19 @@ pub async fn run_watch(config: WatchConfig, tg: &TelegramClient) {
         let snapshot = HealthSnapshot::collect();
         let alerts = evaluate_thresholds(&snapshot, &config, &state);
 
+        let docker = crate::health::docker_health();
+        let restart_alerts = check_container_restarts(&docker, &config, &state);
+
         for alert in &alerts {
             // Best-effort: log failures but don't break the watch loop
             if let Err(e) = tg.send_message(alert).await {
                 eprintln!("  watch: alert send failed: {e}");
+            }
+        }
+
+        for alert in &restart_alerts {
+            if let Err(e) = tg.send_message(alert).await {
+                eprintln!("  watch: restart alert send failed: {e}");
             }
         }
 
@@ -214,6 +260,16 @@ pub async fn run_watch(config: WatchConfig, tg: &TelegramClient) {
         }
         if alerts.iter().any(|a| a.contains("disk")) {
             state.last_disk_alert = Some(now);
+        }
+        // Update restart alert state for any containers that were alerted
+        for alert in &restart_alerts {
+            // Extract container name from "⚠️ *Container restarting*: <name>\n  Status: ..."
+            if let Some(rest) = alert.strip_prefix("⚠️ *Container restarting*: ") {
+                let name = rest.split('\n').next().unwrap_or("").to_string();
+                if !name.is_empty() {
+                    state.last_restart_alert.insert(name, now);
+                }
+            }
         }
     }
 }
@@ -447,5 +503,93 @@ mod tests {
         state.last_cpu_alert = Some(Instant::now());
         let cooldown = Duration::from_secs(300);
         assert!(!state.can_alert_cpu(cooldown), "should not alert immediately after previous alert");
+    }
+
+    // ── check_container_restarts ──────────────────────────────────────────────
+
+    use crate::health::ContainerStatus;
+
+    fn make_container(name: &str, state: &str, status: &str) -> ContainerStatus {
+        ContainerStatus {
+            name: name.to_string(),
+            state: state.to_string(),
+            status: status.to_string(),
+            healthy: state == "running",
+        }
+    }
+
+    fn make_docker_health(containers: Vec<ContainerStatus>, error: Option<&str>) -> DockerHealth {
+        DockerHealth {
+            containers,
+            error: error.map(|s| s.to_string()),
+        }
+    }
+
+    #[test]
+    fn test_check_container_restarts_restarting_triggers_alert() {
+        let docker = make_docker_health(
+            vec![make_container("axonix", "restarting", "Restarting (1) 5 seconds ago")],
+            None,
+        );
+        let config = WatchConfig::default();
+        let state = AlertState::default();
+        let alerts = check_container_restarts(&docker, &config, &state);
+        assert_eq!(alerts.len(), 1, "restarting container should trigger alert: {alerts:?}");
+        assert!(alerts[0].contains("axonix"), "alert should mention container name: {}", alerts[0]);
+        assert!(alerts[0].contains("Container restarting"), "alert should say restarting: {}", alerts[0]);
+    }
+
+    #[test]
+    fn test_check_container_restarts_running_no_alert() {
+        let docker = make_docker_health(
+            vec![make_container("axonix", "running", "Up 2 days")],
+            None,
+        );
+        let config = WatchConfig::default();
+        let state = AlertState::default();
+        let alerts = check_container_restarts(&docker, &config, &state);
+        assert!(alerts.is_empty(), "running container should not trigger restart alert: {alerts:?}");
+    }
+
+    #[test]
+    fn test_check_container_restarts_cooldown_suppresses() {
+        let docker = make_docker_health(
+            vec![make_container("axonix", "restarting", "Restarting (2) 3 seconds ago")],
+            None,
+        );
+        let config = WatchConfig::default(); // restart_cooldown = 3600s
+        let mut state = AlertState::default();
+        // Simulate a recent alert for this container
+        state.last_restart_alert.insert("axonix".to_string(), Instant::now());
+        let alerts = check_container_restarts(&docker, &config, &state);
+        assert!(alerts.is_empty(), "restart alert should be suppressed during cooldown: {alerts:?}");
+    }
+
+    #[test]
+    fn test_check_container_restarts_docker_unavailable_no_panic() {
+        let docker = make_docker_health(vec![], Some("connection refused"));
+        let config = WatchConfig::default();
+        let state = AlertState::default();
+        let alerts = check_container_restarts(&docker, &config, &state);
+        assert!(alerts.is_empty(), "Docker unavailable should return empty vec without panic: {alerts:?}");
+    }
+
+    #[test]
+    fn test_restart_cooldown_default() {
+        let config = WatchConfig::default();
+        assert_eq!(
+            config.restart_cooldown,
+            Duration::from_secs(3600),
+            "default restart_cooldown should be 3600s (1 hour)"
+        );
+    }
+
+    #[test]
+    fn test_alert_state_restart_empty_by_default() {
+        let state = AlertState::default();
+        assert!(
+            state.can_alert_restart("any-container", Duration::from_secs(3600)),
+            "fresh AlertState should allow restart alert for any container"
+        );
     }
 }
