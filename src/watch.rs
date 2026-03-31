@@ -515,6 +515,7 @@ mod tests {
             state: state.to_string(),
             status: status.to_string(),
             healthy: state == "running",
+            anomaly: state == "restarting" || status.contains("(unhealthy)"),
         }
     }
 

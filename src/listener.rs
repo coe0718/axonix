@@ -63,6 +63,24 @@ pub fn select_model_for_command(command: &str, sonnet_model: &str, haiku_model: 
     }
 }
 
+/// Parse `LISTENER_RATE_LIMIT` env var (format: "N/Ss" e.g. "5/60s").
+/// Returns (max_count, window_secs). Falls back to provided defaults on parse error.
+///
+/// Examples of valid values: "5/60s", "10/30s", "3/120s"
+/// The trailing "s" is optional: "10/30" is also accepted.
+pub fn parse_rate_limit_env(default_max: u32, default_window: u64) -> (u32, u64) {
+    if let Ok(val) = std::env::var("LISTENER_RATE_LIMIT") {
+        // Expected format: "5/60s" or "10/30s"
+        let val = val.trim().trim_end_matches('s');
+        if let Some((n_str, w_str)) = val.split_once('/') {
+            if let (Ok(n), Ok(w)) = (n_str.trim().parse::<u32>(), w_str.trim().parse::<u64>()) {
+                return (n, w);
+            }
+        }
+    }
+    (default_max, default_window)
+}
+
 // ── Config ────────────────────────────────────────────────────────────────────
 
 /// Configuration for the always-on Telegram listener.
@@ -82,6 +100,10 @@ pub struct ListenerConfig {
     pub daily_brief_hour: u8,
     /// Path to store the set of already-acknowledged issue numbers (JSON). None = use default.
     pub acked_issues_path: Option<String>,
+    /// Maximum commands per user per rate limit window. Default: 5.
+    pub rate_limit_max: u32,
+    /// Rate limit window size in seconds. Default: 60.
+    pub rate_limit_window_secs: u64,
 }
 
 impl Default for ListenerConfig {
@@ -94,6 +116,8 @@ impl Default for ListenerConfig {
             github_poll_interval_secs: 900,
             daily_brief_hour: 7,
             acked_issues_path: None,
+            rate_limit_max: 5,
+            rate_limit_window_secs: 60,
         }
     }
 }
@@ -484,6 +508,16 @@ pub async fn run_listener(
         .or_else(|_| std::env::var("GH_TOKEN"))
         .ok();
 
+    // Per-user rate limiting state.
+    // Since there is only one authorised operator chat, we use a single global
+    // bucket keyed on 0i64 rather than extracting chat_id from every BotCommand variant.
+    let mut rate_map: std::collections::HashMap<i64, (u32, std::time::Instant)> =
+        std::collections::HashMap::new();
+    let (rate_max, rate_window) = parse_rate_limit_env(
+        config.rate_limit_max,
+        config.rate_limit_window_secs,
+    );
+
     loop {
         // Update uptime
         stats.uptime_secs = start_time.elapsed().as_secs();
@@ -508,6 +542,23 @@ pub async fn run_listener(
         let commands = tg.extract_commands(&updates);
 
         for cmd in commands {
+            // Rate limiting check (global bucket — single authorised operator).
+            let now = std::time::Instant::now();
+            let entry = rate_map.entry(0i64).or_insert((0, now));
+            if now.duration_since(entry.1) > std::time::Duration::from_secs(rate_window) {
+                // Window has expired — reset the counter.
+                *entry = (0, now);
+            }
+            entry.0 += 1;
+            if entry.0 > rate_max {
+                let msg = format!(
+                    "⏳ Slow down! You can send {} commands per {}s. Try again shortly.",
+                    rate_max, rate_window
+                );
+                let _ = tg.send_message(&msg).await;
+                continue;
+            }
+
             match cmd {
                 BotCommand::Ask(ask_cmd) => {
                     // Send "processing" acknowledgement
@@ -1171,6 +1222,45 @@ mod tests {
         assert!(help.contains("/goal"),   "help text must mention /goal");
         assert!(help.contains("/status"), "help text must mention /status");
         assert!(help.contains("/help"),   "help text must mention /help itself");
+    }
+
+    // ── parse_rate_limit_env ──────────────────────────────────────────────────
+
+    #[test]
+    fn test_parse_rate_limit_env_valid() {
+        // Temporarily set the env var to "5/60s" and verify parsing.
+        // Use a scope guard pattern via a helper to avoid test pollution.
+        std::env::set_var("LISTENER_RATE_LIMIT", "5/60s");
+        let (n, w) = parse_rate_limit_env(3, 30);
+        std::env::remove_var("LISTENER_RATE_LIMIT");
+        assert_eq!(n, 5, "should parse max as 5");
+        assert_eq!(w, 60, "should parse window as 60");
+    }
+
+    #[test]
+    fn test_parse_rate_limit_env_invalid() {
+        std::env::set_var("LISTENER_RATE_LIMIT", "bad");
+        let (n, w) = parse_rate_limit_env(3, 30);
+        std::env::remove_var("LISTENER_RATE_LIMIT");
+        assert_eq!(n, 3, "invalid env var should fall back to default max");
+        assert_eq!(w, 30, "invalid env var should fall back to default window");
+    }
+
+    #[test]
+    fn test_parse_rate_limit_env_unset() {
+        std::env::remove_var("LISTENER_RATE_LIMIT");
+        let (n, w) = parse_rate_limit_env(7, 90);
+        assert_eq!(n, 7, "unset env var should return default max");
+        assert_eq!(w, 90, "unset env var should return default window");
+    }
+
+    #[test]
+    fn test_parse_rate_limit_env_no_s_suffix() {
+        std::env::set_var("LISTENER_RATE_LIMIT", "10/30");
+        let (n, w) = parse_rate_limit_env(3, 30);
+        std::env::remove_var("LISTENER_RATE_LIMIT");
+        assert_eq!(n, 10, "should parse max as 10 even without 's' suffix");
+        assert_eq!(w, 30, "should parse window as 30 even without 's' suffix");
     }
 }
 

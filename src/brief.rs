@@ -65,6 +65,8 @@ pub struct Brief {
     pub predictions_due_soon: Vec<(u32, String, String)>,
     /// Top memory-search results for the current active goal (text, score).
     pub memory_context: Vec<(String, f64)>,
+    /// Infrastructure anomalies: containers in unhealthy/restarting state.
+    pub infrastructure_anomalies: Vec<String>,
 }
 
 /// One session row from METRICS.md.
@@ -148,6 +150,16 @@ impl Brief {
             vec![]
         };
 
+        // Collect infrastructure anomalies from docker container state.
+        let infrastructure_anomalies: Vec<String> = if let Some(ref d) = docker {
+            d.containers.iter()
+                .filter(|c| c.anomaly)
+                .map(|c| format!("⚠ {} — {}", c.name, c.status))
+                .collect()
+        } else {
+            vec![]
+        };
+
         let mut brief = Brief {
             active_goals,
             open_predictions,
@@ -169,6 +181,7 @@ impl Brief {
             recent_journal,
             predictions_due_soon,
             memory_context,
+            infrastructure_anomalies,
         };
         brief.today_priority = synthesize_priority(&brief);
         brief
@@ -442,6 +455,15 @@ impl Brief {
         // Docker container health (compact)
         if let Some(docker) = &self.docker {
             out.push_str(&format!("🐳 {}\n", docker.format_compact()));
+        }
+
+        // Infrastructure anomalies (alert section)
+        if !self.infrastructure_anomalies.is_empty() {
+            out.push_str("⚠️ *Infrastructure Anomalies*\n");
+            for a in &self.infrastructure_anomalies {
+                out.push_str(&format!("{a}\n"));
+            }
+            out.push('\n');
         }
 
         // Failure pattern summary (compact)
@@ -834,6 +856,7 @@ fn count_backlog_goals() -> usize {
 ///
 /// Priority order (first match wins):
 /// 1. Non-running Docker containers
+/// 1b. Running containers with health anomalies (unhealthy check / restarting)
 /// 2. Meta-health issues
 /// 3. No active goals
 /// 4. Consecutive session failures (last 2+ sessions with "FAILED" in notes)
@@ -851,6 +874,11 @@ fn synthesize_priority(brief: &Brief) -> String {
                 );
             }
         }
+    }
+
+    // 1b. Running containers with health anomalies (unhealthy health check or restarting)
+    if !brief.infrastructure_anomalies.is_empty() {
+        return format!("⚠ Infrastructure anomaly: {}", brief.infrastructure_anomalies[0]);
     }
 
     // 2. Meta-health issues
@@ -1162,6 +1190,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("MORNING BRIEF"), "should contain header");
@@ -1193,6 +1222,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("no active goals"), "should note empty goals");
@@ -1226,6 +1256,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Axonix Morning Brief*"), "should have bold header");
@@ -1252,6 +1283,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("deploy needed"), "note should appear in output");
@@ -1314,6 +1346,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("end of brief"), "should have end marker");
@@ -1343,6 +1376,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("Goal one"));
@@ -1373,6 +1407,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("#1"), "should show prediction IDs");
@@ -1401,6 +1436,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Axonix Morning Brief*"), "should have header");
@@ -1428,6 +1464,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_telegram();
         // format_telegram doesn't render notes (compact format) — but must not panic
@@ -1455,6 +1492,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("alpha"));
@@ -1503,6 +1541,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("Day 7"), "should show day number");
@@ -1575,6 +1614,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("SYSTEM HEALTH"), "should contain SYSTEM HEALTH section");
@@ -1604,6 +1644,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("SYSTEM HEALTH"), "should still contain section header");
@@ -1635,6 +1676,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("Health:"), "telegram brief should contain Health: line");
@@ -1697,6 +1739,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("BLUESKY"), "should contain BLUESKY section");
@@ -1725,6 +1768,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         assert!(!output.contains("BLUESKY"), "no bluesky_stats → no BLUESKY section");
@@ -1750,6 +1794,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Bluesky*"), "telegram should show *Bluesky* label");
@@ -1777,6 +1822,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let terminal = brief.format_terminal();
         assert!(terminal.contains("(never)"), "no last date should display (never)");
@@ -1813,6 +1859,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("calibration:"), "terminal should show calibration line");
@@ -1841,6 +1888,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         assert!(!output.contains("calibration:"), "no calibration → should not show calibration line");
@@ -1873,6 +1921,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("📊 Calibration:"), "telegram should show calibration emoji line");
@@ -1900,6 +1949,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_telegram();
         assert!(!output.contains("📊 Calibration:"), "no calibration → should not show calibration line");
@@ -1933,6 +1983,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("LAST SESSION"), "should contain LAST SESSION header");
@@ -1960,6 +2011,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("LAST SESSION"), "header still present when None");
@@ -1995,6 +2047,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("G-064: prediction calibration"), "should show first completed item");
@@ -2034,6 +2087,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("item five"), "fifth item should appear");
@@ -2066,6 +2120,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("624 tests"), "should show numeric test count");
@@ -2097,6 +2152,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("? tests"), "should show '? tests' when count is None");
@@ -2130,6 +2186,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Last Session*"), "telegram should show bold Last Session header");
@@ -2157,6 +2214,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("*Last Session*"), "telegram header still present when None");
@@ -2192,6 +2250,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("G-064: prediction calibration"), "telegram should show completed items");
@@ -2224,6 +2283,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("624 tests"), "telegram should show numeric test count");
@@ -2255,6 +2315,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_telegram();
         assert!(output.contains("? tests"), "telegram should show '? tests' when count is None");
@@ -2288,6 +2349,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let terminal = brief.format_terminal();
         assert!(terminal.contains("no completed items recorded"), "empty completed should show fallback in terminal");
@@ -2323,6 +2385,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         // The full 80-char string should NOT appear (truncated to 60)
@@ -2352,6 +2415,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("📝 LAST SESSION"), "LAST SESSION header must always appear in terminal brief");
@@ -2383,6 +2447,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let terminal = brief.format_terminal();
         assert!(terminal.contains("2026-03-23"), "terminal should show date next to session name");
@@ -2419,6 +2484,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
 
         // Should not panic even with a fresh (non-existent) DB path.
@@ -2468,6 +2534,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
 
         brief.log_to_db_at(&db_path);
@@ -2512,6 +2579,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
 
         brief.log_to_db_at(&db_path);
@@ -2568,6 +2636,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         assert!(brief.meta_health.is_some(), "meta_health should be Some when set");
     }
@@ -2598,6 +2667,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("META-SYSTEM"), "format_terminal should include META-SYSTEM section: {output}");
@@ -2631,6 +2701,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_telegram();
         assert!(
@@ -2660,6 +2731,7 @@ More text.\n\
             recent_journal: vec![],
             predictions_due_soon: vec![],
             memory_context: vec![],
+            infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
         assert!(output.contains("META-SYSTEM"), "META-SYSTEM section always present");
@@ -2687,8 +2759,9 @@ More text.\n\
                 meta_health: None,
                 today_priority: String::new(),
                 recent_journal: vec![],
-            predictions_due_soon: vec![],
-            memory_context: vec![],
+                predictions_due_soon: vec![],
+                memory_context: vec![],
+                infrastructure_anomalies: vec![],
             }
         }
     }
@@ -2930,6 +3003,57 @@ More text.\n\
         let output = b.format_telegram();
         assert!(output.contains("⏰ *Due Soon*"), "telegram should show Due Soon section");
         assert!(output.contains("#12"), "should show prediction id in telegram");
+    }
+
+    // ── G-104: infrastructure anomaly detection ───────────────────────────────
+
+    #[test]
+    fn test_brief_infrastructure_anomalies_shown_in_telegram() {
+        let mut b = Brief::test_empty();
+        b.infrastructure_anomalies = vec!["⚠ axonix-db — Up 5 min (unhealthy)".to_string()];
+        let output = b.format_telegram();
+        assert!(
+            output.contains("Infrastructure Anomalies"),
+            "telegram brief should show Infrastructure Anomalies section"
+        );
+        assert!(
+            output.contains("axonix-db"),
+            "telegram brief should show anomalous container name"
+        );
+    }
+
+    #[test]
+    fn test_brief_infrastructure_anomalies_not_shown_when_empty() {
+        let b = Brief::test_empty(); // infrastructure_anomalies is empty
+        let output = b.format_telegram();
+        assert!(
+            !output.contains("Infrastructure Anomalies"),
+            "telegram brief should NOT show anomaly section when there are no anomalies"
+        );
+    }
+
+    #[test]
+    fn test_synthesize_priority_anomaly_takes_precedence_over_meta_health() {
+        let mut b = Brief::test_empty();
+        b.active_goals = vec!["some goal".to_string()];
+        b.infrastructure_anomalies = vec!["⚠ axonix — Up 1 min (unhealthy)".to_string()];
+        let result = synthesize_priority(&b);
+        assert!(
+            result.contains("Infrastructure anomaly"),
+            "anomaly should be surfaced in priority, got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_synthesize_priority_no_anomaly_when_healthy() {
+        let mut b = Brief::test_empty();
+        b.active_goals = vec!["some goal".to_string()];
+        b.infrastructure_anomalies = vec![]; // no anomalies
+        let result = synthesize_priority(&b);
+        assert!(
+            !result.contains("Infrastructure anomaly"),
+            "no anomaly section when infrastructure_anomalies is empty, got: {result}"
+        );
     }
 }
 

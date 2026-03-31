@@ -288,6 +288,11 @@ pub struct ContainerStatus {
     pub status: String,
     /// Whether the container is healthy (state == "running")
     pub healthy: bool,
+    /// True if the container has a health check anomaly:
+    /// state is "restarting", or the status string contains "(unhealthy)".
+    /// A container can be `healthy=true` (running) yet still have `anomaly=true`
+    /// when Docker reports an unhealthy health-check result.
+    pub anomaly: bool,
 }
 
 /// Health summary of all Docker containers.
@@ -320,7 +325,7 @@ impl DockerHealth {
         let icon = if healthy == total { "🟢" } else { "🔴" };
         let mut out = format!("🐳 Containers: {} {}/{} running\n", icon, healthy, total);
         for c in &self.containers {
-            let marker = if c.healthy { "  ✓" } else { "  ✗" };
+            let marker = if !c.healthy { "  ✗" } else if c.anomaly { "  ⚠" } else { "  ✓" };
             out.push_str(&format!("{} {} — {}\n", marker, c.name, c.status));
         }
         out.trim_end().to_string()
@@ -410,7 +415,8 @@ fn parse_docker_containers(json: &str) -> DockerHealth {
         let status = extract_json_string_value(entry, "\"Status\"");
 
         let healthy = state == "running";
-        containers.push(ContainerStatus { name, state, status, healthy });
+        let anomaly = state == "restarting" || status.contains("(unhealthy)");
+        containers.push(ContainerStatus { name, state, status, healthy, anomaly });
     }
 
     DockerHealth { containers, error: None }
@@ -774,6 +780,7 @@ mod tests {
             state: state.to_string(),
             status: status.to_string(),
             healthy: state == "running",
+            anomaly: state == "restarting" || status.contains("(unhealthy)"),
         }
     }
 
@@ -897,5 +904,42 @@ mod tests {
         // Calling format() must not panic regardless
         let _ = result.format();
         let _ = result.format_compact();
+    }
+
+    // ── ContainerStatus anomaly detection ─────────────────────────────────────
+
+    #[test]
+    fn test_container_status_anomaly_restarting() {
+        let c = make_container("axonix", "restarting", "Restarting (1) 3 seconds ago");
+        assert!(c.anomaly, "restarting state should set anomaly=true");
+        assert!(!c.healthy, "restarting container should not be healthy");
+    }
+
+    #[test]
+    fn test_container_status_anomaly_unhealthy_status() {
+        let c = make_container("axonix", "running", "Up 5 min (unhealthy)");
+        assert!(c.anomaly, "status containing '(unhealthy)' should set anomaly=true");
+        assert!(c.healthy, "state is 'running' so healthy should still be true");
+    }
+
+    #[test]
+    fn test_container_status_no_anomaly() {
+        let c = make_container("axonix", "running", "Up 2 days");
+        assert!(!c.anomaly, "normal running container should have anomaly=false");
+        assert!(c.healthy, "running container should be healthy");
+    }
+
+    #[test]
+    fn test_docker_health_format_shows_warning_for_anomaly() {
+        let dh = DockerHealth {
+            containers: vec![
+                make_container("axonix", "running", "Up 5 min (unhealthy)"),
+                make_container("axonix-listener", "running", "Up 2 days"),
+            ],
+            error: None,
+        };
+        let fmt = dh.format();
+        assert!(fmt.contains('⚠'), "format should show ⚠ for anomaly container: {fmt}");
+        assert!(fmt.contains('✓'), "format should show ✓ for healthy container: {fmt}");
     }
 }
