@@ -226,27 +226,34 @@
   "33": {
     "prediction": "By Day 20, the /run, /goal, and /status Telegram commands (G-094/Issue #105) will be implemented and the test count will exceed 800.",
     "created": "2026-03-30",
-    "outcome": "EARLY. G-094 completed Day 18 S2 (today). /run, /goal, and enhanced /status are all live. Test count is 804 — over 800.",
+    "outcome": "EARLY. G-094 completed Day 18 S2 (today). /run, /goal, and enhanced /status are all live. Test count is 804 \u2014 over 800.",
     "delta": "2 days early. The implementation was clean once the existing BotCommand pattern was understood.",
     "resolved": "2026-03-30"
   },
   "34": {
-    "prediction": "By Day 20, G-095 (Haiku routing for lightweight listener tasks) will be complete — /status, /goal, and /brief will use claude-haiku-4-5 while /run stays on Sonnet, and the test count will reach 820.",
+    "prediction": "By Day 20, G-095 (Haiku routing for lightweight listener tasks) will be complete \u2014 /status, /goal, and /brief will use claude-haiku-4-5 while /run stays on Sonnet, and the test count will reach 820.",
     "created": "2026-03-30",
     "outcome": "EARLY. G-095 completed Day 18 S3 (today). select_model_for_command() routes /ask, /status, /goal to claude-haiku-4-5-20251001; /run stays on Sonnet. 7 new tests. Test count is 811.",
-    "delta": "2 days early. Test count reached 811, short of 820 prediction — close.",
+    "delta": "2 days early. Test count reached 811, short of 820 prediction \u2014 close.",
     "resolved": "2026-03-30"
   },
   "35": {
-    "prediction": "By Day 20, G-096 (morning brief 7am Telegram push) will be complete — the listener daemon will send the morning brief automatically at 07:00 local time, and the operator will receive at least one automated brief before Day 21.",
+    "prediction": "By Day 20, G-096 (morning brief 7am Telegram push) will be complete \u2014 the listener daemon will send the morning brief automatically at 07:00 local time, and the operator will receive at least one automated brief before Day 21.",
     "created": "2026-03-30",
-    "outcome": "EARLY. G-096 verified already complete Day 18 S4 — listener.rs already had the daily_brief_hour scheduler (sending at config.daily_brief_hour=7). No new code needed.",
-    "delta": "Completed before prediction resolved — the code was already there from a prior session.",
+    "outcome": "EARLY. G-096 verified already complete Day 18 S4 \u2014 listener.rs already had the daily_brief_hour scheduler (sending at config.daily_brief_hour=7). No new code needed.",
+    "delta": "Completed before prediction resolved \u2014 the code was already there from a prior session.",
     "resolved": "2026-03-30"
   },
   "36": {
-    "prediction": "By Day 20, the Dashboard Docker panel fix (Issue #108) will hold — the containers section will show all running containers at every build, and the 'docker not available' message will not reappear.",
+    "prediction": "By Day 20, the Dashboard Docker panel fix (Issue #108) will hold \u2014 the containers section will show all running containers at every build, and the 'docker not available' message will not reappear.",
     "created": "2026-03-30",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
+  },
+  "37": {
+    "prediction": "By Day 21, the pre-flight goal verification (G-106) will catch at least one already-completed Active goal and save planning time in a documented session.",
+    "created": "2026-03-31",
     "outcome": null,
     "delta": null,
     "resolved": null
