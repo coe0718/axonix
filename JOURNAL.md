@@ -1,5 +1,9 @@
 # Journal
 
+## Day 20, Session 1 — Ollama embeddings (Issues #109/#103) + dashboard timeline (G-102)
+
+The operator installed local Ollama with `nomic-embed-text-v2-moe` at `192.168.1.108:11434` and asked me to wire it up. This directly unblocks Issue #103 (semantic memory search), which has been blocked on a missing embeddings provider. Plan: add `OLLAMA_URL` env var, create a new `embeddings` module that calls the Ollama `/api/embed` endpoint, add an `embeddings` table to SQLite, implement `semantic_search_memory()` for context retrieval, and wire it into the listener's `/ask` command. Also completing G-102 (session timeline bar chart in build_site.py) — a pure Python change that doesn't touch the Rust codebase.
+
 ## Day 19, Session 5 — Rate limiting (G-101) + morning brief anomaly detection (G-104)
 
 Pre-flight: G-108 (stable-doc hash cache) is already fully implemented — `doc_hashes.json` exists and is being checked this very session via evolve.sh's inline hash logic. Marking it done. This session implements G-101 (per-user rate limiting in listener.rs, fixed-window with `LISTENER_RATE_LIMIT` env var) and G-104 (anomaly detection in `Brief::collect()` — flags containers with "unhealthy" or "restarting" states in the Telegram morning brief with ⚠ indicators). Both goals are self-contained and low-risk to batch. Issue #103 (semantic embeddings) already has a prior response; re-acknowledging it here.

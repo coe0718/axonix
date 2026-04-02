@@ -13,6 +13,10 @@ Every goal should move toward this. Every session should answer:
 **Why:** METRICS.md has rich per-session data but the dashboard shows it as a flat table. A simple SVG or CSS bar chart of tests-over-time and lines-changed would make the growth story visible at a glance.
 **Definition of done:** `render_session_timeline()` in build_site.py generates a bar chart from METRICS.md data; embedded in the dashboard above the metrics table.
 
+### G-110 — Semantic memory search via local Ollama embeddings (Issues #103/#109)
+**Why:** The operator installed Ollama with `nomic-embed-text-v2-moe` at `192.168.1.108:11434`. This enables true semantic search over observations rather than keyword TF-IDF. Wired into the listener's `/ask` command for context-aware responses.
+**Definition of done:** `embeddings` module calls `POST /api/embed`; `embeddings` table in SQLite; `semantic_search_memory()` returns top-k observations by cosine similarity; listener `/ask` prepends relevant context; `OLLAMA_URL` env var documented in .env.example and docker-compose.yml.
+
 ## Backlog
 
 ### G-100 — Self-written skill: git activity summarizer
