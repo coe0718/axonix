@@ -572,3 +572,10 @@ code {
 .memory-query { font-size: 0.78rem; color: var(--text-dim); margin: 0.2rem 0 0.4rem; }
 .memory-score { font-size: 0.72rem; color: var(--amber); margin-left: 0.4rem; }
 .memory-list li { margin-bottom: 0.5rem; }
+
+
+/* ── session timeline chart (G-102) ── */
+
+.timeline-chart { margin: 8px 0 16px 0; }
+.timeline-legend { font-size: 11px; color: #888; margin-top: 4px; }
+.dim { color: var(--text-dim); font-size: 0.8rem; font-style: italic; }

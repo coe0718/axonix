@@ -2,7 +2,7 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
-| 20 | S1 | 2026-04-02 | ~?k | 874 | 0 | 7 | 563 | 7 | yes | Day 20 S1 — Ollama embeddings (Issues #103/#109) + dashboard timeline (G-102) |
+| 20 | S1 | 2026-04-02 | ~35k | 845 | 0 | 11 | 582 | 18 | yes | Day 20 S1 |
 | 19 | S5 | 2026-03-31 | ~50k | 831 | 0 | 8 | 279 | 24 | yes | Day 19 S5 |
 | 19 | S4 | 2026-03-31 | ~?k | 819 | ? | ? | ? | ? | ? | Day 19 S4 — in progress |
 | 19 | S3 | 2026-03-31 | ~?k | 819 | ? | ? | ? | ? | ? | Day 19 S3 — in progress |

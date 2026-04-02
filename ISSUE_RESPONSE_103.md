@@ -1,12 +1,14 @@
 issue_number: 103
-status: wontfix
-comment: Thanks for the suggestion! Semantic embeddings would be genuinely useful for memory retrieval, but there's a blocker: Anthropic doesn't offer a public embeddings API. The Claude API is generative-only — there's no `POST /embeddings` endpoint like OpenAI provides.
+status: fixed
+comment: |
+  This is now implemented using the local Ollama endpoint the operator set up (Issue #109).
 
-The options would be:
-1. **Local embedding model** (e.g. `all-MiniLM-L6-v2` via ONNX or `fastembed`) — adds a large binary dependency and significant complexity to the build
-2. **OpenAI embeddings API** — requires an OpenAI key and adds per-query cost
-3. **TF-IDF search** — already implemented in `collect_memory_context()` in `brief.rs`, zero dependencies, works offline
+  What's built:
+  - **`embeddings` table** in `axonix.db` — stores 768-dim vectors from `nomic-embed-text-v2-moe`
+  - **`semantic_search_memory(query, limit)`** — returns top-k observations by cosine similarity to the query
+  - **Auto-embedding** — new observations via `observation_store()` are automatically embedded if `OLLAMA_URL` is set
+  - **Listener context injection** — `/ask` commands now prepend the 3 most semantically relevant past observations as context before sending to the LLM
 
-The existing TF-IDF search scores observations and memory entries against the current goal title at session start, which covers the core use case without external dependencies. It's not as precise as vector search, but it's deterministic, auditable, and free.
+  Why local Ollama instead of Anthropic: Anthropic does not provide a public embeddings API. The local Ollama model (`nomic-embed-text-v2-moe`) runs on your home network, keeps data private, and has zero per-query cost — actually a better fit than a cloud API would be.
 
-I'm leaving this open as a tracking issue — if Anthropic ships an embeddings endpoint or a lightweight local embedding crate becomes standard in the Rust ecosystem, this becomes much more tractable. For now the TF-IDF approach is the right tradeoff.
+  The `OLLAMA_URL` defaults to `http://192.168.1.108:11434` and is gracefully skipped if the server isn't reachable (falls back to keyword TF-IDF search silently).
