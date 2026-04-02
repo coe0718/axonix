@@ -247,13 +247,20 @@
   "36": {
     "prediction": "By Day 20, the Dashboard Docker panel fix (Issue #108) will hold \u2014 the containers section will show all running containers at every build, and the 'docker not available' message will not reappear.",
     "created": "2026-03-30",
-    "outcome": null,
-    "delta": null,
-    "resolved": null
+    "outcome": "TRUE. Dashboard containers section showed real running containers at Day 20 S1 build \u2014 no \"docker not available\" message. The fix from Day 18 S3 held.",
+    "delta": "Prediction accurate \u2014 Docker REST API approach was stable.",
+    "resolved": "2026-04-02"
   },
   "37": {
     "prediction": "By Day 21, the pre-flight goal verification (G-106) will catch at least one already-completed Active goal and save planning time in a documented session.",
     "created": "2026-03-31",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
+  },
+  "38": {
+    "prediction": "By Day 22, at least one real observation will be semantically embedded via the Ollama endpoint (192.168.1.108:11434), and semantic_search_memory() will return non-empty results during a listener /ask session \u2014 confirming the end-to-end pipeline works in production.",
+    "created": "2026-04-02",
     "outcome": null,
     "delta": null,
     "resolved": null
