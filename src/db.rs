@@ -232,6 +232,15 @@ impl AxonixDb {
                 tags        TEXT NOT NULL DEFAULT '',
                 created_at  TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS embeddings (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                obs_key     TEXT NOT NULL,
+                source_type TEXT NOT NULL DEFAULT 'observation',
+                vector      BLOB NOT NULL,
+                created_at  TEXT NOT NULL,
+                UNIQUE(obs_key)
+            );
         ")
     }
 
@@ -441,6 +450,9 @@ impl AxonixDb {
 
     /// Store (insert or replace) an observation by key.
     /// `tags` is a comma-separated list of topic tags (e.g. `"repl,slash-command,bug"`).
+    ///
+    /// After storing, best-effort embeds the text via Ollama for semantic search.
+    /// If Ollama is unavailable, the observation is still stored — embedding is skipped.
     pub fn observation_store(&self, key: &str, text: &str, tags: &str) -> Result<()> {
         let now = now_utc();
         self.conn.execute(
@@ -452,6 +464,10 @@ impl AxonixDb {
                created_at = excluded.created_at",
             params![key, text, tags, now],
         )?;
+        // Best-effort: embed and store vector for semantic search
+        if let Ok(vec) = crate::embeddings::embed(text) {
+            let _ = self.embedding_store(key, &vec);
+        }
         Ok(())
     }
 
@@ -944,6 +960,101 @@ impl AxonixDb {
             })
         })?;
         rows.collect()
+    }
+
+    // ─── Embedding helpers ────────────────────────────────────────────────────
+
+    /// Store an embedding for an observation identified by its unique key.
+    /// Uses INSERT OR REPLACE to update if already exists.
+    pub fn embedding_store(&self, obs_key: &str, vector: &[f32]) -> Result<()> {
+        let now = now_utc();
+        let blob = crate::embeddings::serialize_vec(vector);
+        self.conn.execute(
+            "INSERT OR REPLACE INTO embeddings (obs_key, vector, created_at)
+             VALUES (?1, ?2, ?3)",
+            params![obs_key, blob, now],
+        )?;
+        Ok(())
+    }
+
+    /// Return all (obs_key, vector) rows from the embeddings table.
+    pub fn embeddings_list_by_key(&self) -> Result<Vec<(String, Vec<f32>)>> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT obs_key, vector FROM embeddings")?;
+        let rows = stmt.query_map([], |row| {
+            let key: String = row.get(0)?;
+            let blob: Vec<u8> = row.get(1)?;
+            Ok((key, blob))
+        })?;
+        let mut result = Vec::new();
+        for row in rows {
+            let (key, blob) = row?;
+            let vec = crate::embeddings::deserialize_vec(&blob);
+            result.push((key, vec));
+        }
+        Ok(result)
+    }
+
+    /// Semantic search using Ollama embeddings. Returns top-`limit` observations
+    /// ordered by cosine similarity to `query`.
+    ///
+    /// Gracefully returns an empty vec if Ollama is unavailable or no embeddings
+    /// are stored yet — never panics.
+    pub fn semantic_search_memory(&self, query: &str, limit: usize) -> Result<Vec<ObservationRow>> {
+        if limit == 0 || query.is_empty() {
+            return Ok(vec![]);
+        }
+        // Get query embedding — graceful fallback if Ollama is down
+        let query_vec = match crate::embeddings::embed(query) {
+            Ok(v) => v,
+            Err(_) => return Ok(vec![]),
+        };
+        // Get all stored embeddings
+        let all_embeddings = self.embeddings_list_by_key()?;
+        if all_embeddings.is_empty() {
+            return Ok(vec![]);
+        }
+        // Score each stored embedding against the query vector
+        let mut scored: Vec<(String, f32)> = all_embeddings
+            .into_iter()
+            .map(|(key, vec)| {
+                let sim = crate::embeddings::cosine_similarity(&query_vec, &vec);
+                (key, sim)
+            })
+            .filter(|(_, sim)| *sim > 0.01)
+            .collect();
+        scored.sort_by(|a, b| {
+            b.1.partial_cmp(&a.1)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+        scored.truncate(limit);
+
+        // Fetch matching observations from DB
+        let mut result = Vec::new();
+        for (key, sim) in scored {
+            let mut stmt = self.conn.prepare(
+                "SELECT id, key, text, tags, created_at FROM observations WHERE key = ?1",
+            )?;
+            let rows: Vec<ObservationRow> = stmt
+                .query_map(params![key], |row| {
+                    Ok(ObservationRow {
+                        id: row.get(0)?,
+                        key: row.get(1)?,
+                        text: row.get(2)?,
+                        tags: row.get(3)?,
+                        created_at: row.get(4)?,
+                        score: 0.0,
+                    })
+                })?
+                .filter_map(|r| r.ok())
+                .collect();
+            for mut row in rows {
+                row.score = sim as f64;
+                result.push(row);
+            }
+        }
+        Ok(result)
     }
 }
 
@@ -1599,5 +1710,58 @@ mod tests {
             results[0].tags, "sqlite,storage",
             "tag-match observation should rank first"
         );
+    }
+
+    // ── Embeddings ────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_embedding_store_and_retrieve() {
+        let db = open_tmp();
+        let vec = vec![1.0f32, 2.0, 3.0];
+        db.embedding_store("obs:test", &vec).unwrap();
+        let list = db.embeddings_list_by_key().unwrap();
+        assert_eq!(list.len(), 1, "should have 1 embedding");
+        assert_eq!(list[0].0, "obs:test");
+        assert_eq!(list[0].1.len(), 3);
+        assert!((list[0].1[0] - 1.0).abs() < 1e-6);
+        assert!((list[0].1[1] - 2.0).abs() < 1e-6);
+        assert!((list[0].1[2] - 3.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_embedding_store_upsert() {
+        let db = open_tmp();
+        db.embedding_store("obs:dup", &[1.0f32, 0.0]).unwrap();
+        db.embedding_store("obs:dup", &[0.0f32, 1.0]).unwrap();
+        let list = db.embeddings_list_by_key().unwrap();
+        assert_eq!(list.len(), 1, "upsert should keep only 1 embedding row");
+        assert!((list[0].1[0] - 0.0).abs() < 1e-6);
+        assert!((list[0].1[1] - 1.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_semantic_search_memory_no_ollama_returns_empty() {
+        // With no Ollama available, should return empty vec (graceful fallback)
+        let db = open_tmp();
+        // Point to a port that will refuse connections
+        std::env::set_var("OLLAMA_URL", "http://127.0.0.1:1");
+        let result = db.semantic_search_memory("test query", 5);
+        std::env::remove_var("OLLAMA_URL");
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_semantic_search_memory_empty_query_returns_empty() {
+        let db = open_tmp();
+        let result = db.semantic_search_memory("", 5).unwrap();
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_semantic_search_memory_zero_limit_returns_empty() {
+        let db = open_tmp();
+        let result = db.semantic_search_memory("query", 0).unwrap();
+        assert!(result.is_empty());
     }
 }

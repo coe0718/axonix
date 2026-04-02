@@ -975,6 +975,9 @@ fn collect_predictions_due_soon() -> Vec<(u32, String, String)> {
 
 /// Search the axonix DB memory for the top `limit` results matching `goal_title`.
 ///
+/// Tries semantic search (via Ollama embeddings) first; falls back to keyword
+/// search if Ollama is unavailable or returns no results.
+///
 /// Returns an empty vec when the DB is unavailable, the query is empty, or no
 /// results are found — never panics.
 pub fn collect_memory_context(goal_title: &str) -> Vec<(String, f64)> {
@@ -982,12 +985,19 @@ pub fn collect_memory_context(goal_title: &str) -> Vec<(String, f64)> {
         return vec![];
     }
     match crate::db::AxonixDb::open_default() {
-        Ok(db) => db
-            .search_memory(goal_title, 3)
-            .unwrap_or_default()
-            .into_iter()
-            .map(|row| (row.text, row.score))
-            .collect(),
+        Ok(db) => {
+            // Try semantic search first; fall back to keyword search
+            let semantic = db.semantic_search_memory(goal_title, 3).unwrap_or_default();
+            if !semantic.is_empty() {
+                return semantic.into_iter().map(|row| (row.text, row.score)).collect();
+            }
+            // Keyword fallback
+            db.search_memory(goal_title, 3)
+                .unwrap_or_default()
+                .into_iter()
+                .map(|row| (row.text, row.score))
+                .collect()
+        }
         Err(_) => vec![],
     }
 }

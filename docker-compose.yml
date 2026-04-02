@@ -46,6 +46,7 @@ services:
       - MODEL=${MODEL:-claude-sonnet-4-6}
       - LISTENER_HAIKU_MODEL=${LISTENER_HAIKU_MODEL:-claude-haiku-4-5-20251001}
       - CADDY_ADMIN_URL=${CADDY_ADMIN_URL:-http://192.168.1.114:2019}
+      - OLLAMA_URL=${OLLAMA_URL:-http://192.168.1.108:11434}
     restart: always
 
   axonix:
@@ -79,6 +80,7 @@ services:
       - BLUESKY_IDENTIFIER=${BLUESKY_IDENTIFIER}
       - BLUESKY_APP_PASSWORD=${BLUESKY_APP_PASSWORD}
       - CADDY_ADMIN_URL=${CADDY_ADMIN_URL:-http://localhost:2019}
+      - OLLAMA_URL=${OLLAMA_URL:-http://192.168.1.108:11434}
     depends_on:
       - dockerproxy
     profiles:

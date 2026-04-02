@@ -1076,6 +1076,94 @@ def render_identity(identity):
 
 
 
+def render_session_timeline(sessions):
+    """Render an SVG bar chart of test counts over sessions (G-102)."""
+    if not sessions:
+        return '<p class="dim">No metrics data available.</p>'
+
+    # Filter rows with valid test counts
+    valid = []
+    for r in sessions:
+        tests_str = r.get("tests_passed", "?")
+        if isinstance(tests_str, str) and tests_str.isdigit():
+            valid.append((r.get("day", "?"), r.get("session", "?"), r.get("date", "?"), int(tests_str)))
+    valid = valid[-20:]  # last 20 sessions
+    if not valid:
+        return '<p class="dim">No numeric test data.</p>'
+
+    max_tests = max(t for _, _, _, t in valid)
+    if max_tests == 0:
+        return '<p class="dim">All sessions have 0 tests.</p>'
+
+    # SVG dimensions
+    width = 800
+    height = 120
+    bar_width = max(8, width // len(valid) - 2)
+    padding_left = 40
+    padding_bottom = 25
+    chart_height = height - padding_bottom
+
+    bars = []
+    prev_tests = None
+    for i, (day, session, date, tests) in enumerate(valid):
+        x = padding_left + i * (bar_width + 2)
+        bar_h = max(1, int((tests / max_tests) * chart_height * 0.9))
+        y = chart_height - bar_h
+
+        if prev_tests is None or tests == prev_tests:
+            color = "#4a9eff"
+        elif tests > prev_tests:
+            color = "#4caf50"
+        else:
+            color = "#f44336"
+        prev_tests = tests
+
+        label = f"Day {day} {session}"
+        tooltip = f"{label} ({date}): {tests} tests"
+        bars.append(
+            f'<rect x="{x}" y="{y}" width="{bar_width}" height="{bar_h}" '
+            f'fill="{color}" opacity="0.85">'
+            f'<title>{html.escape(tooltip)}</title>'
+            f'</rect>'
+        )
+
+    # Y-axis labels
+    y_labels = [
+        f'<text x="2" y="{chart_height}" font-size="9" fill="#666">{0}</text>',
+        f'<text x="2" y="{int(chart_height * 0.5)}" font-size="9" fill="#666">{max_tests // 2}</text>',
+        f'<text x="2" y="10" font-size="9" fill="#666">{max_tests}</text>',
+    ]
+
+    svg = (
+        f'<svg viewBox="0 0 {width} {height}" '
+        f'style="width:100%;height:{height}px;overflow:visible">\n'
+        f'  <line x1="{padding_left}" y1="0" x2="{padding_left}" y2="{chart_height}" '
+        f'stroke="#444" stroke-width="1"/>\n'
+        f'  <line x1="{padding_left}" y1="{chart_height}" x2="{width}" y2="{chart_height}" '
+        f'stroke="#444" stroke-width="1"/>\n'
+        f'  {"".join(y_labels)}\n'
+        f'  {"".join(bars)}\n'
+        f'</svg>'
+    )
+
+    latest_tests = valid[-1][3] if valid else 0
+    first_tests = valid[0][3] if valid else 0
+    delta = latest_tests - first_tests
+    delta_str = f"+{delta}" if delta >= 0 else str(delta)
+
+    return (
+        f'<div class="timeline-chart">\n'
+        f'  {svg}\n'
+        f'  <div class="timeline-legend">\n'
+        f'    <span class="dim">Last {len(valid)} sessions shown</span>\n'
+        f'    <span class="dim"> · </span>\n'
+        f'    <span>Tests: <strong>{first_tests}</strong> → <strong>{latest_tests}</strong> ({delta_str})</span>\n'
+        f'  </div>\n'
+        f'</div>'
+    )
+
+
+
 # ── Templates ──
 
 HTML_TEMPLATE = """\
@@ -1147,6 +1235,11 @@ evolving in public since day 1</pre>
     <section id="metrics" class="page-section">
       <div class="section-label">[ METRICS ]</div>
 {stats_html}
+    </section>
+
+    <section id="timeline" class="page-section">
+      <div class="section-label">[ SESSION GROWTH ]</div>
+{session_timeline}
     </section>
 
     <section id="patterns" class="page-section">
@@ -1824,6 +1917,13 @@ code {
 .memory-query { font-size: 0.78rem; color: var(--text-dim); margin: 0.2rem 0 0.4rem; }
 .memory-score { font-size: 0.72rem; color: var(--amber); margin-left: 0.4rem; }
 .memory-list li { margin-bottom: 0.5rem; }
+
+
+/* ── session timeline chart (G-102) ── */
+
+.timeline-chart { margin: 8px 0 16px 0; }
+.timeline-legend { font-size: 11px; color: #888; margin-top: 4px; }
+.dim { color: var(--text-dim); font-size: 0.8rem; font-style: italic; }
 """
 
 
@@ -1853,6 +1953,7 @@ def build():
 
     stats_html = render_stats(metrics)
     patterns_html = render_metrics_patterns(metrics)
+    session_timeline = render_session_timeline(metrics)
     live_state_html = render_live_state(goals, open_predictions, memory_context_html, pred_stats=pred_stats, failure_patterns=failure_patterns)
     containers_html = render_containers(containers)
     journal_html = render_journal(parse_journal(read_file("JOURNAL.md")))
@@ -1863,6 +1964,7 @@ def build():
         day_count=day_count,
         live_state_html=live_state_html,
         stats_html=stats_html,
+        session_timeline=session_timeline,
         patterns_html=patterns_html,
         containers_html=containers_html,
         journal_html=journal_html,
