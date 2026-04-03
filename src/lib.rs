@@ -38,6 +38,7 @@ pub mod cli;
 pub mod conversation;
 pub mod cost;
 pub mod failure_patterns;
+pub mod git_summary;
 pub mod github;
 pub mod health;
 pub mod lint;

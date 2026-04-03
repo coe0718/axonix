@@ -294,6 +294,11 @@ pub fn is_brief_command(text: &str) -> bool {
     matches!(text.trim(), "/brief")
 }
 
+/// Check whether a Telegram message is a `/history` command.
+pub fn is_history_command(text: &str) -> bool {
+    matches!(text.trim(), "/history")
+}
+
 /// Parse a `/run <task>` command. Returns the task text, or None.
 pub fn parse_run_command(text: &str) -> Option<&str> {
     let text = text.trim();
@@ -407,6 +412,7 @@ pub const TELEGRAM_HELP_TEXT: &str = "\
 /status — Show current session status (model, mode, uptime)
 /health — Show system health (CPU, memory, disk, uptime)
 /brief — Morning brief: active goals, open predictions, recent sessions
+/history — Show last 5 conversation turns
 /help — Show this help message
 
 *Examples:*
@@ -417,6 +423,7 @@ pub const TELEGRAM_HELP_TEXT: &str = "\
 • /status
 • /health
 • /brief
+• /history
 
 Responses may take a moment depending on prompt complexity.";
 
@@ -444,6 +451,8 @@ pub enum BotCommand {
     /// `/memory search <query>` — search structured observations.
     /// `/memory list` — list recent observations.
     Memory { action: MemoryAction, message_id: i64 },
+    /// `/history` — show last 5 conversation turns from ConversationMemory.
+    History { message_id: i64 },
 }
 
 impl TelegramClient {
@@ -469,6 +478,9 @@ impl TelegramClient {
                 }
                 if is_brief_command(text) {
                     return Some(BotCommand::Brief { message_id: msg.message_id });
+                }
+                if is_history_command(text) {
+                    return Some(BotCommand::History { message_id: msg.message_id });
                 }
                 if let Some(task) = parse_run_command(text) {
                     return Some(BotCommand::Run { task: task.to_string(), message_id: msg.message_id });
@@ -543,6 +555,10 @@ impl TelegramClient {
         if let Some(commit) = last_commit {
             parts.push(format!("📝 last commit: {commit}"));
         }
+        // Append git activity summary (last 3 commits)
+        let git_summary = crate::git_summary::format_for_telegram(3);
+        parts.push(String::new());
+        parts.push(git_summary);
         parts.join("\n")
     }
 }
@@ -1268,6 +1284,71 @@ mod tests {
         assert!(
             TELEGRAM_HELP_TEXT.contains("/memory"),
             "TELEGRAM_HELP_TEXT should mention /memory"
+        );
+    }
+
+    // ── is_history_command ───────────────────────────────────────────────────
+
+    #[test]
+    fn test_is_history_command_true() {
+        assert!(is_history_command("/history"));
+        assert!(is_history_command("  /history  "));
+    }
+
+    #[test]
+    fn test_is_history_command_false_for_non_history() {
+        assert!(!is_history_command("/ask hello"));
+        assert!(!is_history_command("/help"));
+        assert!(!is_history_command("/status"));
+        assert!(!is_history_command("history"));
+        assert!(!is_history_command(""));
+        assert!(!is_history_command("/historical"));
+    }
+
+    // ── extract_commands with /history ───────────────────────────────────────
+
+    #[test]
+    fn test_extract_commands_history_detected() {
+        let client = make_client();
+        let updates = vec![make_update(1, 12345, 13, "/history")];
+        let commands = client.extract_commands(&updates);
+        assert_eq!(commands.len(), 1);
+        assert!(
+            matches!(commands[0], BotCommand::History { message_id: 13 }),
+            "expected BotCommand::History, got {:?}",
+            commands[0]
+        );
+    }
+
+    #[test]
+    fn test_extract_commands_history_in_mixed_batch() {
+        let client = make_client();
+        let updates = vec![
+            make_update(1, 12345, 1, "/ask question"),
+            make_update(2, 12345, 2, "/history"),
+            make_update(3, 12345, 3, "/help"),
+        ];
+        let commands = client.extract_commands(&updates);
+        assert_eq!(commands.len(), 3, "3 commands: ask + history + help");
+        assert!(matches!(commands[0], BotCommand::Ask(_)));
+        assert!(matches!(commands[1], BotCommand::History { .. }));
+        assert!(matches!(commands[2], BotCommand::Help { .. }));
+    }
+
+    #[test]
+    fn test_help_text_mentions_history() {
+        assert!(TELEGRAM_HELP_TEXT.contains("/history"), "help text must mention /history command");
+    }
+
+    // ── format_enhanced_status_reply includes git summary ────────────────────
+
+    #[test]
+    fn test_format_enhanced_status_reply_includes_git_summary() {
+        let reply = TelegramClient::format_enhanced_status_reply("test-model", 60, None, None);
+        // The git summary should always be appended (even if it says "No recent commits")
+        assert!(
+            reply.contains("📝"),
+            "status reply should include git summary with 📝 emoji: {reply}"
         );
     }
 }

@@ -355,6 +355,40 @@ fn get_last_commit_message() -> Option<String> {
     }
 }
 
+/// Format the last `n` conversation turns from memory as a Telegram-ready string.
+///
+/// Each turn is formatted as:
+///   #N You: <text truncated to 100 chars>
+///   #N Axonix: <text truncated to 100 chars>
+///
+/// Returns a placeholder message if there are no turns.
+pub fn format_history_reply(mem: &ConversationMemory, n: usize) -> String {
+    if mem.turns.is_empty() {
+        return "📜 No conversation history yet.".to_string();
+    }
+    let turns = &mem.turns;
+    let start = turns.len().saturating_sub(n);
+    let recent = &turns[start..];
+    let total = turns.len();
+    let mut lines = vec![format!(
+        "📜 Last {} turn{} (of {total} total):",
+        recent.len(),
+        if recent.len() == 1 { "" } else { "s" }
+    )];
+    for (i, turn) in recent.iter().enumerate() {
+        let turn_num = start + i + 1;
+        let label = if turn.role == "user" { "You" } else { "Axonix" };
+        let text = if turn.text.chars().count() > 100 {
+            let truncated: String = turn.text.chars().take(100).collect();
+            format!("{truncated}…")
+        } else {
+            turn.text.clone()
+        };
+        lines.push(format!("#{turn_num} {label}: {text}"));
+    }
+    lines.join("\n")
+}
+
 /// Append a new goal to the GOALS.md backlog (using default path).
 fn append_goal_to_backlog(description: &str) -> Result<(), String> {
     append_goal_to_backlog_at(description, std::path::Path::new("GOALS.md"))
@@ -734,6 +768,11 @@ pub async fn run_listener(
                             }
                         }
                     };
+                    let _ = tg.reply_to(&reply, message_id).await;
+                    stats.messages_handled += 1;
+                }
+                BotCommand::History { message_id } => {
+                    let reply = format_history_reply(&mem, 5);
                     let _ = tg.reply_to(&reply, message_id).await;
                     stats.messages_handled += 1;
                 }
@@ -1222,6 +1261,81 @@ mod tests {
         assert!(help.contains("/goal"),   "help text must mention /goal");
         assert!(help.contains("/status"), "help text must mention /status");
         assert!(help.contains("/help"),   "help text must mention /help itself");
+        assert!(help.contains("/history"), "help text must mention /history");
+    }
+
+    // ── format_history_reply ─────────────────────────────────────────────────
+
+    #[test]
+    fn test_format_history_reply_empty_memory() {
+        let dir = tempfile::tempdir().unwrap();
+        let mem = ConversationMemory::new(dir.path().join("conv.json"));
+        let reply = format_history_reply(&mem, 5);
+        assert!(
+            reply.contains("No conversation history"),
+            "empty memory should say no history: {reply}"
+        );
+    }
+
+    #[test]
+    fn test_format_history_reply_shows_turns() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut mem = ConversationMemory::new(dir.path().join("conv.json"));
+        mem.push("user", "what is the disk usage?", "telegram");
+        mem.push("assistant", "Disk is at 45%.", "telegram");
+        let reply = format_history_reply(&mem, 5);
+        assert!(reply.contains("You:"), "should label user turns as 'You': {reply}");
+        assert!(reply.contains("Axonix:"), "should label assistant turns as 'Axonix': {reply}");
+        assert!(reply.contains("disk usage"), "should include turn text: {reply}");
+        assert!(reply.contains("45%"), "should include assistant response: {reply}");
+    }
+
+    #[test]
+    fn test_format_history_reply_truncates_long_text() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut mem = ConversationMemory::new(dir.path().join("conv.json"));
+        let long_text = "x".repeat(200);
+        mem.push("user", &long_text, "telegram");
+        let reply = format_history_reply(&mem, 5);
+        // Should be truncated to 100 chars + ellipsis
+        assert!(reply.contains("…"), "long text should be truncated with ellipsis: {reply}");
+        // The turn content should not exceed reasonable length
+        assert!(
+            reply.len() < 500,
+            "reply should be compact even with long input: {} chars",
+            reply.len()
+        );
+    }
+
+    #[test]
+    fn test_format_history_reply_limits_to_n_turns() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut mem = ConversationMemory::new(dir.path().join("conv.json"));
+        for i in 0..10 {
+            mem.push("user", &format!("question {i}"), "telegram");
+            mem.push("assistant", &format!("answer {i}"), "telegram");
+        }
+        let reply = format_history_reply(&mem, 5);
+        // Should show only last 5 turns, not all 20
+        assert!(
+            reply.contains("question 7") || reply.contains("answer 7") ||
+            reply.contains("question 8") || reply.contains("answer 8") ||
+            reply.contains("question 9") || reply.contains("answer 9"),
+            "should show recent turns: {reply}"
+        );
+        assert!(
+            !reply.contains("question 0"),
+            "should not show oldest turns: {reply}"
+        );
+    }
+
+    #[test]
+    fn test_format_history_reply_header_contains_emoji() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut mem = ConversationMemory::new(dir.path().join("conv.json"));
+        mem.push("user", "hello", "telegram");
+        let reply = format_history_reply(&mem, 5);
+        assert!(reply.contains("📜"), "history reply should have scroll emoji: {reply}");
     }
 
     // ── parse_rate_limit_env ──────────────────────────────────────────────────
