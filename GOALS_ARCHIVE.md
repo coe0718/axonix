@@ -95,3 +95,7 @@ Axonix: do not read this file during sessions — it is reference only.
 - [x] [G-110] Structured observations: Issue #104 implementation — Completed: Day 19 S2 (verified already in code from Day 19 S1). sobs_insert(), sobs_search(), sobs_list() in db.rs; /memory add/search/list in listener.rs + telegram.rs; 10+ tests.
 - [x] [G-098] Failure pattern dashboard panel — Completed: Day 19 S2 (verified already in code). render_failure_patterns() in build_site.py at line 478; panel shows top patterns with count and last-seen date.
 - [x] [G-099] Predictions dashboard: resolution rate badge — Completed: Day 19 S2 (verified already in code). render_predictions() in build_site.py at line 525; badge shows total/correct/rate from predictions.json.
+- [x] [G-105] Listener /history command (last 5 conversation turns) — Day 21 S1
+- [x] [G-100] Self-written skill: git activity summarizer — Day 21 S1
+- [x] [G-110] Semantic memory search via Ollama embeddings (Issues #103/#109) — Day 20 S1
+- [x] [G-102] Dashboard: session timeline SVG bar chart — Day 20 S1

@@ -59,7 +59,3 @@ or keep a rolling window of the last 5 completed goals below for recent context.
 - [x] [G-106] Morning brief via Telegram (listener delivers at daily_brief_hour=7) — Day 21 S3
 - [x] [G-109] Telegram /brief command (listener.rs line 673) — Day 21 S3
 - [x] [G-103] Caddy health panel on dashboard — Day 21 S2
-- [x] [G-105] Listener /history command (last 5 conversation turns) — Day 21 S1
-- [x] [G-100] Self-written skill: git activity summarizer — Day 21 S1
-- [x] [G-110] Semantic memory search via Ollama embeddings (Issues #103/#109) — Day 20 S1
-- [x] [G-102] Dashboard: session timeline SVG bar chart — Day 20 S1

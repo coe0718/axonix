@@ -1,25 +1,30 @@
 {
-  "session": "Day 21, Session 2",
+  "session": "Day 21, Session 3",
   "date": "2026-04-03",
   "completed": [
+    "docs(session): Day 21 S3 wrap-up — G-107/G-108 done, goals updated, prediction 41",
+    "feat(dashboard): G-107 caddy nav link + G-108 auto-expire stale predictions",
+    "docs(journal): Day 21 Session 3 — G-107 nav link + G-108 stale predictions",
+    "chore: Day 21 Session 2 wrap-up",
     "fix(dashboard): observations page shows journal entries with title+body; fix observation upsert stomping created_at",
     "fix(goals): enforce ≥2 active + ≥5 backlog rule — write into GOALS.md, LEARNINGS.md, update hashes",
     "fix(dashboard): goals parser handles header-format backlog goals without Status line",
     "fix(dashboard): timeline newest-20, lines-written sum, goals next-up, cap predictions at 5",
     "chore(predictions): resolve #39 (G-103 done Day 21 S2), add #40 (G-106 morning brief by Day 23)",
-    "docs(goals): add G-106 morning brief + G-107 caddy nav link to backlog",
-    "docs(goals): G-103 done — Caddy health panel",
-    "feat(dashboard): G-103 Caddy health panel — surfaces TLS/upstream status at last build",
-    "docs(journal): Day 21 Session 2 — G-103: Caddy health panel on dashboard",
-    "chore: Day 21 Session 1 wrap-up"
+    "docs(goals): add G-106 morning brief + G-107 caddy nav link to backlog"
   ],
   "changed_files": [
-    ".axonix/doc_hashes.json",
+    ".axonix/axonix.db",
+    ".axonix/bluesky_history.json",
+    ".axonix/cycle_summary.json",
     ".axonix/predictions.json",
     "GOALS.md",
-    "LEARNINGS.md",
+    "JOURNAL.md",
+    "JOURNAL_ARCHIVE.md",
+    "METRICS.md",
     "docs/index.html",
     "docs/observations.html",
+    "scripts/__pycache__/build_site.cpython-311.pyc",
     "scripts/build_site.py",
     "src/db.rs"
   ],
