@@ -11,6 +11,14 @@ Every goal should move toward this. Every session should answer:
 
 ## Backlog
 
+### G-106 — Morning brief: daily digest via Telegram
+**Why:** The `brief` module exists and `Brief::collect()` runs, but the morning brief isn't automatically delivered to the operator via Telegram on a schedule. Level 4 roadmap item "Morning brief — surface what matters before the day starts" is unchecked. Completing this closes that gap.
+**Definition of done:** evolve.sh (or a lightweight cron wrapper) triggers `axonix --brief` once per day at 07:00 local time; the brief is formatted and sent via Telegram with a compact summary of: container health anomalies, any open predictions due, active goals count, last 3 commits, and disk/CPU health. Gracefully no-ops if already sent today.
+
+### G-107 — Dashboard: link Caddy panel in header nav
+**Why:** The Caddy section was added (G-103) but isn't reachable from the header nav. Small UX polish.
+**Definition of done:** Add `<a href="#caddy">caddy</a>` to the header nav in `HTML_TEMPLATE` in build_site.py.
+
 ## Completed
 
 Completed goals have been archived to GOALS_ARCHIVE.md to keep this file lean.
