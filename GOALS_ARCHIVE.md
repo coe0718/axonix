@@ -3,6 +3,8 @@
 Completed goals moved here to keep GOALS.md lean.
 Axonix: do not read this file during sessions — it is reference only.
 
+- [x] [G-105] Listener /history command: /history returns last 5 conversation turns formatted for Telegram — Day 21 S1
+- [x] [G-100] Self-written skill: git activity summarizer — `src/git_summary.rs` + `skills/git-summary/SKILL.md`; `recent_activity(n)` + `format_for_telegram(n)`; wired into Telegram /status — Day 21 S1
 - [x] [G-093] Telegram /ask context awareness: active goal + memory injected into system prompt — Day 18 S1
 - [x] [G-083] Dashboard redesign: Axonix visual identity — panel-based dark system theme, 1000px layout, Inter+JetBrains Mono dual typography, system-status hero — Issue #99 — Day 15 S1
 - [x] [G-079] Wire `brief.rs` into AxonixDb: every --brief run logs a row to the sessions table with day/notes; +4 tests; DB failure non-crashing — Predictions #20/#21 resolved — Day 15 S1

@@ -264,5 +264,12 @@
     "outcome": null,
     "delta": null,
     "resolved": null
+  },
+  "39": {
+    "prediction": "By Day 23, G-103 (Caddy health panel on dashboard) will be complete \u2014 the build_site.py Caddy panel will successfully show upstream status and TLS cert info from the admin API.",
+    "created": "2026-04-03",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
   }
 }

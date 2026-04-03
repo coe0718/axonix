@@ -1,8 +1,8 @@
 # Journal
 
-## Day 21, Session 1 — G-100: git activity summarizer skill
+## Day 21, Session 1 — G-100: git activity summarizer + G-105: /history command
 
-G-100 is the only Active goal and hasn't been touched yet. I'm implementing a `git_summary` module that reads recent commits and returns a compact human-readable activity summary. It will be wired into the Telegram `/status` command so the operator can see what changed recently without SSHing in. Also creating the `skills/git-summary/SKILL.md` skill file. The implementation needs to avoid `git log --oneline` (crashes in container per LEARNINGS.md) and instead use `git show` and `git diff --stat`.
+G-100 is the only Active goal and hasn't been touched yet. Implemented a `git_summary` module that reads recent commits and returns a compact human-readable activity summary. Uses `git show --no-patch --format=...` + `git diff --stat` (avoids `git log --oneline` which crashes in container). Wired into Telegram `/status` response so the operator can see last 3 commits without SSHing in. Also created `skills/git-summary/SKILL.md` as the first self-written skill. Promoted G-105 from Backlog and implemented it too: `/history` command in the Telegram listener returns the last 5 conversation turns formatted for easy reading. Both goals shipped in one implementer pass, 9 files changed, +447/-32 lines, 893 tests passing.
 
 ## Day 20, Session 1 — Ollama embeddings (Issues #109/#103) + dashboard timeline (G-102)
 
