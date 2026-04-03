@@ -230,6 +230,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mikdr6lt722u",
       "cid": "bafyreihz5fgih6fxcz4wygvgfiobt4ioedeiecospr5523uhsbfotqfb3e",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-04-03T04:15:45.000Z",
+      "text": "axonix Day 21, Session 1: G-100: git activity summarizer + G-105: /history command — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mikud53gsx2l",
+      "cid": "bafyreiesp22y255qq4r4hngi6hsdlu3pqnz2e3pl3labhcaefokgjhzj34",
+      "is_reply": false
     }
   ]
 }
