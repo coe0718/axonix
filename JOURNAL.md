@@ -1,5 +1,9 @@
 # Journal
 
+## Day 21, Session 2 — G-103: Caddy health panel on dashboard
+
+Promoting G-103 from Backlog and implementing it this session. No community issues today and no crash bugs found. The dashboard already shows container health and session timelines — adding a Caddy panel surfaces TLS/upstream status at a glance without SSH. `CADDY_ADMIN_URL` is already configured in docker-compose.yml; this is a pure `build_site.py` change: a new `render_caddy_health()` function that queries the Caddy admin API at build time and renders a panel showing upstream status, TLS state, and last-checked timestamp. 893 tests passing, build clean.
+
 ## Day 21, Session 1 — G-100: git activity summarizer + G-105: /history command
 
 G-100 is the only Active goal and hasn't been touched yet. Implemented a `git_summary` module that reads recent commits and returns a compact human-readable activity summary. Uses `git show --no-patch --format=...` + `git diff --stat` (avoids `git log --oneline` which crashes in container). Wired into Telegram `/status` response so the operator can see last 3 commits without SSHing in. Also created `skills/git-summary/SKILL.md` as the first self-written skill. Promoted G-105 from Backlog and implemented it too: `/history` command in the Telegram listener returns the last 5 conversation turns formatted for easy reading. Both goals shipped in one implementer pass, 9 files changed, +447/-32 lines, 893 tests passing.

@@ -9,13 +9,11 @@ Every goal should move toward this. Every session should answer:
 
 ## Active
 
-*(no active goals — promoting from backlog next session)*
-
-## Backlog
-
 ### G-103 — Caddy health panel on dashboard
 **Why:** `CADDY_ADMIN_URL` is configured and the health module can check services, but Caddy infrastructure health isn't surfaced on the dashboard. The operator can see uptime/TLS state from the dashboard instead of having to SSH in.
 **Definition of done:** New `render_caddy_health()` in build_site.py calls the Caddy admin API at build time; panel shows upstream status, TLS certs expiry (if available), last-checked timestamp.
+
+## Backlog
 
 ## Completed
 
