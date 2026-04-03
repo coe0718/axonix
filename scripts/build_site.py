@@ -619,6 +619,79 @@ def render_failure_patterns(patterns):
     return "\n".join(parts)
 
 
+def get_current_day():
+    """Read current day number from DAY_COUNT file."""
+    try:
+        day_count_path = ROOT / "DAY_COUNT"
+        content = day_count_path.read_text().strip()
+        return int(content.split()[0])
+    except Exception:
+        return 999  # fallback: don't expire anything if we can't read day
+
+
+def auto_expire_predictions():
+    """Mark stale 'By Day N' predictions as expired if their deadline has passed.
+
+    Returns (expired_count, total_open_before).
+    """
+    path = ROOT / ".axonix" / "predictions.json"
+    if not path.exists():
+        return (0, 0)
+    try:
+        data = json.loads(path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return (0, 0)
+
+    current_day = get_current_day()
+    open_before = sum(1 for p in data.values() if p.get("outcome") is None)
+    expired_count = 0
+
+    for key, pred in data.items():
+        if pred.get("outcome") is not None:
+            continue  # already resolved
+        text = pred.get("prediction", "")
+        m = re.search(r'\bBy Day (\d+)', text, re.IGNORECASE)
+        if m:
+            pred_day = int(m.group(1))
+            if pred_day < current_day:
+                pred["outcome"] = "Expired — prediction window passed (auto-closed Day 21)"
+                pred["delta"] = "Prediction not verified before deadline."
+                pred["resolved"] = "2026-04-03"
+                expired_count += 1
+
+    if expired_count > 0:
+        path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
+        print(f"auto_expire_predictions: expired {expired_count} of {open_before} open predictions")
+
+    return (expired_count, open_before)
+
+
+def parse_expired_predictions():
+    """Return predictions where outcome starts with 'Expired'."""
+    path = ROOT / ".axonix" / "predictions.json"
+    if not path.exists():
+        return []
+    try:
+        data = json.loads(path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return []
+
+    expired = []
+    for key, pred in sorted(data.items(), key=lambda kv: int(kv[0]) if kv[0].isdigit() else 0):
+        outcome = pred.get("outcome") or ""
+        if str(outcome).startswith("Expired"):
+            try:
+                pred_id = int(key)
+            except ValueError:
+                continue
+            expired.append({
+                "id": pred_id,
+                "created": pred.get("created", "?"),
+                "text": pred.get("prediction", ""),
+            })
+    return expired
+
+
 def parse_open_predictions():
     """Read open (unresolved) predictions from .axonix/predictions.json."""
     path = ROOT / ".axonix" / "predictions.json"
@@ -671,7 +744,7 @@ def parse_prediction_stats():
     return {"resolved": resolved, "correct": correct, "rate_pct": rate_pct}
 
 
-def render_live_state(goals, open_predictions, memory_context_html="", pred_stats=None, failure_patterns=None):
+def render_live_state(goals, open_predictions, memory_context_html="", pred_stats=None, failure_patterns=None, expired_predictions=None):
     """Render live state as plain text blocks."""
     active_goals = goals["active"]
     parts = []
@@ -702,7 +775,11 @@ def render_live_state(goals, open_predictions, memory_context_html="", pred_stat
 
     # Open predictions with resolution rate badge
     parts.append('<div class="state-block">')
-    parts.append('<div class="state-label">◈ open predictions</div>')
+    n_expired = len(expired_predictions) if expired_predictions else 0
+    if n_expired > 0:
+        parts.append(f'<div class="state-label">◈ open predictions <span class="pred-expired-badge">{n_expired} expired</span></div>')
+    else:
+        parts.append('<div class="state-label">◈ open predictions</div>')
     if pred_stats:
         badge = (
             f'{pred_stats["resolved"]} resolved · '
@@ -1041,6 +1118,7 @@ def render_observations_page(observations: list, journal_entries: list = None) -
         <a href="/#state">system</a>
         <a href="/#log">journal</a>
         <a href="/#goals">goals</a>
+        <a href="#caddy">caddy</a>
         <a href="https://github.com/coe0718/axonix" target="_blank" rel="noopener">github</a>
       </nav>
     </div>
@@ -1375,6 +1453,7 @@ HTML_TEMPLATE = """\
         <a href="#log">log</a>
         <a href="#goals">goals</a>
         <a href="observations.html">observations</a>
+        <a href="#caddy">caddy</a>
         <a href="https://github.com/coe0718/axonix" target="_blank" rel="noopener">github</a>
         <a href="https://bsky.app/profile/axonixai.bsky.social" target="_blank" rel="noopener">bluesky</a>
       </nav>
@@ -1873,6 +1952,8 @@ code {
   margin-bottom: 0.4rem;
 }
 
+.pred-expired-badge { font-size: 0.7rem; color: var(--text-dim); opacity: 0.6; margin-left: 0.5rem; }
+
 .item-text {
   color: var(--text-hi);
   flex: 1;
@@ -2127,7 +2208,9 @@ def build():
 
     metrics = parse_metrics(read_file("METRICS.md"))
     goals = parse_goals(read_file("GOALS.md"))
+    auto_expire_predictions()  # marks stale "By Day N" predictions as expired
     open_predictions = parse_open_predictions()
+    expired_predictions = parse_expired_predictions()
     pred_stats = parse_prediction_stats()
     failure_patterns = parse_failure_patterns()
     containers = get_docker_containers()
@@ -2142,7 +2225,7 @@ def build():
     stats_html = render_stats(metrics)
     patterns_html = render_metrics_patterns(metrics)
     session_timeline = render_session_timeline(metrics)
-    live_state_html = render_live_state(goals, open_predictions, memory_context_html, pred_stats=pred_stats, failure_patterns=failure_patterns)
+    live_state_html = render_live_state(goals, open_predictions, memory_context_html, pred_stats=pred_stats, failure_patterns=failure_patterns, expired_predictions=expired_predictions)
     containers_html = render_containers(containers)
     caddy_html = render_caddy_health(caddy)
     journal_html = render_journal(parse_journal(read_file("JOURNAL.md")))
