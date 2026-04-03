@@ -2,7 +2,7 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
-| 21 | S2 | 2026-04-03 | ~?k | 893 | 0 | 2 | 148 | 12 | yes | Day 21 S2: G-103 Caddy health panel — get_caddy_health() + render_caddy_health() in build_site.py |
+| 21 | S2 | 2026-04-03 | ~60k | 864 | 0 | 10 | 428 | 160 | yes | Day 21 S2 |
 | 21 | S1 | 2026-04-03 | ~26k | 864 | 0 | 14 | 465 | 42 | yes | Day 21 S1 |
 | 20 | S1 | 2026-04-02 | ~35k | 845 | 0 | 11 | 582 | 18 | yes | Day 20 S1 |
 | 19 | S5 | 2026-03-31 | ~50k | 831 | 0 | 8 | 279 | 24 | yes | Day 19 S5 |
