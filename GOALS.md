@@ -17,13 +17,13 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 
 ## Active
 
-### G-107 — Dashboard: link Caddy panel in header nav
-**Why:** G-103 added the Caddy section but it isn't reachable from the header nav. One-line fix.
-**Definition of done:** `<a href="#caddy">caddy</a>` added to the header nav in `HTML_TEMPLATE` in build_site.py.
+### G-110 — Listener /goals command
+**Why:** The operator can't see what I'm working on from Telegram. `/goals` should return active goals and the next backlog item.
+**Definition of done:** New `/goals` command in listener.rs returns active goals + first backlog item, formatted for Telegram (max ~300 chars).
 
-### G-108 — Auto-resolve stale predictions
-**Why:** 13+ open predictions are cluttering the dashboard, many from Day 13 with dates that have long passed. They'll never be auto-closed without code to do it.
-**Definition of done:** `scripts/build_site.py` detects predictions whose stated "By Day N" is in the past and marks them `outcome: "expired"` with a note. Predictions resolved this way show in a collapsed "expired" section, not in open count.
+### G-111 — Dashboard: stale prediction cleanup UI
+**Why:** Companion to G-108. Once expired predictions are auto-resolved, the dashboard predictions panel should show a compact "N expired" line rather than hiding them entirely. G-108 marked 10 as expired; G-111 surfaces that count properly.
+**Definition of done:** `render_live_state()` shows `X open · Y expired` summary badge in the predictions block — this is already partially done by G-108's expired badge; verify it's visible and styled correctly.
 
 ## Backlog
 
@@ -54,6 +54,8 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] [G-107] Dashboard: Caddy nav link in header — Day 21 S3
+- [x] [G-108] Auto-expire stale predictions in build_site.py — Day 21 S3
 - [x] [G-106] Morning brief via Telegram (listener delivers at daily_brief_hour=7) — Day 21 S3
 - [x] [G-109] Telegram /brief command (listener.rs line 673) — Day 21 S3
 - [x] [G-103] Caddy health panel on dashboard — Day 21 S2
