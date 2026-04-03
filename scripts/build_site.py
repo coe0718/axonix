@@ -267,11 +267,14 @@ def render_stats(sessions):
 
     latest_tests = sessions[-1]["tests_passed"] if sessions else "?"
 
-    try:
-        total_added = sum(int(s["lines_added"].replace(",", "")) for s in sessions)
-        added_str = f"+{total_added:,}"
-    except (ValueError, AttributeError):
-        added_str = "?"
+    added_total = 0
+    for s in sessions:
+        try:
+            v = int(s["lines_added"].replace(",", "").replace("?", "").strip())
+            added_total += v
+        except (ValueError, AttributeError):
+            pass
+    added_str = f"+{added_total:,}" if added_total > 0 else "?"
 
     committed = sum(1 for s in sessions if s["committed"].lower() == "yes")
     commit_pct = int(committed / total_sessions * 100) if total_sessions else 0
@@ -678,7 +681,16 @@ def render_live_state(goals, open_predictions, memory_context_html="", pred_stat
             )
         parts.append('</ul>')
     else:
-        parts.append('<p class="empty-state">no active goals — promote from backlog</p>')
+        backlog = goals.get("backlog", [])
+        if backlog:
+            next_g = backlog[0]
+            id_part = f'<span class="tag">{html.escape(next_g["id"])}</span> ' if next_g.get("id") else ""
+            parts.append(
+                f'<p class="empty-state">no active goals — next up: '
+                f'{id_part}<span class="item-text">{md_inline(next_g["text"])}</span></p>'
+            )
+        else:
+            parts.append('<p class="empty-state">no active goals — promote from backlog</p>')
     parts.append('</div>')
 
     # Open predictions with resolution rate badge
@@ -693,7 +705,9 @@ def render_live_state(goals, open_predictions, memory_context_html="", pred_stat
         parts.append(f'<span class="pred-badge">{html.escape(badge)}</span>')
     if open_predictions:
         parts.append('<ul class="plain-list">')
-        for pred in open_predictions:
+        MAX_PRED_SHOWN = 5
+        hidden_count = max(0, len(open_predictions) - MAX_PRED_SHOWN)
+        for pred in open_predictions[:MAX_PRED_SHOWN]:
             text = pred["text"]
             if len(text) > 70:
                 text = text[:67] + "..."
@@ -704,6 +718,8 @@ def render_live_state(goals, open_predictions, memory_context_html="", pred_stat
                 f'<span class="item-date"> [{html.escape(pred["created"])}]</span>'
                 f'</li>'
             )
+        if hidden_count > 0:
+            parts.append(f'<li class="item-dim">... {hidden_count} older predictions not shown</li>')
         parts.append('</ul>')
     else:
         parts.append('<p class="empty-state">no open predictions</p>')
@@ -1089,6 +1105,19 @@ def render_goals(goals):
             )
         parts.append('</ul>')
         parts.append('</div>')
+    else:
+        parts.append('<div class="goals-section">')
+        parts.append('<div class="goals-group-hdr">// active</div>')
+        if backlog:
+            next_g = backlog[0]
+            id_part = f'<span class="tag">{html.escape(next_g["id"])}</span> ' if next_g.get("id") else ""
+            parts.append(
+                f'<p class="empty-state">no active goals — next up: '
+                f'{id_part}<span class="item-text">{md_inline(next_g["text"])}</span></p>'
+            )
+        else:
+            parts.append('<p class="empty-state">no active goals — promote from backlog</p>')
+        parts.append('</div>')
 
     if backlog:
         parts.append('<div class="goals-section">')
@@ -1200,7 +1229,8 @@ def render_session_timeline(sessions):
         tests_str = r.get("tests_passed", "?")
         if isinstance(tests_str, str) and tests_str.isdigit():
             valid.append((r.get("day", "?"), r.get("session", "?"), r.get("date", "?"), int(tests_str)))
-    valid = valid[-20:]  # last 20 sessions
+    valid = list(reversed(valid))  # metrics file is newest-first; reverse to chronological order
+    valid = valid[-20:]  # last 20 sessions, chronological order for the chart
     if not valid:
         return '<p class="dim">No numeric test data.</p>'
 
