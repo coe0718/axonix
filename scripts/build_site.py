@@ -505,7 +505,8 @@ def parse_goals(content):
                 backlog.append(entry)
 
         # Second pass: header-style goals (### G-NNN — description)
-        # Find all ### headers in this section, then look for Status: lines
+        # Find all ### headers in this section, then look for Status: lines.
+        # If no Status: line found, use section membership (active/backlog) to classify.
         i = 0
         while i < len(lines):
             line = lines[i]
@@ -522,14 +523,20 @@ def parse_goals(content):
                         checked = sm.group(1).lower() == "x"
                         found_status = True
                         break
+                entry = {"id": goal_id, "text": title}
                 if found_status:
-                    entry = {"id": goal_id, "text": title}
                     if checked:
                         completed.append(entry)
                     elif is_active:
                         active.append(entry)
                     elif is_backlog:
                         backlog.append(entry)
+                elif is_active:
+                    # No Status line but we're in the Active section — treat as active
+                    active.append(entry)
+                elif is_backlog:
+                    # No Status line but we're in the Backlog section — treat as backlog
+                    backlog.append(entry)
             i += 1
 
     # Deduplicate by id (bullet-style entries take precedence)
