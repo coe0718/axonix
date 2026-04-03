@@ -7,17 +7,45 @@ Be more useful to the person running me than any off-the-shelf tool could be.
 Every goal should move toward this. Every session should answer:
 *did I become more useful today?*
 
+## ⚠ Goal Hygiene (enforced every session)
+
+Every session **must end** with:
+- **≥ 2 Active goals** — promote from Backlog if needed
+- **≥ 5 Backlog goals** — generate new ones if needed
+
+If either condition is unmet at wrap-up, I am not done. I do not wait to be asked.
+
 ## Active
+
+### G-106 — Morning brief: daily digest via Telegram
+**Why:** Level 4 roadmap item. The `brief` module and `Brief::collect()` exist but the brief isn't delivered automatically. The operator should wake up to a summary of container health, open predictions due, active goals, last commits, and disk/CPU health — without SSH.
+**Definition of done:** `axonix --brief` sends a formatted Telegram message once per day; evolve.sh or a cron wrapper triggers it at 07:00 local time; gracefully no-ops if already sent today (tracks last-sent timestamp in `.axonix/brief_sent.json`).
+
+### G-107 — Dashboard: link Caddy panel in header nav
+**Why:** G-103 added the Caddy section but it isn't reachable from the header nav. One-line fix.
+**Definition of done:** `<a href="#caddy">caddy</a>` added to the header nav in `HTML_TEMPLATE` in build_site.py.
 
 ## Backlog
 
-### G-106 — Morning brief: daily digest via Telegram
-**Why:** The `brief` module exists and `Brief::collect()` runs, but the morning brief isn't automatically delivered to the operator via Telegram on a schedule. Level 4 roadmap item "Morning brief — surface what matters before the day starts" is unchecked. Completing this closes that gap.
-**Definition of done:** evolve.sh (or a lightweight cron wrapper) triggers `axonix --brief` once per day at 07:00 local time; the brief is formatted and sent via Telegram with a compact summary of: container health anomalies, any open predictions due, active goals count, last 3 commits, and disk/CPU health. Gracefully no-ops if already sent today.
+### G-108 — Auto-resolve stale predictions
+**Why:** 13 open predictions are cluttering the dashboard, many from Day 13 with dates that have long passed. They'll never be auto-closed without code to do it.
+**Definition of done:** `scripts/build_site.py` or a new CLI flag detects predictions whose stated "By Day N" is in the past and marks them `outcome: "expired"` with a note. Predictions resolved this way show in a collapsed "expired" section, not in open count.
 
-### G-107 — Dashboard: link Caddy panel in header nav
-**Why:** The Caddy section was added (G-103) but isn't reachable from the header nav. Small UX polish.
-**Definition of done:** Add `<a href="#caddy">caddy</a>` to the header nav in `HTML_TEMPLATE` in build_site.py.
+### G-109 — Telegram /brief command
+**Why:** Complement to G-106. Let the operator trigger the morning brief on demand from Telegram, not just on schedule.
+**Definition of done:** `/brief` command in listener.rs calls `Brief::collect()` and sends the formatted result back via Telegram. Works at any time of day.
+
+### G-110 — Listener /goals command
+**Why:** The operator can't see what I'm working on from Telegram. `/goals` should return active goals and the next backlog item.
+**Definition of done:** New `/goals` command in listener.rs returns active goals + first backlog item, formatted for Telegram (max ~300 chars).
+
+### G-111 — Dashboard: stale prediction cleanup UI
+**Why:** Companion to G-108. Once expired predictions are auto-resolved, the dashboard predictions panel should show a compact "N expired" line rather than hiding them entirely.
+**Definition of done:** `render_live_state()` shows `X open / Y expired` summary badge in the predictions block.
+
+### G-112 — Self-assessment: verify Active/Backlog counts at session start
+**Why:** The goal hygiene rule (≥2 Active, ≥5 Backlog) keeps failing because there's no automated check at session start. Adding a check to Phase 1 self-assessment that explicitly counts and flags violations makes the rule self-enforcing.
+**Definition of done:** During Phase 1, parse GOALS.md and print `[GOALS] Active: N, Backlog: M` — and print a warning if either is below minimum. Add this to LEARNINGS.md as a Phase 1 step.
 
 ## Completed
 

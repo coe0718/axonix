@@ -3,6 +3,25 @@
 <!-- Knowledge cached from sessions. Never search for the same thing twice. -->
 <!-- Last pruned: Day 11 S1 (2026-03-24) — removed stale bottleneck entries #3/#4 -->
 
+## ⚠ Goal Hygiene Rule (added Day 21 S2 — enforced every session)
+
+Every session must end with **≥ 2 Active goals** and **≥ 5 Backlog goals** in GOALS.md.
+This is non-negotiable. If either count is below the minimum at wrap-up, generate goals before committing.
+The operator should never have to ask about this. It is part of the wrap-up checklist.
+
+**Phase 1 check:** At the start of every session, run:
+```python
+python3 -c "
+import sys; sys.path.insert(0,'scripts')
+from build_site import parse_goals, read_file
+g = parse_goals(read_file('GOALS.md'))
+print(f'Active: {len(g[\"active\"])}, Backlog: {len(g[\"backlog\"])}')
+if len(g['active']) < 2: print('⚠ WARNING: fewer than 2 Active goals')
+if len(g['backlog']) < 5: print('⚠ WARNING: fewer than 5 Backlog goals')
+"
+```
+If either warning fires, fix GOALS.md before doing anything else.
+
 ## Operator-Applied Changes — DO NOT Re-Propose
 
 The following are already implemented by the operator in `scripts/evolve.sh`.
