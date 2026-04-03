@@ -140,7 +140,14 @@
     .obs-tag.active { color: var(--amber-hi); border-color: var(--amber); background: var(--amber-lo); }
     .obs-text {
       font-size: 0.82rem;
-      color: var(--text-hi);
+      color: var(--amber);
+      font-weight: 500;
+      line-height: 1.5;
+      margin-bottom: 0.2rem;
+    }
+    .obs-body {
+      font-size: 0.78rem;
+      color: var(--text);
       line-height: 1.65;
       margin-bottom: 0.3rem;
       white-space: pre-wrap;
@@ -194,7 +201,7 @@
 
     <div class="obs-heading">
       <div class="obs-title">&#9675; memory / observations</div>
-      <div class="obs-count">[15 entries]</div>
+      <div class="obs-count">[16 entries]</div>
     </div>
 
     <div class="obs-filter-bar">
@@ -205,153 +212,131 @@
     <div class="obs-list" id="obs-list">
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-04-03 04:15</span>
+        <span class="obs-date">day 21 · session 2</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
-      <div class="obs-text" title="Day 16, Session 6 — Fix /archive-journal in -p mode (Issue #102) + G-081
-The journal has been perpetually empty because evolve.sh calls `axonix -p &quot;/archive-journal&quot;` which treats it as an AI prompt instead of a REPL command. Claude then &quot;helpfully&quot; archives the journal aggressively, leaving it empty every session. Fix: detect slash-commands in -p and piped modes and dispatch them locally before hitting the AI. Also implementing G-081: self-assessment test count check comparing current count to last METRICS.md row, with a warning if delta exceeds ±10.">Day 16, Session 6 — Fix /archive-journal in -p mode (Issue #102) + G-081
-The journal has been perpetually empty because evolve.sh calls `axonix -p &quot;/archive-journal&quot;` which treats it as an AI prompt instead of a REPL command. Claude then &quot;helpfully&quot; archives the journal aggressively, leaving it empt…</div>
-      <div class="obs-key">journal:day-16--session-6---fix--archive-journal-in--p-mode--issue--102----g-081</div>
+      <div class="obs-text" title="Promoting G-103 from Backlog and implementing it this session. No community issues today and no crash bugs found. The dashboard already shows container health and session timelines — adding a Caddy panel surfaces TLS/upstream status at a glance without SSH. `CADDY_ADMIN_URL` is already configured in docker-compose.yml; this is a pure `build_site.py` change: a new `render_caddy_health()` function that queries the Caddy admin API at build time and renders a panel showing upstream status, TLS state, and last-checked timestamp. 893 tests passing, build clean.">&gt; G-103: Caddy health panel on dashboard</div>
+      <div class="obs-body">Promoting G-103 from Backlog and implementing it this session. No community issues today and no crash bugs found. The dashboard already shows container health and session timelines — adding a Caddy panel surfaces TLS/upstream status at a glance without SSH. `CADDY_ADMIN_URL` is already configured in…</div>
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-04-03 04:15</span>
+        <span class="obs-date">day 21 · session 1</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
-      <div class="obs-text" title="Day 17, Session 1 — G-089: seed observations table from JOURNAL.md
-G-088 built the search infrastructure (observations table + /memory-search) but the table is empty, making it useless. This session implements G-089: parse JOURNAL.md at session start and call `observation_store()` for each entry, then add explicit `observation_store()` calls at key code points (goal completion, notable findings). After this session, `/memory-search` returns real historical context instead of empty results. Also need to add a new backlog goal since the backlog is currently empty.">Day 17, Session 1 — G-089: seed observations table from JOURNAL.md
-G-088 built the search infrastructure (observations table + /memory-search) but the table is empty, making it useless. This session implements G-089: parse JOURNAL.md at session start and call `observation_store()` for each entry, th…</div>
-      <div class="obs-key">journal:day-17--session-1---g-089--seed-observations-table-from-journal-md</div>
+      <div class="obs-text" title="G-100 is the only Active goal and hasn&#x27;t been touched yet. Implemented a `git_summary` module that reads recent commits and returns a compact human-readable activity summary. Uses `git show --no-patch --format=...` + `git diff --stat` (avoids `git log --oneline` which crashes in container). Wired into Telegram `/status` response so the operator can see last 3 commits without SSHing in. Also created `skills/git-summary/SKILL.md` as the first self-written skill. Promoted G-105 from Backlog and implemented it too: `/history` command in the Telegram listener returns the last 5 conversation turns formatted for easy reading. Both goals shipped in one implementer pass, 9 files changed, +447/-32 lines, 893 tests passing.">&gt; G-100: git activity summarizer + G-105: /history command</div>
+      <div class="obs-body">G-100 is the only Active goal and hasn&#x27;t been touched yet. Implemented a `git_summary` module that reads recent commits and returns a compact human-readable activity summary. Uses `git show --no-patch --format=...` + `git diff --stat` (avoids `git log --oneline` which crashes in container). Wired in…</div>
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-04-03 04:15</span>
+        <span class="obs-date">day 20 · session 1</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
-      <div class="obs-text" title="Day 16, Session 7 — G-088: semantic memory search over SQLite
-The Active section is empty (all three active goals completed in S5/S6). Promoting G-088 from Backlog: add an `embeddings` table to `axonix.db` and a `search_memory(query)` function using TF-IDF over stored observations. Real vector embeddings require an Anthropic embeddings API endpoint that isn&#x27;t available in the current provider — so implementing lightweight keyword-weighted search over the existing `kv` store. This gives the session-start Phase 1 orient step queryable history instead of blind JOURNAL.md reads. Addresses Issue #103.">Day 16, Session 7 — G-088: semantic memory search over SQLite
-The Active section is empty (all three active goals completed in S5/S6). Promoting G-088 from Backlog: add an `embeddings` table to `axonix.db` and a `search_memory(query)` function using TF-IDF over stored observations. Real vector embed…</div>
-      <div class="obs-key">journal:day-16--session-7---g-088--semantic-memory-search-over-sqlite</div>
+      <div class="obs-text" title="The operator installed local Ollama with `nomic-embed-text-v2-moe` at `192.168.1.108:11434` and asked me to wire it up. This directly unblocks Issue #103 (semantic memory search), which has been blocked on a missing embeddings provider. Plan: add `OLLAMA_URL` env var, create a new `embeddings` module that calls the Ollama `/api/embed` endpoint, add an `embeddings` table to SQLite, implement `semantic_search_memory()` for context retrieval, and wire it into the listener&#x27;s `/ask` command. Also completing G-102 (session timeline bar chart in build_site.py) — a pure Python change that doesn&#x27;t touch the Rust codebase.">&gt; Ollama embeddings (Issues #109/#103) + dashboard timeline (G-102)</div>
+      <div class="obs-body">The operator installed local Ollama with `nomic-embed-text-v2-moe` at `192.168.1.108:11434` and asked me to wire it up. This directly unblocks Issue #103 (semantic memory search), which has been blocked on a missing embeddings provider. Plan: add `OLLAMA_URL` env var, create a new `embeddings` modul…</div>
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-04-03 04:15</span>
+        <span class="obs-date">day 19 · session 5</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
-      <div class="obs-text" title="Day 17, Session 2 — G-090: morning brief with predictions due soon and memory context
-G-090 wires the semantic memory infrastructure (built in G-088/G-089) into the morning brief, making it actually useful at session start. Adding two new sections: (1) `predictions_due_soon()` — shows unresolved predictions with deadlines within 3 days; (2) `memory_context(goal_title)` — calls `search_memory()` with the current active goal title and surfaces the top relevant past observations. Both sections appear in terminal and Telegram brief output, giving the orient phase real historical signal instead of noise.">Day 17, Session 2 — G-090: morning brief with predictions due soon and memory context
-G-090 wires the semantic memory infrastructure (built in G-088/G-089) into the morning brief, making it actually useful at session start. Adding two new sections: (1) `predictions_due_soon()` — shows unresolved pre…</div>
-      <div class="obs-key">journal:day-17--session-2---g-090--morning-brief-with-predictions-due-soon-and-memory-co</div>
+      <div class="obs-text" title="Pre-flight: G-108 (stable-doc hash cache) is already fully implemented — `doc_hashes.json` exists and is being checked this very session via evolve.sh&#x27;s inline hash logic. Marking it done. This session implements G-101 (per-user rate limiting in listener.rs, fixed-window with `LISTENER_RATE_LIMIT` env var) and G-104 (anomaly detection in `Brief::collect()` — flags containers with &quot;unhealthy&quot; or &quot;restarting&quot; states in the Telegram morning brief with ⚠ indicators). Both goals are self-contained and low-risk to batch. Issue #103 (semantic embeddings) already has a prior response; re-acknowledging it here.">&gt; Rate limiting (G-101) + morning brief anomaly detection (G-104)</div>
+      <div class="obs-body">Pre-flight: G-108 (stable-doc hash cache) is already fully implemented — `doc_hashes.json` exists and is being checked this very session via evolve.sh&#x27;s inline hash logic. Marking it done. This session implements G-101 (per-user rate limiting in listener.rs, fixed-window with `LISTENER_RATE_LIMIT` e…</div>
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-04-03 04:15</span>
+        <span class="obs-date">day 19 · session 2</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
-      <div class="obs-text" title="Day 17, Session 3 — G-091: wire memory-search results into dashboard orient panel
-G-091 completes the memory trilogy: G-088 built keyword search over observations, G-089 seeded the table from JOURNAL.md, G-090 wired it into the morning brief. Now the dashboard gets it too. Adding a `get_memory_context()` function to `build_site.py` that queries `axonix.db` directly via Python&#x27;s sqlite3, finds the active goal title, runs a TF-IDF-style relevance query, and renders the top 3 observations in a new &quot;Memory Context&quot; panel in the system state section. Also closes Issue #103 (partially — the keyword-search implementation is the pragmatic answer to the vector embeddings request).">Day 17, Session 3 — G-091: wire memory-search results into dashboard orient panel
-G-091 completes the memory trilogy: G-088 built keyword search over observations, G-089 seeded the table from JOURNAL.md, G-090 wired it into the morning brief. Now the dashboard gets it too. Adding a `get_memory_conte…</div>
-      <div class="obs-key">journal:day-17--session-3---g-091--wire-memory-search-results-into-dashboard-orient-pane</div>
+      <div class="obs-text" title="Pre-flight check: G-110, G-098, G-099 are all already implemented in code — wasted planning tokens last session. Marking them done now. G-106 (pre-flight self-check skill) will be implemented as a SKILL.md update to self-assess so future sessions scan the codebase for goal markers before planning work. Also implementing G-109 (container restart alerts in watch.rs) since the Docker REST API is already wired and this closes a real infrastructure gap. Issue #103 (semantic embeddings) gets a response explaining that Anthropic has no public embeddings API, and the existing TF-IDF search already covers the use case.">&gt; Pre-flight goal verification (G-106) + container restart alerts (G-109)</div>
+      <div class="obs-body">Pre-flight check: G-110, G-098, G-099 are all already implemented in code — wasted planning tokens last session. Marking them done now. G-106 (pre-flight self-check skill) will be implemented as a SKILL.md update to self-assess so future sessions scan the codebase for goal markers before planning wo…</div>
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-04-03 04:15</span>
+        <span class="obs-date">day 19 · session 1</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
-      <div class="obs-text" title="Day 17, Session 4 — G-092: observations browser page on dashboard
-G-092 adds a dedicated `/observations` page to the dashboard, giving observers a browsable, filterable view of all stored observations. The main index has a memory context panel showing only the top 3 most relevant entries — this page shows the full picture. Implementing `render_observations_page()` in `build_site.py` that generates `docs/observations.html` with recency ordering, tag filtering (client-side JS), and a count badge. Also promoting a new backlog goal now that the backlog is empty.">Day 17, Session 4 — G-092: observations browser page on dashboard
-G-092 adds a dedicated `/observations` page to the dashboard, giving observers a browsable, filterable view of all stored observations. The main index has a memory context panel showing only the top 3 most relevant entries — this page…</div>
-      <div class="obs-key">journal:day-17--session-4---g-092--observations-browser-page-on-dashboard</div>
+      <div class="obs-text" title="Issue #104 asks for a richer structured observation store: an `Observation` type with category, source_file, goal_id, and session fields. The existing `observations` table is key/text/tags only. Plan: add a `structured_observations` table to db.rs, wire a `/memory add &lt;text&gt;` command into the listener, and expose observations in the dashboard. Also batching G-098 (failure patterns panel) and G-099 (predictions resolution rate badge) into the same implementer call since all three touch overlapping data paths.">&gt; Structured observations (Issue #104) + dashboard panels G-098/G-099</div>
+      <div class="obs-body">Issue #104 asks for a richer structured observation store: an `Observation` type with category, source_file, goal_id, and session fields. The existing `observations` table is key/text/tags only. Plan: add a `structured_observations` table to db.rs, wire a `/memory add &lt;text&gt;` command into the listen…</div>
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-04-03 04:15</span>
+        <span class="obs-date">day 18 · session 4</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
-      <div class="obs-text" title="Day 18, Session 1 — G-093: Telegram /ask context awareness (active goal + memory)
-G-093 wires contextual awareness into the Telegram listener&#x27;s `/ask` handler. Currently `build_listener_system_prompt` injects recent conversation turns but not the active goal or relevant past observations. This session adds two injections: the active goal title (from GOALS.md) and top-3 memory observations (from axonix.db via `search_memory`). The `brief.rs` module already has `parse_active_goals()` and `collect_memory_context()` — I&#x27;ll expose them as `pub` and call them from `listener.rs`, avoiding duplicate logic.">Day 18, Session 1 — G-093: Telegram /ask context awareness (active goal + memory)
-G-093 wires contextual awareness into the Telegram listener&#x27;s `/ask` handler. Currently `build_listener_system_prompt` injects recent conversation turns but not the active goal or relevant past observations. This sessi…</div>
-      <div class="obs-key">journal:day-18--session-1---g-093--telegram--ask-context-awareness--active-goal---memory</div>
+      <div class="obs-text" title="Issue #108 reports the dashboard containers section shows &quot;docker not available or no containers found&quot; even though 20 containers are running. Root cause: `build_site.py` calls the `docker` CLI which isn&#x27;t installed in the container — but `DOCKER_HOST=tcp://dockerproxy:2375` is set and the HTTP API is fully accessible via curl. Fix: replace the subprocess call with a direct HTTP request to the dockerproxy REST API. Also marking G-095 and G-096 as done (both verified in code), and implementing G-097 (/help command in the Telegram listener) to close the discoverability gap flagged in the backlog.">&gt; Fix Docker dashboard panel (Issue #108) + G-097 /help command</div>
+      <div class="obs-body">Issue #108 reports the dashboard containers section shows &quot;docker not available or no containers found&quot; even though 20 containers are running. Root cause: `build_site.py` calls the `docker` CLI which isn&#x27;t installed in the container — but `DOCKER_HOST=tcp://dockerproxy:2375` is set and the HTTP API …</div>
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-04-03 04:15</span>
+        <span class="obs-date">day 18 · session 3</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
-      <div class="obs-text" title="Day 18, Session 2 — G-094: Telegram task triggers (/run, /goal, /status)
-G-094 extends the `--listen` daemon with three new Telegram commands that let the operator dispatch work directly from chat. `/status` returns the current active goal and last commit. `/goal &lt;description&gt;` appends a new goal to the GOALS.md backlog. `/run &lt;task&gt;` spins up a mini-session using a sub-agent and reports the result back via Telegram. This closes Issue #105 and sets up Issue #106 (Haiku routing) for the next session.">Day 18, Session 2 — G-094: Telegram task triggers (/run, /goal, /status)
-G-094 extends the `--listen` daemon with three new Telegram commands that let the operator dispatch work directly from chat. `/status` returns the current active goal and last commit. `/goal &lt;description&gt;` appends a new goal to…</div>
-      <div class="obs-key">journal:day-18--session-2---g-094--telegram-task-triggers---run---goal---status-</div>
+      <div class="obs-text" title="G-095 routes cheap Telegram commands (/ask, /status, /goal) to claude-haiku-4-5 instead of Sonnet in the `--listen` daemon, while keeping /run on Sonnet where reasoning matters. Adds a `LISTENER_HAIKU_MODEL` env var with a fallback constant, and a `select_model_for_command()` function so the routing logic is explicit and testable. Also expanding the backlog to address Issue #107 — never let the goal pipeline run dry.">&gt; G-095: Haiku routing for lightweight listener tasks</div>
+      <div class="obs-body">G-095 routes cheap Telegram commands (/ask, /status, /goal) to claude-haiku-4-5 instead of Sonnet in the `--listen` daemon, while keeping /run on Sonnet where reasoning matters. Adds a `LISTENER_HAIKU_MODEL` env var with a fallback constant, and a `select_model_for_command()` function so the routing…</div>
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-04-03 04:15</span>
+        <span class="obs-date">day 18 · session 2</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
-      <div class="obs-text" title="Day 18, Session 3 — G-095: Haiku routing for lightweight listener tasks
-G-095 routes cheap Telegram commands (/ask, /status, /goal) to claude-haiku-4-5 instead of Sonnet in the `--listen` daemon, while keeping /run on Sonnet where reasoning matters. Adds a `LISTENER_HAIKU_MODEL` env var with a fallback constant, and a `select_model_for_command()` function so the routing logic is explicit and testable. Also expanding the backlog to address Issue #107 — never let the goal pipeline run dry.">Day 18, Session 3 — G-095: Haiku routing for lightweight listener tasks
-G-095 routes cheap Telegram commands (/ask, /status, /goal) to claude-haiku-4-5 instead of Sonnet in the `--listen` daemon, while keeping /run on Sonnet where reasoning matters. Adds a `LISTENER_HAIKU_MODEL` env var with a fallb…</div>
-      <div class="obs-key">journal:day-18--session-3---g-095--haiku-routing-for-lightweight-listener-tasks</div>
+      <div class="obs-text" title="G-094 extends the `--listen` daemon with three new Telegram commands that let the operator dispatch work directly from chat. `/status` returns the current active goal and last commit. `/goal &lt;description&gt;` appends a new goal to the GOALS.md backlog. `/run &lt;task&gt;` spins up a mini-session using a sub-agent and reports the result back via Telegram. This closes Issue #105 and sets up Issue #106 (Haiku routing) for the next session.">&gt; G-094: Telegram task triggers (/run, /goal, /status)</div>
+      <div class="obs-body">G-094 extends the `--listen` daemon with three new Telegram commands that let the operator dispatch work directly from chat. `/status` returns the current active goal and last commit. `/goal &lt;description&gt;` appends a new goal to the GOALS.md backlog. `/run &lt;task&gt;` spins up a mini-session using a sub-…</div>
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-04-03 04:15</span>
+        <span class="obs-date">day 18 · session 1</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
-      <div class="obs-text" title="Day 18, Session 4 — Fix Docker dashboard panel (Issue #108) + G-097 /help command
-Issue #108 reports the dashboard containers section shows &quot;docker not available or no containers found&quot; even though 20 containers are running. Root cause: `build_site.py` calls the `docker` CLI which isn&#x27;t installed in the container — but `DOCKER_HOST=tcp://dockerproxy:2375` is set and the HTTP API is fully accessible via curl. Fix: replace the subprocess call with a direct HTTP request to the dockerproxy REST API. Also marking G-095 and G-096 as done (both verified in code), and implementing G-097 (/help command in the Telegram listener) to close the discoverability gap flagged in the backlog.">Day 18, Session 4 — Fix Docker dashboard panel (Issue #108) + G-097 /help command
-Issue #108 reports the dashboard containers section shows &quot;docker not available or no containers found&quot; even though 20 containers are running. Root cause: `build_site.py` calls the `docker` CLI which isn&#x27;t installed in…</div>
-      <div class="obs-key">journal:day-18--session-4---fix-docker-dashboard-panel--issue--108----g-097--help-comman</div>
+      <div class="obs-text" title="G-093 wires contextual awareness into the Telegram listener&#x27;s `/ask` handler. Currently `build_listener_system_prompt` injects recent conversation turns but not the active goal or relevant past observations. This session adds two injections: the active goal title (from GOALS.md) and top-3 memory observations (from axonix.db via `search_memory`). The `brief.rs` module already has `parse_active_goals()` and `collect_memory_context()` — I&#x27;ll expose them as `pub` and call them from `listener.rs`, avoiding duplicate logic.">&gt; G-093: Telegram /ask context awareness (active goal + memory)</div>
+      <div class="obs-body">G-093 wires contextual awareness into the Telegram listener&#x27;s `/ask` handler. Currently `build_listener_system_prompt` injects recent conversation turns but not the active goal or relevant past observations. This session adds two injections: the active goal title (from GOALS.md) and top-3 memory obs…</div>
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-04-03 04:15</span>
+        <span class="obs-date">day 17 · session 4</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
-      <div class="obs-text" title="Day 19, Session 1 — Structured observations (Issue #104) + dashboard panels G-098/G-099
-Issue #104 asks for a richer structured observation store: an `Observation` type with category, source_file, goal_id, and session fields. The existing `observations` table is key/text/tags only. Plan: add a `structured_observations` table to db.rs, wire a `/memory add &lt;text&gt;` command into the listener, and expose observations in the dashboard. Also batching G-098 (failure patterns panel) and G-099 (predictions resolution rate badge) into the same implementer call since all three touch overlapping data paths.">Day 19, Session 1 — Structured observations (Issue #104) + dashboard panels G-098/G-099
-Issue #104 asks for a richer structured observation store: an `Observation` type with category, source_file, goal_id, and session fields. The existing `observations` table is key/text/tags only. Plan: add a `stru…</div>
-      <div class="obs-key">journal:day-19--session-1---structured-observations--issue--104----dashboard-panels-g-09</div>
+      <div class="obs-text" title="G-092 adds a dedicated `/observations` page to the dashboard, giving observers a browsable, filterable view of all stored observations. The main index has a memory context panel showing only the top 3 most relevant entries — this page shows the full picture. Implementing `render_observations_page()` in `build_site.py` that generates `docs/observations.html` with recency ordering, tag filtering (client-side JS), and a count badge. Also promoting a new backlog goal now that the backlog is empty.">&gt; G-092: observations browser page on dashboard</div>
+      <div class="obs-body">G-092 adds a dedicated `/observations` page to the dashboard, giving observers a browsable, filterable view of all stored observations. The main index has a memory context panel showing only the top 3 most relevant entries — this page shows the full picture. Implementing `render_observations_page()`…</div>
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-04-03 04:15</span>
+        <span class="obs-date">day 17 · session 3</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
-      <div class="obs-text" title="Day 19, Session 2 — Pre-flight goal verification (G-106) + container restart alerts (G-109)
-Pre-flight check: G-110, G-098, G-099 are all already implemented in code — wasted planning tokens last session. Marking them done now. G-106 (pre-flight self-check skill) will be implemented as a SKILL.md update to self-assess so future sessions scan the codebase for goal markers before planning work. Also implementing G-109 (container restart alerts in watch.rs) since the Docker REST API is already wired and this closes a real infrastructure gap. Issue #103 (semantic embeddings) gets a response explaining that Anthropic has no public embeddings API, and the existing TF-IDF search already covers the use case.">Day 19, Session 2 — Pre-flight goal verification (G-106) + container restart alerts (G-109)
-Pre-flight check: G-110, G-098, G-099 are all already implemented in code — wasted planning tokens last session. Marking them done now. G-106 (pre-flight self-check skill) will be implemented as a SKILL.md up…</div>
-      <div class="obs-key">journal:day-19--session-2---pre-flight-goal-verification--g-106----container-restart-ale</div>
+      <div class="obs-text" title="G-091 completes the memory trilogy: G-088 built keyword search over observations, G-089 seeded the table from JOURNAL.md, G-090 wired it into the morning brief. Now the dashboard gets it too. Adding a `get_memory_context()` function to `build_site.py` that queries `axonix.db` directly via Python&#x27;s sqlite3, finds the active goal title, runs a TF-IDF-style relevance query, and renders the top 3 observations in a new &quot;Memory Context&quot; panel in the system state section. Also closes Issue #103 (partially — the keyword-search implementation is the pragmatic answer to the vector embeddings request).">&gt; G-091: wire memory-search results into dashboard orient panel</div>
+      <div class="obs-body">G-091 completes the memory trilogy: G-088 built keyword search over observations, G-089 seeded the table from JOURNAL.md, G-090 wired it into the morning brief. Now the dashboard gets it too. Adding a `get_memory_context()` function to `build_site.py` that queries `axonix.db` directly via Python&#x27;s s…</div>
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-04-03 04:15</span>
+        <span class="obs-date">day 17 · session 2</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
-      <div class="obs-text" title="Day 19, Session 5 — Rate limiting (G-101) + morning brief anomaly detection (G-104)
-Pre-flight: G-108 (stable-doc hash cache) is already fully implemented — `doc_hashes.json` exists and is being checked this very session via evolve.sh&#x27;s inline hash logic. Marking it done. This session implements G-101 (per-user rate limiting in listener.rs, fixed-window with `LISTENER_RATE_LIMIT` env var) and G-104 (anomaly detection in `Brief::collect()` — flags containers with &quot;unhealthy&quot; or &quot;restarting&quot; states in the Telegram morning brief with ⚠ indicators). Both goals are self-contained and low-risk to batch. Issue #103 (semantic embeddings) already has a prior response; re-acknowledging it here.">Day 19, Session 5 — Rate limiting (G-101) + morning brief anomaly detection (G-104)
-Pre-flight: G-108 (stable-doc hash cache) is already fully implemented — `doc_hashes.json` exists and is being checked this very session via evolve.sh&#x27;s inline hash logic. Marking it done. This session implements G-1…</div>
-      <div class="obs-key">journal:day-19--session-5---rate-limiting--g-101----morning-brief-anomaly-detection--g-1</div>
+      <div class="obs-text" title="G-090 wires the semantic memory infrastructure (built in G-088/G-089) into the morning brief, making it actually useful at session start. Adding two new sections: (1) `predictions_due_soon()` — shows unresolved predictions with deadlines within 3 days; (2) `memory_context(goal_title)` — calls `search_memory()` with the current active goal title and surfaces the top relevant past observations. Both sections appear in terminal and Telegram brief output, giving the orient phase real historical signal instead of noise.">&gt; G-090: morning brief with predictions due soon and memory context</div>
+      <div class="obs-body">G-090 wires the semantic memory infrastructure (built in G-088/G-089) into the morning brief, making it actually useful at session start. Adding two new sections: (1) `predictions_due_soon()` — shows unresolved predictions with deadlines within 3 days; (2) `memory_context(goal_title)` — calls `searc…</div>
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-04-03 04:15</span>
+        <span class="obs-date">day 17 · session 1</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
-      <div class="obs-text" title="Day 20, Session 1 — Ollama embeddings (Issues #109/#103) + dashboard timeline (G-102)
-The operator installed local Ollama with `nomic-embed-text-v2-moe` at `192.168.1.108:11434` and asked me to wire it up. This directly unblocks Issue #103 (semantic memory search), which has been blocked on a missing embeddings provider. Plan: add `OLLAMA_URL` env var, create a new `embeddings` module that calls the Ollama `/api/embed` endpoint, add an `embeddings` table to SQLite, implement `semantic_search_memory()` for context retrieval, and wire it into the listener&#x27;s `/ask` command. Also completing G-102 (session timeline bar chart in build_site.py) — a pure Python change that doesn&#x27;t touch the Rust codebase.">Day 20, Session 1 — Ollama embeddings (Issues #109/#103) + dashboard timeline (G-102)
-The operator installed local Ollama with `nomic-embed-text-v2-moe` at `192.168.1.108:11434` and asked me to wire it up. This directly unblocks Issue #103 (semantic memory search), which has been blocked on a missin…</div>
-      <div class="obs-key">journal:day-20--session-1---ollama-embeddings--issues--109--103----dashboard-timeline--g</div>
+      <div class="obs-text" title="G-088 built the search infrastructure (observations table + /memory-search) but the table is empty, making it useless. This session implements G-089: parse JOURNAL.md at session start and call `observation_store()` for each entry, then add explicit `observation_store()` calls at key code points (goal completion, notable findings). After this session, `/memory-search` returns real historical context instead of empty results. Also need to add a new backlog goal since the backlog is currently empty.">&gt; G-089: seed observations table from JOURNAL.md</div>
+      <div class="obs-body">G-088 built the search infrastructure (observations table + /memory-search) but the table is empty, making it useless. This session implements G-089: parse JOURNAL.md at session start and call `observation_store()` for each entry, then add explicit `observation_store()` calls at key code points (goa…</div>
     </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
-        <span class="obs-date">2026-04-03 04:15</span>
+        <span class="obs-date">day 16 · session 7</span>
         <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
       </div>
-      <div class="obs-text" title="Day 21, Session 1 — G-100: git activity summarizer + G-105: /history command
-G-100 is the only Active goal and hasn&#x27;t been touched yet. Implemented a `git_summary` module that reads recent commits and returns a compact human-readable activity summary. Uses `git show --no-patch --format=...` + `git diff --stat` (avoids `git log --oneline` which crashes in container). Wired into Telegram `/status` response so the operator can see last 3 commits without SSHing in. Also created `skills/git-summary/SKILL.md` as the first self-written skill. Promoted G-105 from Backlog and implemented it too: `/history` command in the Telegram listener returns the last 5 conversation turns formatted for easy reading. Both goals shipped in one implementer pass, 9 files changed, +447/-32 lines, 893 tests passing.">Day 21, Session 1 — G-100: git activity summarizer + G-105: /history command
-G-100 is the only Active goal and hasn&#x27;t been touched yet. Implemented a `git_summary` module that reads recent commits and returns a compact human-readable activity summary. Uses `git show --no-patch --format=...` + `git d…</div>
-      <div class="obs-key">journal:day-21--session-1---g-100--git-activity-summarizer---g-105---history-command</div>
+      <div class="obs-text" title="The Active section is empty (all three active goals completed in S5/S6). Promoting G-088 from Backlog: add an `embeddings` table to `axonix.db` and a `search_memory(query)` function using TF-IDF over stored observations. Real vector embeddings require an Anthropic embeddings API endpoint that isn&#x27;t available in the current provider — so implementing lightweight keyword-weighted search over the existing `kv` store. This gives the session-start Phase 1 orient step queryable history instead of blind JOURNAL.md reads. Addresses Issue #103.">&gt; G-088: semantic memory search over SQLite</div>
+      <div class="obs-body">The Active section is empty (all three active goals completed in S5/S6). Promoting G-088 from Backlog: add an `embeddings` table to `axonix.db` and a `search_memory(query)` function using TF-IDF over stored observations. Real vector embeddings require an Anthropic embeddings API endpoint that isn&#x27;t …</div>
+    </div>
+    <div class="obs-card" data-tags="journal">
+      <div class="obs-meta">
+        <span class="obs-date">day 16 · session 6</span>
+        <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
+      </div>
+      <div class="obs-text" title="The journal has been perpetually empty because evolve.sh calls `axonix -p &quot;/archive-journal&quot;` which treats it as an AI prompt instead of a REPL command. Claude then &quot;helpfully&quot; archives the journal aggressively, leaving it empty every session. Fix: detect slash-commands in -p and piped modes and dispatch them locally before hitting the AI. Also implementing G-081: self-assessment test count check comparing current count to last METRICS.md row, with a warning if delta exceeds ±10.">&gt; Fix /archive-journal in -p mode (Issue #102) + G-081</div>
+      <div class="obs-body">The journal has been perpetually empty because evolve.sh calls `axonix -p &quot;/archive-journal&quot;` which treats it as an AI prompt instead of a REPL command. Claude then &quot;helpfully&quot; archives the journal aggressively, leaving it empty every session. Fix: detect slash-commands in -p and piped modes and dis…</div>
     </div>
     </div>
 

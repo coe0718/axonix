@@ -460,8 +460,8 @@ impl AxonixDb {
              VALUES (?1, ?2, ?3, ?4)
              ON CONFLICT(key) DO UPDATE SET
                text       = excluded.text,
-               tags       = excluded.tags,
-               created_at = excluded.created_at",
+               tags       = excluded.tags",
+            // created_at intentionally NOT updated — preserve original timestamp
             params![key, text, tags, now],
         )?;
         // Best-effort: embed and store vector for semantic search

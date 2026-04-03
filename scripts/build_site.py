@@ -769,8 +769,12 @@ def render_memory_context(results: list, query: str) -> str:
     return "\n".join(parts)
 
 
-def render_observations_page(observations: list) -> str:
-    """Generate a complete standalone HTML page for browsing all observations."""
+def render_observations_page(observations: list, journal_entries: list = None) -> str:
+    """Generate a complete standalone HTML page for browsing all observations.
+
+    Primary content comes from journal_entries (parsed JOURNAL.md). DB observations
+    with non-'journal' tags are shown as supplementary entries below.
+    """
 
     def fmt_date(dt_str):
         """Format ISO datetime to YYYY-MM-DD HH:MM."""
@@ -780,44 +784,65 @@ def render_observations_page(observations: list) -> str:
         s = dt_str.replace("T", " ").replace("Z", "")
         return s[:16]
 
-    count = len(observations)
-    count_badge = f"[{count} {'entry' if count == 1 else 'entries'}]"
+    cards_html_parts = []
 
-    if observations:
-        cards_html_parts = []
-        for obs in observations:
-            text = obs["text"]
-            display_text = text[:300] + "…" if len(text) > 300 else text
-            full_text = html.escape(text)
-            display_text_esc = html.escape(display_text)
-
-            tags = obs["tags"]
-            tag_html = ""
-            if tags:
-                tag_parts = []
-                for t in tags.split(","):
-                    t = t.strip()
-                    if t:
-                        tag_parts.append(
-                            f'<span class="obs-tag" data-tag="{html.escape(t)}">'
-                            f'{html.escape(t)}'
-                            f'</span>'
-                        )
-                tag_html = "\n          ".join(tag_parts)
-
-            date_str = fmt_date(obs["created_at"])
-            key_esc = html.escape(obs["key"])
+    # Primary: render journal entries (richest, most meaningful content)
+    if journal_entries:
+        for entry in reversed(journal_entries):  # oldest first
+            day = entry.get("day", "?")
+            session = entry.get("session", "?")
+            title = html.escape(entry.get("title", ""))
+            body = entry.get("body", "")
+            display_body = html.escape(body[:300] + "…" if len(body) > 300 else body)
+            full_body = html.escape(body)
+            date_label = f"day {day} · session {session}"
 
             cards_html_parts.append(f"""\
+    <div class="obs-card" data-tags="journal">
+      <div class="obs-meta">
+        <span class="obs-date">{html.escape(date_label)}</span>
+        <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
+      </div>
+      <div class="obs-text" title="{full_body}">&gt; {title}</div>
+      <div class="obs-body">{display_body}</div>
+    </div>""")
+
+    # Supplementary: non-journal DB observations (runtime events, memory adds, etc.)
+    extra = [o for o in observations if o.get("tags", "") != "journal"]
+    for obs in extra:
+        text = obs["text"]
+        display_text = html.escape(text[:300] + "…" if len(text) > 300 else text)
+        full_text = html.escape(text)
+        tags = obs["tags"]
+        tag_html = ""
+        if tags:
+            tag_parts = []
+            for t in tags.split(","):
+                t = t.strip()
+                if t:
+                    tag_parts.append(
+                        f'<span class="obs-tag" data-tag="{html.escape(t)}">'
+                        f'{html.escape(t)}'
+                        f'</span>'
+                    )
+            tag_html = " ".join(tag_parts)
+        date_str = fmt_date(obs["created_at"])
+        key_esc = html.escape(obs["key"])
+        cards_html_parts.append(f"""\
     <div class="obs-card" data-tags="{html.escape(tags)}">
       <div class="obs-meta">
         <span class="obs-date">{html.escape(date_str)}</span>
         <span class="obs-tags">{tag_html}</span>
       </div>
-      <div class="obs-text" title="{full_text}">{display_text_esc}</div>
+      <div class="obs-text" title="{full_text}">{display_text}</div>
       <div class="obs-key">{key_esc}</div>
     </div>""")
-        cards_html = "\n".join(cards_html_parts)
+
+    count = len(cards_html_parts)
+    count_badge = f"[{count} {'entry' if count == 1 else 'entries'}]"
+
+    if cards_html_parts:
+        cards_html = "\n".join(reversed(cards_html_parts))  # newest first for display
     else:
         cards_html = '<p class="empty-state obs-empty">no observations stored yet.</p>'
 
@@ -964,7 +989,14 @@ def render_observations_page(observations: list) -> str:
     .obs-tag.active {{ color: var(--amber-hi); border-color: var(--amber); background: var(--amber-lo); }}
     .obs-text {{
       font-size: 0.82rem;
-      color: var(--text-hi);
+      color: var(--amber);
+      font-weight: 500;
+      line-height: 1.5;
+      margin-bottom: 0.2rem;
+    }}
+    .obs-body {{
+      font-size: 0.78rem;
+      color: var(--text);
       line-height: 1.65;
       margin-bottom: 0.3rem;
       white-space: pre-wrap;
@@ -2136,7 +2168,8 @@ def build():
     (DOCS / ".nojekyll").touch()
 
     observations = get_all_observations()
-    obs_page = render_observations_page(observations)
+    journal_entries = parse_journal(read_file("JOURNAL.md"))
+    obs_page = render_observations_page(observations, journal_entries)
     (DOCS / "observations.html").write_text(obs_page)
 
     n_open_preds = len(open_predictions)

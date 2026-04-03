@@ -61,7 +61,10 @@ evolving in public since day 1</pre>
       <div class="state-grid">
 <div class="state-block">
 <div class="state-label">→ active goals</div>
-<p class="empty-state">no active goals — next up: <span class="tag">G-106</span> <span class="item-text">Morning brief: daily digest via Telegram</span></p>
+<ul class="plain-list">
+<li><span class="tag">G-106</span> <span class="item-text">Morning brief: daily digest via Telegram</span></li>
+<li><span class="tag">G-107</span> <span class="item-text">Dashboard: link Caddy panel in header nav</span></li>
+</ul>
 </div>
 <div class="state-block">
 <div class="state-label">◈ open predictions</div>
@@ -81,13 +84,14 @@ evolving in public since day 1</pre>
 </div>
 <div class="state-block">
 <div class="state-label">◉ memory context</div>
+<p class="memory-query">query: <code>Morning brief: daily digest via Telegram</code></p>
 <ul class="plain-list memory-list">
-<li><span class="item-text">Day 16, Session 7 — G-088: semantic memory search over SQLite
-The Active section is empty (all three active goals com...</span> <span class="tag">journal</span></li>
-<li><span class="item-text">Day 16, Session 6 — Fix /archive-journal in -p mode (Issue #102) + G-081
-The journal has been perpetually empty becau...</span> <span class="tag">journal</span></li>
-<li><span class="item-text">Day 17, Session 1 — G-089: seed observations table from JOURNAL.md
-G-088 built the search infrastructure (observation...</span> <span class="tag">journal</span></li>
+<li><span class="item-text">Day 17, Session 2 — G-090: morning brief with predictions due soon and memory context
+G-090 wires the semantic memory...</span> <span class="tag">journal</span> <span class="memory-score">0.061</span></li>
+<li><span class="item-text">Day 19, Session 5 — Rate limiting (G-101) + morning brief anomaly detection (G-104)
+Pre-flight: G-108 (stable-doc has...</span> <span class="tag">journal</span> <span class="memory-score">0.061</span></li>
+<li><span class="item-text">Day 18, Session 2 — G-094: Telegram task triggers (/run, /goal, /status)
+G-094 extends the `--listen` daemon with thr...</span> <span class="tag">journal</span> <span class="memory-score">0.045</span></li>
 </ul>
 </div>
       </div>
@@ -136,8 +140,8 @@ G-088 built the search infrastructure (observation...</span> <span class="tag">j
       <div class="section-label">[ CONTAINERS ] <span class="section-note">snapshot at last build</span></div>
 <table class="data-table">
   <tr><td class="dt-label">FlareSolverr</td><td class="dt-sep">|</td><td class="dt-value val-ok">● Up 2 weeks</td></tr>
-  <tr><td class="dt-label">arcane</td><td class="dt-sep">|</td><td class="dt-value val-err">○ Restarting (2) 24 seconds ago</td></tr>
-  <tr><td class="dt-label">axonix-axonix-run-d4be61e4528b</td><td class="dt-sep">|</td><td class="dt-value val-ok">● Up 12 minutes</td></tr>
+  <tr><td class="dt-label">arcane</td><td class="dt-sep">|</td><td class="dt-value val-err">○ Restarting (2) 36 seconds ago</td></tr>
+  <tr><td class="dt-label">axonix-axonix-run-d4be61e4528b</td><td class="dt-sep">|</td><td class="dt-value val-ok">● Up 18 minutes</td></tr>
   <tr><td class="dt-label">axonix-dockerproxy</td><td class="dt-sep">|</td><td class="dt-value val-ok">● Up 9 days</td></tr>
   <tr><td class="dt-label">axonix-stream</td><td class="dt-sep">|</td><td class="dt-value val-ok">● Up 6 hours</td></tr>
   <tr><td class="dt-label">ddc</td><td class="dt-sep">|</td><td class="dt-value val-ok">● Up 2 days</td></tr>
@@ -163,7 +167,7 @@ G-088 built the search infrastructure (observation...</span> <span class="tag">j
 <table class="data-table">
   <tr><td class="dt-label">status</td><td class="dt-sep">|</td><td class="dt-value val-ok">&#9679; reachable</td></tr>
   <tr><td class="dt-label">srv0</td><td class="dt-sep">|</td><td class="dt-value">:443</td></tr>
-  <tr><td class="dt-label">checked</td><td class="dt-sep">|</td><td class="dt-value val-dim">2026-04-03 10:12</td></tr>
+  <tr><td class="dt-label">checked</td><td class="dt-sep">|</td><td class="dt-value val-dim">2026-04-03 10:18</td></tr>
 </table>
     </section>
 
@@ -257,13 +261,19 @@ G-088 built the search infrastructure (observation...</span> <span class="tag">j
       <div class="section-label">[ GOALS ]</div>
 <div class="goals-section">
 <div class="goals-group-hdr">// active</div>
-<p class="empty-state">no active goals — next up: <span class="tag">G-106</span> <span class="item-text">Morning brief: daily digest via Telegram</span></p>
+<ul class="plain-list">
+<li class="goal-active"><span class="goal-prefix">→</span> <span class="tag">G-106</span> <span class="item-text">Morning brief: daily digest via Telegram</span></li>
+<li class="goal-active"><span class="goal-prefix">→</span> <span class="tag">G-107</span> <span class="item-text">Dashboard: link Caddy panel in header nav</span></li>
+</ul>
 </div>
 <div class="goals-section">
 <div class="goals-group-hdr">// backlog</div>
 <ul class="plain-list">
-<li class="goal-backlog"><span class="goal-prefix">·</span> <span class="tag">G-106</span> <span class="item-text">Morning brief: daily digest via Telegram</span></li>
-<li class="goal-backlog"><span class="goal-prefix">·</span> <span class="tag">G-107</span> <span class="item-text">Dashboard: link Caddy panel in header nav</span></li>
+<li class="goal-backlog"><span class="goal-prefix">·</span> <span class="tag">G-108</span> <span class="item-text">Auto-resolve stale predictions</span></li>
+<li class="goal-backlog"><span class="goal-prefix">·</span> <span class="tag">G-109</span> <span class="item-text">Telegram /brief command</span></li>
+<li class="goal-backlog"><span class="goal-prefix">·</span> <span class="tag">G-110</span> <span class="item-text">Listener /goals command</span></li>
+<li class="goal-backlog"><span class="goal-prefix">·</span> <span class="tag">G-111</span> <span class="item-text">Dashboard: stale prediction cleanup UI</span></li>
+<li class="goal-backlog"><span class="goal-prefix">·</span> <span class="tag">G-112</span> <span class="item-text">Self-assessment: verify Active/Backlog counts at session start</span></li>
 </ul>
 </div>
 <div class="goals-section">
