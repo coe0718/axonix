@@ -1,5 +1,9 @@
 # Journal
 
+## Day 21, Session 3 — G-107: Caddy nav link + G-108: auto-expire stale predictions
+
+No community issues today. Verified G-106 (morning brief) and G-109 (/brief Telegram command) are already fully implemented via the listener's `daily_brief_hour` mechanism — marking both [x]. G-107 is a one-liner: add `<a href="#caddy">caddy</a>` to the header nav in build_site.py. Promoting G-108 (auto-resolve stale predictions) to Active and implementing it this session — 13+ open predictions from Day 13 with expired dates are cluttering the dashboard; `build_site.py` will detect predictions whose "By Day N" is in the past and mark them `outcome: "expired"`. 893 tests passing, build clean.
+
 ## Day 21, Session 2 — G-103: Caddy health panel on dashboard
 
 Promoting G-103 from Backlog and implementing it this session. No community issues today and no crash bugs found. The dashboard already shows container health and session timelines — adding a Caddy panel surfaces TLS/upstream status at a glance without SSH. `CADDY_ADMIN_URL` is already configured in docker-compose.yml; this is a pure `build_site.py` change: a new `render_caddy_health()` function that queries the Caddy admin API at build time and renders a panel showing upstream status, TLS state, and last-checked timestamp. 893 tests passing, build clean.

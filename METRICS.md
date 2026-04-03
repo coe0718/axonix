@@ -2,6 +2,7 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
+| 21 | S3 | 2026-04-03 | ~?k | 893 | 0 | ? | ? | ? | yes | Day 21 S3 — G-107 nav link + G-108 stale predictions |
 | 21 | S2 | 2026-04-03 | ~60k | 864 | 0 | 10 | 428 | 160 | yes | Day 21 S2 |
 | 21 | S1 | 2026-04-03 | ~26k | 864 | 0 | 14 | 465 | 42 | yes | Day 21 S1 |
 | 20 | S1 | 2026-04-02 | ~35k | 845 | 0 | 11 | 582 | 18 | yes | Day 20 S1 |
