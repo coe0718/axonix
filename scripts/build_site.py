@@ -49,6 +49,61 @@ def get_docker_containers():
         return []
 
 
+def get_caddy_health():
+    """Query Caddy admin API for server and TLS status."""
+    import urllib.request
+    import urllib.error
+    import json as _json
+    from datetime import datetime, timezone
+
+    caddy_url = os.environ.get("CADDY_ADMIN_URL", "http://localhost:2019")
+    checked_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
+
+    try:
+        # Query servers
+        servers_url = caddy_url.rstrip("/") + "/config/apps/http/servers"
+        with urllib.request.urlopen(servers_url, timeout=5) as resp:
+            servers_data = _json.loads(resp.read().decode())
+
+        servers = []
+        for name, cfg in (servers_data or {}).items():
+            listen = cfg.get("listen", [])
+            servers.append({"name": name, "listen": listen})
+
+        # Query TLS certificates (optional — skip if not configured)
+        tls_subjects = []
+        try:
+            tls_url = caddy_url.rstrip("/") + "/config/apps/tls/certificates"
+            with urllib.request.urlopen(tls_url, timeout=5) as resp:
+                tls_data = _json.loads(resp.read().decode())
+            if isinstance(tls_data, list):
+                tls_subjects = tls_data
+            elif isinstance(tls_data, dict):
+                # Flatten any nested subject lists
+                for v in tls_data.values():
+                    if isinstance(v, list):
+                        tls_subjects.extend(v)
+        except Exception:
+            pass  # TLS endpoint absent or not configured — silently skip
+
+        return {
+            "ok": True,
+            "servers": servers,
+            "tls_subjects": tls_subjects,
+            "checked_at": checked_at,
+            "error": None,
+        }
+    except Exception as e:
+        print(f"[build_site] Caddy admin API error: {e}", file=sys.stderr)
+        return {
+            "ok": False,
+            "servers": [],
+            "tls_subjects": [],
+            "checked_at": checked_at,
+            "error": str(e),
+        }
+
+
 def get_all_observations() -> list:
     """Query axonix.db for ALL observations ordered by created_at DESC. Returns list of dicts."""
     import sqlite3
@@ -346,6 +401,64 @@ def render_containers(containers):
             f'</td>'
             f'</tr>'
         )
+    parts.append('</table>')
+    return "\n".join(parts)
+
+
+def render_caddy_health(caddy):
+    """Render Caddy admin API status as an ASCII-style data table."""
+    parts = ['<table class="data-table">']
+
+    if caddy["ok"]:
+        parts.append(
+            '  <tr>'
+            '<td class="dt-label">status</td>'
+            '<td class="dt-sep">|</td>'
+            '<td class="dt-value val-ok">&#9679; reachable</td>'
+            '</tr>'
+        )
+        for srv in caddy["servers"]:
+            listen_str = " ".join(srv["listen"]) if srv["listen"] else "(none)"
+            parts.append(
+                f'  <tr>'
+                f'<td class="dt-label">{html.escape(srv["name"])}</td>'
+                f'<td class="dt-sep">|</td>'
+                f'<td class="dt-value">{html.escape(listen_str)}</td>'
+                f'</tr>'
+            )
+        if caddy["tls_subjects"]:
+            n = len(caddy["tls_subjects"])
+            parts.append(
+                f'  <tr>'
+                f'<td class="dt-label">tls subjects</td>'
+                f'<td class="dt-sep">|</td>'
+                f'<td class="dt-value">{n} managed</td>'
+                f'</tr>'
+            )
+    else:
+        parts.append(
+            '  <tr>'
+            '<td class="dt-label">status</td>'
+            '<td class="dt-sep">|</td>'
+            '<td class="dt-value val-err">&#9675; unreachable</td>'
+            '</tr>'
+        )
+        if caddy["error"]:
+            parts.append(
+                f'  <tr>'
+                f'<td class="dt-label">error</td>'
+                f'<td class="dt-sep">|</td>'
+                f'<td class="dt-value val-err">{html.escape(caddy["error"])}</td>'
+                f'</tr>'
+            )
+
+    parts.append(
+        f'  <tr>'
+        f'<td class="dt-label">checked</td>'
+        f'<td class="dt-sep">|</td>'
+        f'<td class="dt-value val-dim">{html.escape(caddy["checked_at"])}</td>'
+        f'</tr>'
+    )
     parts.append('</table>')
     return "\n".join(parts)
 
@@ -1252,6 +1365,11 @@ evolving in public since day 1</pre>
 {containers_html}
     </section>
 
+    <section id="caddy" class="page-section">
+      <div class="section-label">[ CADDY ] <span class="section-note">snapshot at last build</span></div>
+{caddy_html}
+    </section>
+
     <section id="log" class="page-section">
       <div class="section-label">[ JOURNAL ]</div>
       <div class="log-feed">
@@ -1944,6 +2062,7 @@ def build():
     pred_stats = parse_prediction_stats()
     failure_patterns = parse_failure_patterns()
     containers = get_docker_containers()
+    caddy = get_caddy_health()
 
     # Memory context: query for the first active goal title
     active_goals = goals.get("active", [])
@@ -1956,6 +2075,7 @@ def build():
     session_timeline = render_session_timeline(metrics)
     live_state_html = render_live_state(goals, open_predictions, memory_context_html, pred_stats=pred_stats, failure_patterns=failure_patterns)
     containers_html = render_containers(containers)
+    caddy_html = render_caddy_health(caddy)
     journal_html = render_journal(parse_journal(read_file("JOURNAL.md")))
     goals_html = render_goals(goals)
     identity_html = render_identity(parse_identity(read_file("IDENTITY.md")))
@@ -1967,6 +2087,7 @@ def build():
         session_timeline=session_timeline,
         patterns_html=patterns_html,
         containers_html=containers_html,
+        caddy_html=caddy_html,
         journal_html=journal_html,
         goals_html=goals_html,
         identity_html=identity_html,
@@ -1984,9 +2105,10 @@ def build():
     n_open_preds = len(open_predictions)
     n_active_goals = len(goals["active"])
     n_containers = len(containers)
+    caddy_status = "ok" if caddy["ok"] else "unreachable"
     print(f"Site built: docs/index.html (Day {day_count}, {len(metrics)} sessions, "
           f"{n_active_goals} active goals, {n_open_preds} open predictions, "
-          f"{n_containers} containers, {len(observations)} observations)")
+          f"{n_containers} containers, caddy={caddy_status}, {len(observations)} observations)")
 
 
 if __name__ == "__main__":
