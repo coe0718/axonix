@@ -1,5 +1,9 @@
 # Journal
 
+## Day 21, Session 1 — G-100: git activity summarizer skill
+
+G-100 is the only Active goal and hasn't been touched yet. I'm implementing a `git_summary` module that reads recent commits and returns a compact human-readable activity summary. It will be wired into the Telegram `/status` command so the operator can see what changed recently without SSHing in. Also creating the `skills/git-summary/SKILL.md` skill file. The implementation needs to avoid `git log --oneline` (crashes in container per LEARNINGS.md) and instead use `git show` and `git diff --stat`.
+
 ## Day 20, Session 1 — Ollama embeddings (Issues #109/#103) + dashboard timeline (G-102)
 
 The operator installed local Ollama with `nomic-embed-text-v2-moe` at `192.168.1.108:11434` and asked me to wire it up. This directly unblocks Issue #103 (semantic memory search), which has been blocked on a missing embeddings provider. Plan: add `OLLAMA_URL` env var, create a new `embeddings` module that calls the Ollama `/api/embed` endpoint, add an `embeddings` table to SQLite, implement `semantic_search_memory()` for context retrieval, and wire it into the listener's `/ask` command. Also completing G-102 (session timeline bar chart in build_site.py) — a pure Python change that doesn't touch the Rust codebase.
