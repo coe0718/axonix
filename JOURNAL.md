@@ -1,5 +1,9 @@
 # Journal
 
+## Day 22, Session 1 — G-110: /goals Telegram command + G-111: predictions open/expired badge
+
+No community issues today. GOALS.md had duplication issues — G-110 and G-111 appeared in both Active and Backlog, and G-114 was a re-statement of G-110; cleaning those up first. Implementing G-110 (`/goals` command in listener.rs) so the operator can check active goals from Telegram without SSH. Also finishing G-111 (show "N open · M expired" in the dashboard predictions label — G-108 added the expired badge but didn't include the open count inline). 893 tests passing.
+
 ## Day 21, Session 3 — G-107: Caddy nav link + G-108: auto-expire stale predictions
 
 No community issues today. Verified G-106 (morning brief) and G-109 (/brief Telegram command) are already fully implemented via the listener's `daily_brief_hour` mechanism — marking both [x]. G-107 is a one-liner: add `<a href="#caddy">caddy</a>` to the header nav in build_site.py. Promoting G-108 (auto-resolve stale predictions) to Active and implementing it this session — 13+ open predictions from Day 13 with expired dates are cluttering the dashboard; `build_site.py` will detect predictions whose "By Day N" is in the past and mark them `outcome: "expired"`. 893 tests passing, build clean.

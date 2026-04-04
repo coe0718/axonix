@@ -19,33 +19,37 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 
 ### G-110 — Listener /goals command
 **Why:** The operator can't see what I'm working on from Telegram. `/goals` should return active goals and the next backlog item.
-**Definition of done:** New `/goals` command in listener.rs returns active goals + first backlog item, formatted for Telegram (max ~300 chars).
+**Definition of done:** New `/goals` command in listener.rs + telegram.rs returns active goals + first backlog item, formatted for Telegram (max ~300 chars). Tests added.
 
-### G-111 — Dashboard: stale prediction cleanup UI
-**Why:** Companion to G-108. Once expired predictions are auto-resolved, the dashboard predictions panel should show a compact "N expired" line rather than hiding them entirely. G-108 marked 10 as expired; G-111 surfaces that count properly.
-**Definition of done:** `render_live_state()` shows `X open · Y expired` summary badge in the predictions block — this is already partially done by G-108's expired badge; verify it's visible and styled correctly.
+### G-111 — Dashboard: predictions open/expired count badge
+**Why:** G-108 added an expired count badge but the label still says "◈ open predictions [N expired]" without showing how many are open. The definition of done requires "N open · M expired" inline.
+**Definition of done:** `render_live_state()` label shows `N open · M expired` when expired > 0, or just `N open` when none expired. build_site.py change only.
 
 ## Backlog
-
-### G-110 — Listener /goals command
-**Why:** The operator can't see what I'm working on from Telegram. `/goals` should return active goals and the next backlog item.
-**Definition of done:** New `/goals` command in listener.rs returns active goals + first backlog item, formatted for Telegram (max ~300 chars).
-
-### G-111 — Dashboard: stale prediction cleanup UI
-**Why:** Companion to G-108. Once expired predictions are auto-resolved, the dashboard predictions panel should show a compact "N expired" line rather than hiding them entirely.
-**Definition of done:** `render_live_state()` shows `X open / Y expired` summary badge in the predictions block.
 
 ### G-112 — Self-assessment: verify Active/Backlog counts at session start
 **Why:** The goal hygiene rule (≥2 Active, ≥5 Backlog) keeps failing because there's no automated check at session start. Adding a check to Phase 1 self-assessment that explicitly counts and flags violations makes the rule self-enforcing.
 **Definition of done:** During Phase 1, parse GOALS.md and print `[GOALS] Active: N, Backlog: M` — and print a warning if either is below minimum. Add this to LEARNINGS.md as a Phase 1 step.
 
-### G-113 — Dashboard: predictions open/expired count badge
-**Why:** G-111 companion. Once G-108 marks expired predictions, the open count in the predictions panel should clearly distinguish open vs expired so the operator knows how many are actionable.
-**Definition of done:** The predictions section header shows `N open · M expired` instead of just the total count.
+### G-113 — Telegram /predict command
+**Why:** The operator should be able to add a new prediction from Telegram without SSH. `/predict <text>` should append to .axonix/predictions.json.
+**Definition of done:** New `/predict <text>` command in telegram.rs + listener.rs appends a prediction with today's date, null outcome. Tests added.
 
-### G-114 — Listener /goals command
-**Why:** The operator can't see what I'm working on from Telegram without SSH. A `/goals` command returns active goals and the next backlog item.
-**Definition of done:** New `/goals` command in listener.rs returns the 2 active goals + first backlog goal, formatted for Telegram (≤300 chars per message). Tests added.
+### G-115 — Listener /resolve command
+**Why:** Predictions accumulate unresolved. `/resolve <id> correct|wrong` from Telegram lets the operator close predictions on the go.
+**Definition of done:** New `/resolve <id> correct|wrong` command in telegram.rs + listener.rs updates the prediction outcome in predictions.json. Tests added.
+
+### G-116 — Dashboard: session timeline panel (last 5 sessions)
+**Why:** The dashboard shows current state but no recent activity. A compact "last 5 sessions" panel from METRICS.md would surface what's been done without SSH.
+**Definition of done:** `render_session_timeline()` in build_site.py reads the last 5 rows from METRICS.md and renders them as a compact timeline block.
+
+### G-117 — /status shows prediction accuracy
+**Why:** The `/status` Telegram command currently shows model, uptime, active goal, last commit. Adding prediction accuracy (e.g. "8/12 correct — 67%") gives the operator a quick self-calibration signal.
+**Definition of done:** `format_enhanced_status_reply()` in telegram.rs includes prediction accuracy from predictions.json. Tests updated.
+
+### G-118 — Failure pattern Telegram alert
+**Why:** Failure patterns accumulate silently. When a new pattern is recorded that has appeared 3+ times, send a Telegram alert so the operator notices.
+**Definition of done:** In listener.rs or watch.rs, after writing a new failure pattern, check if any pattern has count ≥ 3 and hasn't been alerted yet. Send one Telegram message per new threshold breach.
 
 ## Completed
 
