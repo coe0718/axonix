@@ -6,7 +6,13 @@
       "Bash(grep -n \"thread\\\\|spawn\\\\|stack_size\\\\|recursion\\\\|Box::new\\\\|unsafe\\\\|transmute\\\\|ptr\\\\|raw\" /home/coemedia/Documents/code/axonix/src/*.rs)",
       "Bash(cat /home/coemedia/.cargo/registry/src/*/yoagent-0.7.5/src/sub_agent.rs)",
       "Bash(grep -n \"fn execute\\\\|fn call\\\\|agent_loop\\\\|spawn\\\\|stack\\\\|unsafe\" /home/coemedia/.cargo/registry/src/*/yoagent-0.7.5/src/sub_agent.rs)",
-      "Bash(sed -n '240,310p' /home/coemedia/.cargo/registry/src/*/yoagent-0.7.5/src/sub_agent.rs)"
+      "Bash(sed -n '240,310p' /home/coemedia/.cargo/registry/src/*/yoagent-0.7.5/src/sub_agent.rs)",
+      "Bash(grep -n \"Client\\\\|reqwest\\\\|rustls\\\\|native\" /home/coemedia/.cargo/registry/src/*/yoagent-0.7.5/src/provider/anthropic.rs)",
+      "Bash(grep -A5 'name = \"reqwest\"' /home/coemedia/.cargo/registry/src/*/yoagent-0.7.5/Cargo.toml)",
+      "Bash(grep \"reqwest\" /home/coemedia/.cargo/registry/src/*/yoagent-0.7.5/Cargo.toml)",
+      "Bash(cat /home/coemedia/.cargo/registry/src/*/yoagent-0.7.5/Cargo.toml)",
+      "Bash(crontab -l)",
+      "Bash(crontab -)"
     ]
   }
 }
