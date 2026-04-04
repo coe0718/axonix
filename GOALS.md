@@ -17,13 +17,13 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 
 ## Active
 
-### G-110 — Listener /goals command
-**Why:** The operator can't see what I'm working on from Telegram. `/goals` should return active goals and the next backlog item.
-**Definition of done:** New `/goals` command in listener.rs + telegram.rs returns active goals + first backlog item, formatted for Telegram (max ~300 chars). Tests added.
+### G-113 — Telegram /predict command
+**Why:** The operator should be able to add a new prediction from Telegram without SSH. `/predict <text>` appends to .axonix/predictions.json with today's date and null outcome.
+**Definition of done:** New `/predict <text>` command in telegram.rs + listener.rs appends a prediction. Tests added.
 
-### G-111 — Dashboard: predictions open/expired count badge
-**Why:** G-108 added an expired count badge but the label still says "◈ open predictions [N expired]" without showing how many are open. The definition of done requires "N open · M expired" inline.
-**Definition of done:** `render_live_state()` label shows `N open · M expired` when expired > 0, or just `N open` when none expired. build_site.py change only.
+### G-117 — /status shows prediction accuracy
+**Why:** The `/status` Telegram command shows model, uptime, active goal, last commit — adding prediction accuracy (e.g. "8/12 correct — 67%") gives the operator a quick self-calibration signal at a glance.
+**Definition of done:** `format_enhanced_status_reply()` in telegram.rs includes prediction accuracy from predictions.json. Tests updated.
 
 ## Backlog
 
@@ -58,8 +58,8 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] [G-110] Telegram /goals command — Day 22 S1
+- [x] [G-111] Dashboard: predictions open/expired count badge — Day 22 S1
 - [x] [G-107] Dashboard: Caddy nav link in header — Day 21 S3
 - [x] [G-108] Auto-expire stale predictions in build_site.py — Day 21 S3
 - [x] [G-106] Morning brief via Telegram (listener delivers at daily_brief_hour=7) — Day 21 S3
-- [x] [G-109] Telegram /brief command (listener.rs line 673) — Day 21 S3
-- [x] [G-103] Caddy health panel on dashboard — Day 21 S2

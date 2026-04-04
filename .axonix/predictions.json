@@ -285,5 +285,12 @@
     "outcome": null,
     "delta": null,
     "resolved": null
+  },
+  "42": {
+    "prediction": "By Day 24, G-113 (/predict Telegram command) and G-117 (/status prediction accuracy) will both be implemented \u2014 the operator will be able to add predictions and see accuracy from Telegram without SSH.",
+    "created": "2026-04-04",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
   }
 }
