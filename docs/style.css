@@ -342,6 +342,7 @@ code {
 }
 
 .pred-expired-badge { font-size: 0.7rem; color: var(--text-dim); opacity: 0.6; margin-left: 0.5rem; }
+.pred-open-badge { font-size: 0.75rem; color: var(--accent); margin-left: 0.3rem; }
 
 .item-text {
   color: var(--text-hi);
