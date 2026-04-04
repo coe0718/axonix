@@ -13,23 +13,7 @@ set -euo pipefail
 
 tg_notify() {
     if [ -n "${TELEGRAM_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ]; then
-        TG_TEXT="$1" python3 -c "
-import urllib.request, json, os
-token = os.environ.get('TELEGRAM_TOKEN', '')
-chat_id = os.environ.get('TELEGRAM_CHAT_ID', '')
-text = os.environ.get('TG_TEXT', '')
-if token and chat_id and text:
-    data = json.dumps({'chat_id': chat_id, 'text': text, 'parse_mode': 'Markdown'}).encode()
-    req = urllib.request.Request(
-        'https://api.telegram.org/bot' + token + '/sendMessage',
-        data=data,
-        headers={'Content-Type': 'application/json'}
-    )
-    try:
-        urllib.request.urlopen(req, timeout=5)
-    except Exception:
-        pass
-" || true
+        cargo run --bin axonix --quiet -- --telegram-notify "$1" 2>/dev/null || true
     fi
 }
 

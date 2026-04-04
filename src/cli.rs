@@ -31,6 +31,8 @@ pub struct CliArgs {
     pub insert_metrics_row: Option<String>,
     /// If set, run memory extraction on the given session log file and exit.
     pub extract_memories: Option<String>,
+    /// If set, send this text to Telegram and exit (no agent session started).
+    pub telegram_notify: Option<String>,
 }
 
 impl CliArgs {
@@ -96,6 +98,12 @@ impl CliArgs {
             .and_then(|i| args.get(i + 1))
             .cloned();
 
+        let telegram_notify = args
+            .iter()
+            .position(|a| a == "--telegram-notify")
+            .and_then(|i| args.get(i + 1))
+            .cloned();
+
         Some(Self {
             model,
             skill_dirs,
@@ -110,6 +118,7 @@ impl CliArgs {
             session_summary_telegram,
             insert_metrics_row,
             extract_memories,
+            telegram_notify,
         })
     }
 }

@@ -298,6 +298,29 @@ async fn main() {
         None => return, // --help or --version was printed
     };
 
+    // --telegram-notify: send a message to Telegram and exit (no API key needed).
+    // Used by evolve.sh tg_notify() to avoid system curl/OpenSSL issues.
+    if let Some(ref text) = cli_args.telegram_notify {
+        let text = text.trim();
+        if text.is_empty() {
+            eprintln!("{RED}error:{RESET} --telegram-notify requires a non-empty message.");
+            std::process::exit(1);
+        }
+        let tg = TelegramClient::from_env();
+        match tg {
+            None => {
+                eprintln!("{YELLOW}warning:{RESET} Telegram not configured — TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID must be set.");
+            }
+            Some(tg_client) => {
+                match tg_client.send_message(text).await {
+                    Ok(_) => {}
+                    Err(e) => eprintln!("{YELLOW}warning:{RESET} Telegram send failed: {e}"),
+                }
+            }
+        }
+        return;
+    }
+
     // --write-summary needs no API key — handle it before the key check.
     if let Some(ref label) = cli_args.write_summary {
         let label = if label.is_empty() { "unknown session".to_string() } else { label.clone() };
