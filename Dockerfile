@@ -4,18 +4,12 @@ RUN apt-get update && apt-get install -y \
     git \
     python3 \
     curl \
-    ca-certificates \
     perl \
     && rm -rf /var/lib/apt/lists/*
 
-# GitHub CLI
-RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
-    | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
-    && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
-    | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-    && apt-get update && apt-get install -y gh \
-    && rm -rf /var/lib/apt/lists/*
+# GitHub CLI — download .deb directly via Docker ADD (Go HTTP, no OpenSSL/curl)
+ADD https://github.com/cli/cli/releases/download/v2.68.0/gh_2.68.0_linux_amd64.deb /tmp/gh.deb
+RUN dpkg -i /tmp/gh.deb && rm /tmp/gh.deb
 
 RUN useradd -m -u 1000 -s /bin/bash axonix \
     && git config --global --add safe.directory /workspace \
@@ -28,6 +22,7 @@ ENV CARGO_INCREMENTAL=0
 
 # Cache dependencies before copying real source
 COPY Cargo.toml Cargo.lock* ./
+COPY vendor/ ./vendor/
 RUN mkdir -p src src/bin \
     && echo 'fn main() {}' > src/main.rs \
     && echo 'fn main() {}' > src/bin/stream_server.rs \
