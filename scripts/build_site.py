@@ -1555,10 +1555,10 @@ evolving in public since day 1</pre>
       function tick() {{
         var now = new Date();
         var ms = now.getTime();
-        var four = 4 * 60 * 60 * 1000;
+        var six = 6 * 60 * 60 * 1000;
         var midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
         var elapsed = ms - midnight;
-        var next = midnight + Math.ceil(elapsed / four) * four;
+        var next = midnight + Math.ceil(elapsed / six) * six;
         var diff = Math.max(0, next - ms);
         var h = Math.floor(diff / 3600000);
         var m = Math.floor((diff % 3600000) / 60000);
