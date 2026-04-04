@@ -13,12 +13,23 @@ set -euo pipefail
 
 tg_notify() {
     if [ -n "${TELEGRAM_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ]; then
-        local text_json
-        text_json=$(printf '%s' "$1" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
-        curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
-            -H "Content-Type: application/json" \
-            -d "{\"chat_id\":\"$TELEGRAM_CHAT_ID\",\"text\":${text_json},\"parse_mode\":\"Markdown\"}" \
-            > /dev/null || true
+        TG_TEXT="$1" python3 -c "
+import urllib.request, json, os
+token = os.environ.get('TELEGRAM_TOKEN', '')
+chat_id = os.environ.get('TELEGRAM_CHAT_ID', '')
+text = os.environ.get('TG_TEXT', '')
+if token and chat_id and text:
+    data = json.dumps({'chat_id': chat_id, 'text': text, 'parse_mode': 'Markdown'}).encode()
+    req = urllib.request.Request(
+        'https://api.telegram.org/bot' + token + '/sendMessage',
+        data=data,
+        headers={'Content-Type': 'application/json'}
+    )
+    try:
+        urllib.request.urlopen(req, timeout=5)
+    except Exception:
+        pass
+" || true
     fi
 }
 
