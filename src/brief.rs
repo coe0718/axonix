@@ -698,6 +698,40 @@ pub fn parse_active_goals() -> Vec<String> {
     goals
 }
 
+/// Parse goal titles from the `## Backlog` section of GOALS.md.
+///
+/// Returns `Vec<String>` of goal titles (from `### G-NNN — <title>` heading lines),
+/// each truncated to 60 characters to fit in Telegram messages.
+pub fn parse_backlog_goals() -> Vec<String> {
+    let content = match std::fs::read_to_string("GOALS.md") {
+        Ok(c) => c,
+        Err(_) => return vec![],
+    };
+
+    let mut in_backlog = false;
+    let mut goals = Vec::new();
+
+    for line in content.lines() {
+        if line.trim_start().starts_with("## Backlog") {
+            in_backlog = true;
+            continue;
+        }
+        if in_backlog && line.trim_start().starts_with("## ") {
+            break; // left the Backlog section
+        }
+        if in_backlog {
+            let trimmed = line.trim();
+            if trimmed.starts_with("### ") {
+                let title = trimmed.trim_start_matches("### ").trim();
+                if !title.is_empty() {
+                    goals.push(truncate_str(title, 60).to_string());
+                }
+            }
+        }
+    }
+    goals
+}
+
 /// Collect open predictions from the default predictions store.
 fn collect_open_predictions() -> Vec<(u32, String, String)> {
     let store = PredictionStore::default_path();
@@ -2856,6 +2890,73 @@ More text.\n\
             if in_backlog && line.starts_with("### ") { count += 1; }
         }
         assert_eq!(count, 2, "should count exactly 2 backlog goals");
+    }
+
+    // ── parse_backlog_goals ───────────────────────────────────────────────────────
+
+    /// parse_backlog_goals returns titles under ## Backlog, each ≤60 chars.
+    #[test]
+    fn test_parse_backlog_goals_logic() {
+        // Mirror the parse_backlog_goals logic inline to test without touching disk.
+        let sample = "## Active\n### G-001 — Some Active Goal\n\n\
+            ## Backlog\n### G-113 — First backlog goal\n### G-114 — Second backlog goal\n\n\
+            ## Done\n### G-001 — Old completed goal\n";
+
+        let mut in_backlog = false;
+        let mut goals = Vec::new();
+
+        for line in sample.lines() {
+            if line.trim_start().starts_with("## Backlog") {
+                in_backlog = true;
+                continue;
+            }
+            if in_backlog && line.trim_start().starts_with("## ") {
+                break;
+            }
+            if in_backlog {
+                let trimmed = line.trim();
+                if trimmed.starts_with("### ") {
+                    let title = trimmed.trim_start_matches("### ").trim();
+                    if !title.is_empty() {
+                        goals.push(truncate_str(title, 60).to_string());
+                    }
+                }
+            }
+        }
+
+        assert_eq!(goals.len(), 2, "should find exactly 2 backlog goals: {goals:?}");
+        assert!(goals[0].contains("G-113"), "first should be G-113: {}", goals[0]);
+        assert!(goals[1].contains("G-114"), "second should be G-114: {}", goals[1]);
+        // Active/Done goals must NOT appear
+        assert!(!goals.iter().any(|g| g.contains("Active Goal")), "active goal should not appear in backlog list");
+        assert!(!goals.iter().any(|g| g.contains("Old completed")), "done goal should not appear in backlog list");
+    }
+
+    #[test]
+    fn test_parse_backlog_goals_empty_when_no_backlog_section() {
+        // parse_backlog_goals reads from disk; just test the logic path for no backlog header.
+        let sample = "## Active\n### G-001\n\n## Done\n### G-old\n";
+        let mut in_backlog = false;
+        let mut goals: Vec<String> = Vec::new();
+        for line in sample.lines() {
+            if line.trim_start().starts_with("## Backlog") { in_backlog = true; continue; }
+            if in_backlog && line.trim_start().starts_with("## ") { break; }
+            if in_backlog {
+                let trimmed = line.trim();
+                if trimmed.starts_with("### ") {
+                    goals.push(trimmed.trim_start_matches("### ").trim().to_string());
+                }
+            }
+        }
+        assert!(goals.is_empty(), "no Backlog section → empty result: {goals:?}");
+    }
+
+    #[test]
+    fn test_parse_backlog_goals_truncates_long_titles() {
+        // Verify truncation at 60 chars using truncate_str directly.
+        let long_title = "G-200 — ".to_string() + &"A".repeat(70);
+        let truncated = truncate_str(&long_title, 60).to_string();
+        assert_eq!(truncated.chars().count(), 60, "should be exactly 60 chars: {truncated}");
     }
 
     #[test]

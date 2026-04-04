@@ -775,11 +775,12 @@ def render_live_state(goals, open_predictions, memory_context_html="", pred_stat
 
     # Open predictions with resolution rate badge
     parts.append('<div class="state-block">')
+    n_open = len(open_predictions) if open_predictions else 0
     n_expired = len(expired_predictions) if expired_predictions else 0
     if n_expired > 0:
-        parts.append(f'<div class="state-label">◈ open predictions <span class="pred-expired-badge">{n_expired} expired</span></div>')
+        parts.append(f'<div class="state-label">◈ predictions <span class="pred-open-badge">{n_open} open</span> · <span class="pred-expired-badge">{n_expired} expired</span></div>')
     else:
-        parts.append('<div class="state-label">◈ open predictions</div>')
+        parts.append(f'<div class="state-label">◈ predictions <span class="pred-open-badge">{n_open} open</span></div>')
     if pred_stats:
         badge = (
             f'{pred_stats["resolved"]} resolved · '
@@ -1953,6 +1954,7 @@ code {
 }
 
 .pred-expired-badge { font-size: 0.7rem; color: var(--text-dim); opacity: 0.6; margin-left: 0.5rem; }
+.pred-open-badge { font-size: 0.75rem; color: var(--accent); margin-left: 0.3rem; }
 
 .item-text {
   color: var(--text-hi);

@@ -299,6 +299,11 @@ pub fn is_history_command(text: &str) -> bool {
     matches!(text.trim(), "/history")
 }
 
+/// Check whether a Telegram message is a `/goals` command.
+pub fn is_goals_command(text: &str) -> bool {
+    matches!(text.trim(), "/goals")
+}
+
 /// Parse a `/run <task>` command. Returns the task text, or None.
 pub fn parse_run_command(text: &str) -> Option<&str> {
     let text = text.trim();
@@ -413,6 +418,7 @@ pub const TELEGRAM_HELP_TEXT: &str = "\
 /health — Show system health (CPU, memory, disk, uptime)
 /brief — Morning brief: active goals, open predictions, recent sessions
 /history — Show last 5 conversation turns
+/goals — Show active goals and first backlog item
 /help — Show this help message
 
 *Examples:*
@@ -424,6 +430,7 @@ pub const TELEGRAM_HELP_TEXT: &str = "\
 • /health
 • /brief
 • /history
+• /goals
 
 Responses may take a moment depending on prompt complexity.";
 
@@ -453,6 +460,8 @@ pub enum BotCommand {
     Memory { action: MemoryAction, message_id: i64 },
     /// `/history` — show last 5 conversation turns from ConversationMemory.
     History { message_id: i64 },
+    /// `/goals` — show active goals and first backlog item.
+    Goals { message_id: i64 },
 }
 
 impl TelegramClient {
@@ -481,6 +490,9 @@ impl TelegramClient {
                 }
                 if is_history_command(text) {
                     return Some(BotCommand::History { message_id: msg.message_id });
+                }
+                if is_goals_command(text) {
+                    return Some(BotCommand::Goals { message_id: msg.message_id });
                 }
                 if let Some(task) = parse_run_command(text) {
                     return Some(BotCommand::Run { task: task.to_string(), message_id: msg.message_id });
@@ -1338,6 +1350,60 @@ mod tests {
     #[test]
     fn test_help_text_mentions_history() {
         assert!(TELEGRAM_HELP_TEXT.contains("/history"), "help text must mention /history command");
+    }
+
+    // ── is_goals_command ─────────────────────────────────────────────────────
+
+    #[test]
+    fn test_is_goals_command_true() {
+        assert!(is_goals_command("/goals"));
+        assert!(is_goals_command("  /goals  "));
+    }
+
+    #[test]
+    fn test_is_goals_command_false_for_non_goals() {
+        assert!(!is_goals_command("/ask hello"));
+        assert!(!is_goals_command("/help"));
+        assert!(!is_goals_command("/status"));
+        assert!(!is_goals_command("goals"));
+        assert!(!is_goals_command(""));
+        assert!(!is_goals_command("/goal"));  // /goal is a different command
+        assert!(!is_goals_command("/goalslist"));
+    }
+
+    // ── extract_commands with /goals ─────────────────────────────────────────
+
+    #[test]
+    fn test_extract_commands_goals_detected() {
+        let client = make_client();
+        let updates = vec![make_update(1, 12345, 15, "/goals")];
+        let commands = client.extract_commands(&updates);
+        assert_eq!(commands.len(), 1);
+        assert!(
+            matches!(commands[0], BotCommand::Goals { message_id: 15 }),
+            "expected BotCommand::Goals {{ message_id: 15 }}, got {:?}",
+            commands[0]
+        );
+    }
+
+    #[test]
+    fn test_extract_commands_goals_in_mixed_batch() {
+        let client = make_client();
+        let updates = vec![
+            make_update(1, 12345, 1, "/ask question"),
+            make_update(2, 12345, 2, "/goals"),
+            make_update(3, 12345, 3, "/help"),
+        ];
+        let commands = client.extract_commands(&updates);
+        assert_eq!(commands.len(), 3, "3 commands: ask + goals + help");
+        assert!(matches!(commands[0], BotCommand::Ask(_)));
+        assert!(matches!(commands[1], BotCommand::Goals { .. }));
+        assert!(matches!(commands[2], BotCommand::Help { .. }));
+    }
+
+    #[test]
+    fn test_help_text_mentions_goals() {
+        assert!(TELEGRAM_HELP_TEXT.contains("/goals"), "help text must mention /goals command");
     }
 
     // ── format_enhanced_status_reply includes git summary ────────────────────

@@ -776,6 +776,28 @@ pub async fn run_listener(
                     let _ = tg.reply_to(&reply, message_id).await;
                     stats.messages_handled += 1;
                 }
+                BotCommand::Goals { message_id } => {
+                    let active = crate::brief::parse_active_goals();
+                    let backlog = crate::brief::parse_backlog_goals();
+                    let mut lines: Vec<String> = Vec::new();
+                    lines.push("*Active Goals:*".to_string());
+                    if active.is_empty() {
+                        lines.push("  _(none)_".to_string());
+                    } else {
+                        for g in &active {
+                            lines.push(format!("  • {g}"));
+                        }
+                    }
+                    lines.push("*Next Backlog:*".to_string());
+                    if let Some(first) = backlog.into_iter().next() {
+                        lines.push(format!("  • {first}"));
+                    } else {
+                        lines.push("  _(empty)_".to_string());
+                    }
+                    let reply = lines.join("\n");
+                    let _ = tg.reply_to(&reply, message_id).await;
+                    stats.messages_handled += 1;
+                }
             }
         }
 
@@ -1413,6 +1435,11 @@ mod haiku_routing_tests {
     #[test]
     fn test_unknown_uses_haiku() {
         assert_eq!(select_model_for_command("/help", SONNET, HAIKU), HAIKU);
+    }
+
+    #[test]
+    fn test_goals_uses_haiku() {
+        assert_eq!(select_model_for_command("/goals", SONNET, HAIKU), HAIKU);
     }
 
     #[test]
