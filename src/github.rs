@@ -97,7 +97,7 @@ impl GitHubClient {
         Self {
             token: token.into(),
             identity,
-            client: reqwest::Client::new(),
+            client: crate::http_client::get(),
         }
     }
 
