@@ -12,7 +12,9 @@
       "Bash(grep \"reqwest\" /home/coemedia/.cargo/registry/src/*/yoagent-0.7.5/Cargo.toml)",
       "Bash(cat /home/coemedia/.cargo/registry/src/*/yoagent-0.7.5/Cargo.toml)",
       "Bash(crontab -l)",
-      "Bash(crontab -)"
+      "Bash(crontab -)",
+      "Bash(grep -n \"reqwest\\\\|Client::new\\\\|#\\\\[test\\\\]\\\\|#\\\\[tokio::test\\\\]\" /home/coemedia/Documents/code/axonix/src/*.rs)",
+      "Bash(grep -n \"reqwest::Client::new\\(\\)\" /home/coemedia/Documents/code/axonix/src/*.rs)"
     ]
   }
 }
