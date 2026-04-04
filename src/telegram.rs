@@ -338,6 +338,18 @@ pub fn is_goal_command(text: &str) -> bool {
     parse_goal_command(text).is_some()
 }
 
+/// Parse a `/predict <text>` command. Returns the prediction text, or None.
+pub fn parse_predict_command(text: &str) -> Option<&str> {
+    let text = text.trim();
+    if let Some(rest) = text.strip_prefix("/predict") {
+        let pred_text = rest.trim();
+        if !pred_text.is_empty() {
+            return Some(pred_text);
+        }
+    }
+    None
+}
+
 /// Action for the `/memory` command.
 #[derive(Debug, PartialEq, Clone)]
 pub enum MemoryAction {
@@ -411,6 +423,7 @@ pub const TELEGRAM_HELP_TEXT: &str = "\
 /ask <prompt> — Send a prompt to the agent and get a response
 /run <task> — Execute a task as a mini-session and report the result
 /goal <description> — Add a goal to the backlog immediately
+/predict <text> — Append a new prediction to .axonix/predictions.json
 /memory add <text>       — store an observation (optionally /memory add:<category>)
 /memory search <query>   — search past observations
 /memory list             — list recent observations
@@ -426,6 +439,7 @@ pub const TELEGRAM_HELP_TEXT: &str = "\
 • /ask what files are in /workspace/src?
 • /run check disk usage
 • /goal add dark mode to dashboard
+• /predict the test count will exceed 1000 by Day 25
 • /status
 • /health
 • /brief
@@ -462,6 +476,8 @@ pub enum BotCommand {
     History { message_id: i64 },
     /// `/goals` — show active goals and first backlog item.
     Goals { message_id: i64 },
+    /// `/predict <text>` — append a new prediction to .axonix/predictions.json.
+    Predict { text: String, message_id: i64 },
 }
 
 impl TelegramClient {
@@ -493,6 +509,9 @@ impl TelegramClient {
                 }
                 if is_goals_command(text) {
                     return Some(BotCommand::Goals { message_id: msg.message_id });
+                }
+                if let Some(pred_text) = parse_predict_command(text) {
+                    return Some(BotCommand::Predict { text: pred_text.to_string(), message_id: msg.message_id });
                 }
                 if let Some(task) = parse_run_command(text) {
                     return Some(BotCommand::Run { task: task.to_string(), message_id: msg.message_id });
@@ -547,6 +566,7 @@ impl TelegramClient {
         elapsed_secs: u64,
         active_goal: Option<&str>,
         last_commit: Option<&str>,
+        prediction_accuracy: Option<&str>,
     ) -> String {
         let mins = elapsed_secs / 60;
         let secs = elapsed_secs % 60;
@@ -566,6 +586,9 @@ impl TelegramClient {
         }
         if let Some(commit) = last_commit {
             parts.push(format!("📝 last commit: {commit}"));
+        }
+        if let Some(acc) = prediction_accuracy {
+            parts.push(format!("🎯 predictions: {acc}"));
         }
         // Append git activity summary (last 3 commits)
         let git_summary = crate::git_summary::format_for_telegram(3);
@@ -1234,6 +1257,7 @@ mod tests {
             120,
             Some("G-094 — Telegram task triggers"),
             Some("feat(listener): add /run and /goal commands"),
+            None,
         );
         assert!(reply.contains("claude-sonnet-4-6"), "should show model: {reply}");
         assert!(reply.contains("G-094"), "should show active goal: {reply}");
@@ -1243,14 +1267,14 @@ mod tests {
 
     #[test]
     fn test_format_enhanced_status_reply_without_goal_or_commit() {
-        let reply = TelegramClient::format_enhanced_status_reply("m", 0, None, None);
+        let reply = TelegramClient::format_enhanced_status_reply("m", 0, None, None, None);
         assert!(!reply.contains("active goal"), "no goal section if None: {reply}");
         assert!(!reply.contains("last commit"), "no commit section if None: {reply}");
     }
 
     #[test]
     fn test_format_enhanced_status_reply_uptime_minutes() {
-        let reply = TelegramClient::format_enhanced_status_reply("m", 185, None, None);
+        let reply = TelegramClient::format_enhanced_status_reply("m", 185, None, None, None);
         assert!(reply.contains("3m"), "185s should show as 3m: {reply}");
     }
 
@@ -1410,11 +1434,81 @@ mod tests {
 
     #[test]
     fn test_format_enhanced_status_reply_includes_git_summary() {
-        let reply = TelegramClient::format_enhanced_status_reply("test-model", 60, None, None);
+        let reply = TelegramClient::format_enhanced_status_reply("test-model", 60, None, None, None);
         // The git summary should always be appended (even if it says "No recent commits")
         assert!(
             reply.contains("📝"),
             "status reply should include git summary with 📝 emoji: {reply}"
+        );
+    }
+
+    // ── /predict command parsing ──────────────────────────────────────────────
+
+    #[test]
+    fn test_bot_command_predict_parses_text() {
+        let client = make_client();
+        let updates = vec![make_update(1, 12345, 7, "/predict some text here")];
+        let commands = client.extract_commands(&updates);
+        assert_eq!(commands.len(), 1);
+        if let BotCommand::Predict { text, message_id } = &commands[0] {
+            assert_eq!(text, "some text here");
+            assert_eq!(*message_id, 7);
+        } else {
+            panic!("expected BotCommand::Predict, got {:?}", commands[0]);
+        }
+    }
+
+    #[test]
+    fn test_bot_command_predict_requires_text() {
+        let client = make_client();
+        // /predict with no text should produce no command
+        let updates = vec![make_update(1, 12345, 1, "/predict")];
+        let commands = client.extract_commands(&updates);
+        assert!(
+            commands.is_empty(),
+            "empty /predict should produce no commands: {commands:?}"
+        );
+    }
+
+    #[test]
+    fn test_format_enhanced_status_reply_with_accuracy() {
+        let reply = TelegramClient::format_enhanced_status_reply(
+            "test-model",
+            60,
+            None,
+            None,
+            Some("8/12 correct — 67%"),
+        );
+        assert!(
+            reply.contains("8/12 correct — 67%"),
+            "should show prediction accuracy: {reply}"
+        );
+        assert!(
+            reply.contains("predictions:"),
+            "should show predictions label: {reply}"
+        );
+    }
+
+    #[test]
+    fn test_format_enhanced_status_reply_no_accuracy() {
+        let reply = TelegramClient::format_enhanced_status_reply(
+            "test-model",
+            60,
+            None,
+            None,
+            None,
+        );
+        assert!(
+            !reply.contains("predictions:"),
+            "should not show predictions line when accuracy is None: {reply}"
+        );
+    }
+
+    #[test]
+    fn test_predict_command_help_text() {
+        assert!(
+            TELEGRAM_HELP_TEXT.contains("/predict"),
+            "TELEGRAM_HELP_TEXT must mention /predict"
         );
     }
 }

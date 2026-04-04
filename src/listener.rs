@@ -440,6 +440,44 @@ fn append_goal_to_backlog_at(description: &str, path: &std::path::Path) -> Resul
     Ok(())
 }
 
+/// Append a new prediction to `.axonix/predictions.json`.
+///
+/// Loads the existing store via `PredictionStore::default_path()`, calls `predict()`,
+/// then `save()`. Returns the assigned prediction ID on success.
+fn append_prediction(text: &str) -> Result<u32, String> {
+    let mut store = crate::predictions::PredictionStore::default_path();
+    let id = store.predict(text);
+    store.save()?;
+    Ok(id)
+}
+
+/// Compute prediction accuracy from `.axonix/predictions.json`.
+///
+/// Returns a formatted string like `"8/12 correct — 67%"` when there are resolved
+/// predictions, or `None` if there are no resolved predictions.
+///
+/// Positive outcomes: `"correct"`, `"TRUE"`, `"EARLY"` (case-insensitive prefix match).
+/// Negative outcomes: `"wrong"`, `"FALSE"`, `"PARTIAL"`, `"Expired"`, etc.
+/// Skipped: `null` (unresolved).
+fn compute_prediction_accuracy() -> Option<String> {
+    let store = crate::predictions::PredictionStore::default_path();
+    let resolved = store.resolved();
+    let total = resolved.len();
+    if total == 0 {
+        return None;
+    }
+    let correct = resolved.iter().filter(|(_, p)| {
+        if let Some(outcome) = &p.outcome {
+            let upper = outcome.to_uppercase();
+            upper.starts_with("CORRECT") || upper.starts_with("TRUE") || upper.starts_with("EARLY")
+        } else {
+            false
+        }
+    }).count();
+    let pct = (correct as f64 / total as f64 * 100.0).round() as u64;
+    Some(format!("{correct}/{total} correct — {pct}%"))
+}
+
 /// Run a task as a mini sub-agent session and return the result text.
 ///
 /// Uses a short-context agent (max 8 turns) focused on the given task.
@@ -710,11 +748,14 @@ pub async fn run_listener(
                 BotCommand::Status { message_id } => {
                     let active_goal = crate::brief::parse_active_goals().into_iter().next();
                     let last_commit = get_last_commit_message();
+                    // Compute prediction accuracy for G-117
+                    let accuracy = compute_prediction_accuracy();
                     let reply = TelegramClient::format_enhanced_status_reply(
                         model,
                         stats.uptime_secs,
                         active_goal.as_deref(),
                         last_commit.as_deref(),
+                        accuracy.as_deref(),
                     );
                     let _ = tg.reply_to(&reply, message_id).await;
                     stats.messages_handled += 1;
@@ -795,6 +836,14 @@ pub async fn run_listener(
                         lines.push("  _(empty)_".to_string());
                     }
                     let reply = lines.join("\n");
+                    let _ = tg.reply_to(&reply, message_id).await;
+                    stats.messages_handled += 1;
+                }
+                BotCommand::Predict { text, message_id } => {
+                    let reply = match append_prediction(&text) {
+                        Ok(id) => format!("✅ Prediction #{id} saved: {text}"),
+                        Err(e) => format!("❌ Failed to save prediction: {e}"),
+                    };
                     let _ = tg.reply_to(&reply, message_id).await;
                     stats.messages_handled += 1;
                 }
@@ -1440,6 +1489,11 @@ mod haiku_routing_tests {
     #[test]
     fn test_goals_uses_haiku() {
         assert_eq!(select_model_for_command("/goals", SONNET, HAIKU), HAIKU);
+    }
+
+    #[test]
+    fn test_predict_uses_haiku() {
+        assert_eq!(select_model_for_command("/predict anything", SONNET, HAIKU), HAIKU);
     }
 
     #[test]
