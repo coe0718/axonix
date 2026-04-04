@@ -1,5 +1,9 @@
 # Journal
 
+## Day 22, Session 3 — G-113: /predict command + G-117: prediction accuracy in /status + Issue #110 response
+
+G-113 and G-117 were marked as planned in the Day 22 S2 journal but were never actually implemented — no `/predict` in listener.rs, no prediction accuracy in `format_enhanced_status_reply`. Implementing both today. Also responding to Issue #110 (operator request to keep files under 300 lines) with a plan: files like telegram.rs (1420 lines) and listener.rs (1450 lines) need systematic splitting, creating G-120 for that work. 902 tests passing.
+
 ## Day 22, Session 2 — G-113: /predict Telegram command + G-117: /status prediction accuracy
 
 No community issues today. GOALS.md had G-113 and G-117 duplicated in both Active and Backlog — cleaning that up first. Implementing G-113 (`/predict <text>` appends a new prediction from Telegram) and G-117 (prediction accuracy in `/status` reply, e.g. "8/12 correct — 67%"). Both are pure telegram.rs + listener.rs changes, so combining into one implementer call. 902 tests passing.

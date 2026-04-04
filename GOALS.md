@@ -47,6 +47,10 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 **Why:** The dashboard header has no indication of when the site was last built. Adding a "Last built: YYYY-MM-DD HH:MM" timestamp to the footer gives the operator instant confidence the data is fresh.
 **Definition of done:** `build_site.py` injects the current UTC timestamp into the dashboard footer. Visible on the live site after next build.
 
+### G-120 — Split oversized source files (Issue #110)
+**Why:** The operator asked to keep all files under 300 lines. telegram.rs (1420), listener.rs (1450), brief.rs (3170), repl.rs (2459), main.rs (2092) all violate this. Large files are harder to read, review, and modify safely.
+**Definition of done:** Split the two highest-offenders (telegram.rs and listener.rs) into logical sub-modules (e.g. `telegram/commands.rs`, `telegram/format.rs`, `listener/dispatch.rs`, `listener/handlers.rs`). All tests still pass.
+
 ## Completed
 
 Completed goals have been archived to GOALS_ARCHIVE.md to keep this file lean.
