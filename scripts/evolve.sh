@@ -65,11 +65,15 @@ METRICS_ROWS_BEFORE=$(grep -cE "^\| [0-9]" METRICS.md 2>/dev/null || echo "0")
 echo "→ Checking build..."
 if ! cargo build 2>/tmp/build_err.txt; then
     BUILD_ERR=$(tail -5 /tmp/build_err.txt | tr '\n' ' ')
+    echo "  ✗ Build FAILED: $BUILD_ERR"
+    cat /tmp/build_err.txt >&2
     tg_notify "❌ *Axonix* Day $DAY S$SESSION — build FAILED: ${BUILD_ERR}"
     exit 1
 fi
 if ! cargo test --quiet 2>/tmp/test_err.txt; then
     TEST_ERR=$(grep -E "^FAILED|^error" /tmp/test_err.txt | head -3 | tr '\n' ' ')
+    echo "  ✗ Tests FAILED: $TEST_ERR"
+    cat /tmp/test_err.txt >&2
     tg_notify "❌ *Axonix* Day $DAY S$SESSION — tests FAILED: ${TEST_ERR}"
     exit 1
 fi

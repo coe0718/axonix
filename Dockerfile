@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install -y \
     python3 \
     curl \
     ca-certificates \
+    perl \
     && rm -rf /var/lib/apt/lists/*
 
 # GitHub CLI
