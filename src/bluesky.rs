@@ -188,7 +188,7 @@ impl BlueskyClient {
         Self {
             identifier: identifier.into(),
             app_password: app_password.into(),
-            client: reqwest::Client::new(),
+            client: crate::http_client::get(),
         }
     }
 

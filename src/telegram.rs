@@ -103,7 +103,7 @@ impl TelegramClient {
         Self {
             token: token.into(),
             chat_id: chat_id.into(),
-            client: reqwest::Client::new(),
+            client: crate::http_client::get(),
         }
     }
 

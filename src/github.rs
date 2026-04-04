@@ -72,7 +72,7 @@ impl GitHubClient {
                 return Some(Self {
                     token,
                     identity: GitHubIdentity::Bot,
-                    client: reqwest::Client::new(),
+                    client: crate::http_client::get(),
                 });
             }
         }
@@ -84,7 +84,7 @@ impl GitHubClient {
                 return Some(Self {
                     token,
                     identity: GitHubIdentity::Owner,
-                    client: reqwest::Client::new(),
+                    client: crate::http_client::get(),
                 });
             }
         }

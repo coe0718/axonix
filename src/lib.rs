@@ -26,6 +26,7 @@
 //! - `bluesky` — Bluesky AT Protocol integration (session announcements, free-tier)
 //! - `watch` — health watch: periodic threshold checks + Telegram alerts (G-025)
 
+pub mod http_client;
 pub mod brief;
 pub mod bluesky;
 pub mod db;
