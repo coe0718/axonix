@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls /home/coemedia/.cargo/registry/src/*/yoagent-0.7.1/src/)",
+      "Bash(diff /home/coemedia/.cargo/registry/src/*/yoagent-0.7.1/src/provider/anthropic.rs /home/coemedia/.cargo/registry/src/*/yoagent-0.7.5/src/provider/anthropic.rs)",
+      "Bash(grep -n \"thread\\\\|spawn\\\\|stack_size\\\\|recursion\\\\|Box::new\\\\|unsafe\\\\|transmute\\\\|ptr\\\\|raw\" /home/coemedia/Documents/code/axonix/src/*.rs)",
+      "Bash(cat /home/coemedia/.cargo/registry/src/*/yoagent-0.7.5/src/sub_agent.rs)",
+      "Bash(grep -n \"fn execute\\\\|fn call\\\\|agent_loop\\\\|spawn\\\\|stack\\\\|unsafe\" /home/coemedia/.cargo/registry/src/*/yoagent-0.7.5/src/sub_agent.rs)",
+      "Bash(sed -n '240,310p' /home/coemedia/.cargo/registry/src/*/yoagent-0.7.5/src/sub_agent.rs)"
+    ]
+  }
+}
