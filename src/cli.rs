@@ -33,6 +33,9 @@ pub struct CliArgs {
     pub extract_memories: Option<String>,
     /// If set, send this text to Telegram and exit (no agent session started).
     pub telegram_notify: Option<String>,
+    /// If set, read stdin line-by-line, redact secrets, and POST each line to this URL.
+    /// Used by evolve.sh to stream session output to the dashboard without curl.
+    pub stream_pipe: Option<String>,
 }
 
 impl CliArgs {
@@ -104,6 +107,12 @@ impl CliArgs {
             .and_then(|i| args.get(i + 1))
             .cloned();
 
+        let stream_pipe = args
+            .iter()
+            .position(|a| a == "--stream-pipe")
+            .and_then(|i| args.get(i + 1))
+            .cloned();
+
         Some(Self {
             model,
             skill_dirs,
@@ -119,6 +128,7 @@ impl CliArgs {
             insert_metrics_row,
             extract_memories,
             telegram_notify,
+            stream_pipe,
         })
     }
 }

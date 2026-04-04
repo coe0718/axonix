@@ -24,7 +24,7 @@
 //!   End a line with \ to continue on the next line
 //!   Type """ to start a block, """ again to finish
 
-use std::io::{self, BufRead, IsTerminal, Read, Write};
+use std::io::{self, BufRead, IsTerminal, Read, Write, BufReader};
 use std::sync::Arc;
 use yoagent::agent::Agent;
 use yoagent::provider::AnthropicProvider;
@@ -45,6 +45,50 @@ use axonix::github::GitHubClient;
 use axonix::render::*;
 use axonix::repl::{handle_command, CommandResult, ReplState};
 use axonix::telegram::TelegramClient;
+
+/// Redact known secret patterns from a stream line before posting to the dashboard.
+/// Mirrors the sed patterns in evolve.sh without requiring the regex crate.
+fn stream_redact(s: &str) -> String {
+    // Redact token-style prefixes: consume trailing alphanumeric/underscore/hyphen chars
+    fn redact_token(s: &str, prefix: &str) -> String {
+        let mut out = String::with_capacity(s.len());
+        let mut rest = s;
+        while let Some(pos) = rest.find(prefix) {
+            out.push_str(&rest[..pos]);
+            out.push_str("[REDACTED]");
+            let after = &rest[pos + prefix.len()..];
+            let end = after.find(|c: char| !c.is_alphanumeric() && c != '_' && c != '-')
+                .unwrap_or(after.len());
+            rest = &after[end..];
+        }
+        out.push_str(rest);
+        out
+    }
+    // Redact VAR=value patterns: everything after '=' up to whitespace
+    fn redact_var(s: &str, var: &str) -> String {
+        let needle = format!("{var}=");
+        let mut out = String::with_capacity(s.len());
+        let mut rest = s;
+        while let Some(pos) = rest.find(&needle) {
+            out.push_str(&rest[..pos + needle.len()]);
+            out.push_str("[REDACTED]");
+            let after = &rest[pos + needle.len()..];
+            let end = after.find(|c: char| c == ' ' || c == '\t').unwrap_or(after.len());
+            rest = &after[end..];
+        }
+        out.push_str(rest);
+        out
+    }
+
+    let s = redact_token(s, "sk-ant-");
+    let s = redact_token(&s, "ghp_");
+    let vars = [
+        "ANTHROPIC_API_KEY", "GH_TOKEN", "AXONIX_BOT_TOKEN",
+        "TELEGRAM_BOT_TOKEN", "TELEGRAM_TOKEN", "TELEGRAM_CHAT_ID",
+        "BLUESKY_IDENTIFIER", "BLUESKY_APP_PASSWORD",
+    ];
+    vars.iter().fold(s, |acc, var| redact_var(&acc, var))
+}
 
 const SYSTEM_PROMPT: &str = r#"You are a coding assistant working in the user's terminal.
 You have access to the filesystem and shell. Be direct and concise.
@@ -317,6 +361,26 @@ async fn main() {
                     Err(e) => eprintln!("{YELLOW}warning:{RESET} Telegram send failed: {e}"),
                 }
             }
+        }
+        return;
+    }
+
+    // --stream-pipe: read stdin line-by-line, redact secrets, POST each line to the URL.
+    // Replaces curl in evolve.sh's streaming pipe — curl uses OpenSSL which crashes here.
+    if let Some(ref url) = cli_args.stream_pipe {
+        let url = url.clone();
+        let client = axonix::http_client::get();
+        let stdin = BufReader::new(io::stdin());
+        for line in stdin.lines() {
+            let line = match line {
+                Ok(l) => l,
+                Err(_) => break,
+            };
+            if line.len() > 500 {
+                continue;
+            }
+            let line = stream_redact(&line);
+            let _ = client.post(&url).body(line).send().await;
         }
         return;
     }

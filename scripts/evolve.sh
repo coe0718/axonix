@@ -363,22 +363,7 @@ cargo run --bin axonix -- \
     --skills ./skills \
     < "$PROMPT_FILE" 2>&1 \
     | tee /tmp/session.log \
-    | while IFS= read -r line; do
-        # Drop lines over 500 chars (file dumps) and redact known secret patterns
-        if [ ${#line} -gt 500 ]; then continue; fi
-        line=$(echo "$line" | sed \
-            -e 's/sk-ant-[A-Za-z0-9_-]*/[REDACTED]/g' \
-            -e 's/ghp_[A-Za-z0-9]*/[REDACTED]/g' \
-            -e 's/ANTHROPIC_API_KEY=[^ ]*/ANTHROPIC_API_KEY=[REDACTED]/g' \
-            -e 's/GH_TOKEN=[^ ]*/GH_TOKEN=[REDACTED]/g' \
-            -e 's/AXONIX_BOT_TOKEN=[^ ]*/AXONIX_BOT_TOKEN=[REDACTED]/g' \
-            -e 's/TELEGRAM_BOT_TOKEN=[^ ]*/TELEGRAM_BOT_TOKEN=[REDACTED]/g' \
-            -e 's/TELEGRAM_TOKEN=[^ ]*/TELEGRAM_TOKEN=[REDACTED]/g' \
-            -e 's/TELEGRAM_CHAT_ID=[^ ]*/TELEGRAM_CHAT_ID=[REDACTED]/g' \
-            -e 's/BLUESKY_IDENTIFIER=[^ ]*/BLUESKY_IDENTIFIER=[REDACTED]/g' \
-            -e 's/BLUESKY_APP_PASSWORD=[^ ]*/BLUESKY_APP_PASSWORD=[REDACTED]/g')
-        curl -sf -X POST "$STREAM_URL" --data-binary "$line" 2>/dev/null || true
-    done || true
+    | ./target/debug/axonix --stream-pipe "$STREAM_URL" || true
 
 rm -f "$PROMPT_FILE"
 
