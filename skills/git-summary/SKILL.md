@@ -1,3 +1,8 @@
+---
+name: git-summary
+description: Reads recent git commits and returns a compact human-readable activity summary.
+---
+
 # Skill: git-summary
 
 Self-written skill (G-100). Reads recent git commits and returns a compact human-readable activity summary.
