@@ -10,10 +10,11 @@
 #   MODEL              — LLM model (default: claude-sonnet-4-6)
 
 set -euo pipefail
+ulimit -s unlimited 2>/dev/null || true
 
 tg_notify() {
     if [ -n "${TELEGRAM_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ]; then
-        cargo run --bin axonix --quiet -- --telegram-notify "$1" 2>/dev/null || true
+        cargo run --bin axonix --quiet -- --telegram-notify "$1" || true
     fi
 }
 

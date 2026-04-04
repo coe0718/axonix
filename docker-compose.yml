@@ -78,6 +78,7 @@ services:
       - HOME=/workspace
       - CARGO_HOME=/workspace/.cargo
       - CARGO_INCREMENTAL=0
+      - RUST_MIN_STACK=16777216
       - DOCKER_HOST=tcp://dockerproxy:2375
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-${TELEGRAM_TOKEN}}
       - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
