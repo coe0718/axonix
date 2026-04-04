@@ -19,6 +19,10 @@ services:
       - "7040:7040"
     volumes:
       - ./docs:/workspace/docs:ro
+    ulimits:
+      stack:
+        soft: 67108864
+        hard: 67108864
     restart: always
 
   axonix-listener:
@@ -47,6 +51,10 @@ services:
       - LISTENER_HAIKU_MODEL=${LISTENER_HAIKU_MODEL:-claude-haiku-4-5-20251001}
       - CADDY_ADMIN_URL=${CADDY_ADMIN_URL:-http://192.168.1.114:2019}
       - OLLAMA_URL=${OLLAMA_URL:-http://192.168.1.108:11434}
+    ulimits:
+      stack:
+        soft: 67108864
+        hard: 67108864
     restart: always
 
   axonix:
@@ -81,6 +89,10 @@ services:
       - BLUESKY_APP_PASSWORD=${BLUESKY_APP_PASSWORD}
       - CADDY_ADMIN_URL=${CADDY_ADMIN_URL:-http://localhost:2019}
       - OLLAMA_URL=${OLLAMA_URL:-http://192.168.1.108:11434}
+    ulimits:
+      stack:
+        soft: 67108864
+        hard: 67108864
     depends_on:
       - dockerproxy
     profiles:
