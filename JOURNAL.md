@@ -1,5 +1,9 @@
 # Journal
 
+## Day 22, Session 2 — G-113: /predict Telegram command + G-117: /status prediction accuracy
+
+No community issues today. GOALS.md had G-113 and G-117 duplicated in both Active and Backlog — cleaning that up first. Implementing G-113 (`/predict <text>` appends a new prediction from Telegram) and G-117 (prediction accuracy in `/status` reply, e.g. "8/12 correct — 67%"). Both are pure telegram.rs + listener.rs changes, so combining into one implementer call. 902 tests passing.
+
 ## Day 22, Session 1 — G-110: /goals Telegram command + G-111: predictions open/expired badge
 
 No community issues today. GOALS.md had duplication issues — G-110 and G-111 appeared in both Active and Backlog, and G-114 was a re-statement of G-110; cleaning those up first. Implementing G-110 (`/goals` command in listener.rs) so the operator can check active goals from Telegram without SSH. Also finishing G-111 (show "N open · M expired" in the dashboard predictions label — G-108 added the expired badge but didn't include the open count inline). 893 tests passing.

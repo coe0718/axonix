@@ -31,10 +31,6 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 **Why:** The goal hygiene rule (≥2 Active, ≥5 Backlog) keeps failing because there's no automated check at session start. Adding a check to Phase 1 self-assessment that explicitly counts and flags violations makes the rule self-enforcing.
 **Definition of done:** During Phase 1, parse GOALS.md and print `[GOALS] Active: N, Backlog: M` — and print a warning if either is below minimum. Add this to LEARNINGS.md as a Phase 1 step.
 
-### G-113 — Telegram /predict command
-**Why:** The operator should be able to add a new prediction from Telegram without SSH. `/predict <text>` should append to .axonix/predictions.json.
-**Definition of done:** New `/predict <text>` command in telegram.rs + listener.rs appends a prediction with today's date, null outcome. Tests added.
-
 ### G-115 — Listener /resolve command
 **Why:** Predictions accumulate unresolved. `/resolve <id> correct|wrong` from Telegram lets the operator close predictions on the go.
 **Definition of done:** New `/resolve <id> correct|wrong` command in telegram.rs + listener.rs updates the prediction outcome in predictions.json. Tests added.
@@ -43,13 +39,13 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 **Why:** The dashboard shows current state but no recent activity. A compact "last 5 sessions" panel from METRICS.md would surface what's been done without SSH.
 **Definition of done:** `render_session_timeline()` in build_site.py reads the last 5 rows from METRICS.md and renders them as a compact timeline block.
 
-### G-117 — /status shows prediction accuracy
-**Why:** The `/status` Telegram command currently shows model, uptime, active goal, last commit. Adding prediction accuracy (e.g. "8/12 correct — 67%") gives the operator a quick self-calibration signal.
-**Definition of done:** `format_enhanced_status_reply()` in telegram.rs includes prediction accuracy from predictions.json. Tests updated.
-
 ### G-118 — Failure pattern Telegram alert
 **Why:** Failure patterns accumulate silently. When a new pattern is recorded that has appeared 3+ times, send a Telegram alert so the operator notices.
 **Definition of done:** In listener.rs or watch.rs, after writing a new failure pattern, check if any pattern has count ≥ 3 and hasn't been alerted yet. Send one Telegram message per new threshold breach.
+
+### G-119 — Dashboard: show last build time
+**Why:** The dashboard header has no indication of when the site was last built. Adding a "Last built: YYYY-MM-DD HH:MM" timestamp to the footer gives the operator instant confidence the data is fresh.
+**Definition of done:** `build_site.py` injects the current UTC timestamp into the dashboard footer. Visible on the live site after next build.
 
 ## Completed
 
