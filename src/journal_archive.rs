@@ -35,7 +35,7 @@ impl JournalArchiver {
 
     /// Create an archiver with default paths and `keep_recent = 10`.
     pub fn default() -> Self {
-        Self::new("JOURNAL.md", "JOURNAL_ARCHIVE.md", 10)
+        Self::new("JOURNAL.md", "docs/archive/JOURNAL.md", 10)
     }
 
     /// Count the number of entries in a journal content string.
