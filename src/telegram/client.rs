@@ -1,6 +1,6 @@
 //! TelegramClient struct and all its implementations.
 
-use super::types::{TelegramUpdate, TelegramMessage, AskCommand, BotCommand};
+use super::types::{TelegramUpdate, AskCommand, BotCommand};
 use super::types::TelegramApiResponse;
 use super::commands::{
     parse_ask_command, is_help_command, is_status_command, is_health_command,

@@ -2,6 +2,9 @@
 
 use super::*;
 use crate::conversation_memory::ConversationMemory;
+use crate::listener::config::{local_hour, format_duration};
+use crate::listener::prompt::get_last_commit_message;
+use crate::listener::handlers::{append_goal_to_backlog_at, format_predictions_list};
 
 
 // ── ListenerConfig ────────────────────────────────────────────────────────
@@ -577,7 +580,7 @@ mod haiku_routing_tests {
 
 #[cfg(test)]
 mod predictions_list_tests {
-    use crate::listener::format_predictions_list;
+    use crate::listener::handlers::format_predictions_list;
     use crate::predictions::PredictionStore;
 
     fn make_store_with_predictions(dir: &std::path::Path) -> PredictionStore {
