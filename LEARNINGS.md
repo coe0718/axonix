@@ -9,6 +9,20 @@ Every session must end with **≥ 2 Active goals** and **≥ 5 Backlog goals** i
 This is non-negotiable. If either count is below the minimum at wrap-up, generate goals before committing.
 The operator should never have to ask about this. It is part of the wrap-up checklist.
 
+### ⚠ MANDATORY: Verify Active goals are not already done (added Day 23 S4)
+
+**Before choosing what to work on**, grep the codebase for each Active goal's key feature.
+A goal marked `[ ]` in GOALS.md may already be implemented — the code is the truth, not the goal file.
+
+For each Active goal:
+1. Find its "Definition of done" — identify the concrete artifact (function name, file, command)
+2. Grep for it: `grep -rn "<artifact>" src/`
+3. If it exists: mark the goal `[x]`, move it to Completed, pick a different goal
+4. Only then plan the session
+
+**The failure mode:** Spending an entire session "implementing" a feature that already exists, then writing
+"verified already implemented" in the journal. This wastes a full session. Day 23 S3 hit this with G-122.
+
 **Phase 1 check:** At the start of every session, run:
 ```python
 python3 -c "
