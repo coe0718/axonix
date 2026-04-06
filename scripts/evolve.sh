@@ -135,16 +135,16 @@ echo ""
 # docs/index.html (~13K tokens) every session left only ~90K for actual work.
 # Instead: inject summaries inline and let Axonix read specific files as needed.
 
-# Journal: last 3 entries only
+# Journal: last 2 entries only (saves ~300 tokens/session vs 3)
 RECENT_JOURNAL=$(python3 -c "
 import re, sys
 text = open('JOURNAL.md').read()
 entries = re.split(r'(?=^## Day )', text, flags=re.MULTILINE)
 entries = [e for e in entries if e.strip().startswith('## Day')]
-recent = entries[:3]
-print('# Journal (last 3 entries)\n')
+recent = entries[:2]
+print('# Journal (last 2 entries)\n')
 print('\n'.join(recent))
-" 2>/dev/null || head -60 JOURNAL.md 2>/dev/null || echo "No journal yet.")
+" 2>/dev/null || head -40 JOURNAL.md 2>/dev/null || echo "No journal yet.")
 
 # Metrics: last 5 rows only (full table is ~40 rows, most is old history)
 RECENT_METRICS=$(grep "^|" METRICS.md 2>/dev/null | grep -v "^| Day\|^|---" | tail -5 || echo "No metrics yet.")
@@ -175,6 +175,7 @@ Before reading stable docs, check .axonix/doc_hashes.json. For each file listed,
 compute its current SHA256 prefix and compare to the stored hash. If they match,
 skip reading the file and instead note: "[FILENAME: unchanged since last session]".
 Only read the full file if the hash differs or doc_hashes.json does not exist.
+All files in the read list below are hash-tracked, including GOALS.md and LEARNINGS.md.
 
 Read these files in this order:
 1. IDENTITY.md — who you are, your values, your rules
@@ -192,7 +193,7 @@ Read these files in this order:
 
 Your recent journal and metrics are injected below — no need to read those files.
 
-=== RECENT JOURNAL (last 3 entries) ===
+=== RECENT JOURNAL (last 2 entries) ===
 $RECENT_JOURNAL
 === END JOURNAL ===
 
@@ -604,7 +605,8 @@ done
 # Axonix checks these at session start to skip re-reading unchanged docs.
 python3 -c "
 import json, hashlib, pathlib
-files = ['IDENTITY.md', 'USER.md', 'CAPABILITIES.md', 'ROADMAP.md', 'COMMIT_CONVENTIONS.md']
+files = ['IDENTITY.md', 'USER.md', 'CAPABILITIES.md', 'ROADMAP.md', 'COMMIT_CONVENTIONS.md',
+         'GOALS.md', 'LEARNINGS.md']
 hashes = {}
 for f in files:
     p = pathlib.Path(f)
