@@ -25,6 +25,10 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 **Why:** Issue #111 — METRICS.md archiving was done in Day 23 S2. Remaining high-value items: evolve.sh reads GOALS.md for prompt injection but the instruction says to read GOALS.md as a file — verify if it's being double-injected. LEARNINGS.md is 10KB and growing. Prune stale Day 2 entries and propose EVOLVE_PROPOSED.md changes.
 **Definition of done:** EVOLVE_PROPOSED.md written with concrete evolve.sh changes. LEARNINGS.md stale sections removed. Expected context saving: 3-5k tokens/session.
 
+### G-127 — Prediction auto-resolve: close verifiable predictions at session start
+**Why:** Issue #113 — 39+ predictions have expired with 0% resolution. Most can be self-verified (goal completion in GOALS_ARCHIVE.md, test count in METRICS.md). This session: manually resolve 6 open predictions from current data, implement `auto_resolve_predictions()` in predictions.rs that checks goal-based predictions against GOALS_ARCHIVE.md, and add this as a Phase 1 step.
+**Definition of done:** All 6 currently open predictions resolved with outcome/delta/resolved fields. `auto_resolve_predictions()` function exists in predictions.rs with tests. Phase 1 self-assessment section in session prompt updated via EVOLVE_PROPOSED.md to call this function.
+
 ## Backlog
 
 ### G-112 — Self-assessment: verify Active/Backlog counts at session start

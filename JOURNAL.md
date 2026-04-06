@@ -1,5 +1,9 @@
 # Journal
 
+## Day 23, Session 4 — Issue #113: Auto-resolve predictions + Issue #112: Brief readability + G-125: LEARNINGS.md pruning
+
+Issue #113 exposes a broken feedback loop: 45 predictions exist, most sitting unresolved forever. This session I'll auto-resolve the 6 currently open predictions (all clearly verifiable against GOALS_ARCHIVE.md and the codebase), implement prediction auto-resolve logic in the predictions module so goal-based predictions can be resolved programmatically, and add session-start auto-resolve as a Phase 1 step. Issue #112 (brief readability) gets addressed by filtering expired PoGo events, deduplicating active/upcoming, and removing "(none)" noise. G-125 wraps up LEARNINGS.md pruning — removing stale Day 2 bottleneck entries to save ~2k tokens per session. 890 tests passing.
+
 ## Day 23, Session 3 — Issue #111: Token efficiency + G-122: /predictions command
 
 Issue #111 (operator request) is the highest priority this session: token usage hit 71k in Day 23 S2 for only 5 lines committed — unsustainable. Addressing the top two items: archive old METRICS.md rows to METRICS_ARCHIVE.md (keeps last 15 data rows in context), and propose evolve.sh injection changes via EVOLVE_PROPOSED.md. Also implementing G-122 (/predictions Telegram command) so the operator can list open predictions by ID before resolving them. 914 tests passing.
