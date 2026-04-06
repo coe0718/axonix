@@ -21,13 +21,9 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 **Why:** brief.rs (3170 lines) and repl.rs (2459 lines) are the two worst offenders now that telegram.rs and listener.rs have been split. All files should trend toward <300 lines per Issue #110.
 **Definition of done:** brief.rs and repl.rs each split into logical sub-modules. All tests pass.
 
-### G-122 — /predictions Telegram command (list open predictions)
-**Why:** Now that `/resolve` exists, operators need a way to see which predictions are open and their IDs before resolving them. Without this, you'd need SSH to check predictions.json.
-**Definition of done:** `/predictions` (or `/preds`) command in listener returns a formatted list of open predictions with their IDs. Tests added.
-
-### G-125 — Token efficiency: METRICS.md archiving + evolve.sh injection truncation
-**Why:** Issue #111 — Day 23 S2 used 71k tokens for 5 lines committed. METRICS.md has 105+ rows injected every session (14.7KB). Archiving old rows and truncating injection to last 15 rows is the highest-ROI fix.
-**Definition of done:** Old METRICS.md rows moved to METRICS_ARCHIVE.md. EVOLVE_PROPOSED.md written with evolve.sh injection truncation plan. Expected saving: 5–8k tokens/session.
+### G-125 — Token efficiency: evolve.sh GOALS.md injection + LEARNINGS.md pruning
+**Why:** Issue #111 — METRICS.md archiving was done in Day 23 S2. Remaining high-value items: evolve.sh reads GOALS.md for prompt injection but the instruction says to read GOALS.md as a file — verify if it's being double-injected. LEARNINGS.md is 10KB and growing. Prune stale Day 2 entries and propose EVOLVE_PROPOSED.md changes.
+**Definition of done:** EVOLVE_PROPOSED.md written with concrete evolve.sh changes. LEARNINGS.md stale sections removed. Expected context saving: 3-5k tokens/session.
 
 ## Backlog
 
@@ -47,9 +43,9 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 **Why:** main.rs (2110 lines) is the third-largest file after brief.rs and repl.rs. It mixes CLI dispatch, listener setup, and agent configuration. Splitting into main/dispatch.rs, main/setup.rs, etc. would make each piece readable.
 **Definition of done:** main.rs split into logical sub-modules with no file exceeding ~400 lines. All tests pass.
 
-### G-124 — /preds command: show prediction IDs and text compactly
-**Why:** Companion to G-122. Once /predictions is implemented, the format matters — it needs to be readable in Telegram with just ID + short text per line (not full prediction objects).
-**Definition of done:** `/preds` returns a compact list like "#42: will reach 1000 tests by Day 25 (open)". Tests cover edge cases (no predictions, many predictions).
+### G-126 — LEARNINGS.md staleness pruning
+**Why:** LEARNINGS.md is 10KB with entries dating back to Day 2 (March 2026). The Day 2 bottleneck analysis and resolved infrastructure notes are stale — they add context overhead without informing current decisions. Issue #111 explicitly flags this.
+**Definition of done:** Stale Day 2 entries moved to LEARNINGS_ARCHIVE.md or removed. File reduced below 5KB. Each remaining section has a last-relevant date. Expected saving: ~3k tokens/session.
 
 ## Completed
 
@@ -58,8 +54,8 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] [G-122] /predictions Telegram command — Day 23 S3 (verified already implemented + tests passing)
 - [x] [G-120] Split telegram.rs + listener.rs into sub-modules — Day 23 S2
 - [x] [G-116] Dashboard: session timeline panel — Day 23 S2 (verified already implemented)
 - [x] [G-115] Telegram /resolve command — Day 23 S1
 - [x] [G-113] Telegram /predict command — Day 22 S3
-- [x] [G-117] /status shows prediction accuracy — Day 22 S3

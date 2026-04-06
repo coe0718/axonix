@@ -72,6 +72,45 @@ pub(super) fn append_prediction(text: &str) -> Result<u32, String> {
     Ok(id)
 }
 
+/// List all open (unresolved) predictions.
+///
+/// Returns a formatted Telegram message with each open prediction's ID and text.
+/// Format:
+/// ```text
+/// 📊 Open Predictions (3)
+///
+/// #42 — will reach 1000 tests by Day 25 (created: 2026-03-15)
+/// ...
+///
+/// Use /resolve <id> correct|wrong to close one.
+/// ```
+///
+/// If there are no open predictions, returns a prompt to add one.
+pub(super) fn list_open_predictions() -> String {
+    format_predictions_list(&crate::predictions::PredictionStore::default_path())
+}
+
+/// Format open predictions from a store into a Telegram message.
+///
+/// Extracted as a pure function to enable unit testing without filesystem.
+pub(crate) fn format_predictions_list(store: &crate::predictions::PredictionStore) -> String {
+    let open: Vec<_> = store.open().into_iter().collect();
+    if open.is_empty() {
+        return "📊 No open predictions. Use /predict <text> to add one.".to_string();
+    }
+    let count = open.len();
+    let mut lines = vec![format!("📊 Open Predictions ({count})\n")];
+    for (id, pred) in &open {
+        lines.push(format!(
+            "#{id} — {} (created: {})",
+            pred.prediction, pred.created
+        ));
+    }
+    lines.push(String::new());
+    lines.push("Use /resolve <id> correct|wrong to close one.".to_string());
+    lines.join("\n")
+}
+
 /// Resolve a prediction by ID with a correct/wrong verdict.
 /// Maps `true` → `"TRUE"` outcome, `false` → `"FALSE"` outcome.
 /// Returns Ok(prediction_text) on success, Err(message) on failure.

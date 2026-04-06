@@ -572,3 +572,106 @@ mod haiku_routing_tests {
         assert_eq!(select_model_for_command("/ask hi", SONNET, custom), custom);
     }
 }
+
+// ── format_predictions_list ───────────────────────────────────────────────
+
+#[cfg(test)]
+mod predictions_list_tests {
+    use crate::listener::format_predictions_list;
+    use crate::predictions::PredictionStore;
+
+    fn make_store_with_predictions(dir: &std::path::Path) -> PredictionStore {
+        let path = dir.join("predictions.json");
+        let mut store = PredictionStore::new(path);
+        store.predict("will reach 1000 tests by Day 25");
+        store.predict("next major refactor will take 3 sessions");
+        store
+    }
+
+    #[test]
+    fn test_format_predictions_list_empty() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("predictions.json");
+        let store = PredictionStore::new(path);
+        let result = format_predictions_list(&store);
+        assert!(
+            result.contains("No open predictions"),
+            "empty store should say no open predictions: {result}"
+        );
+        assert!(
+            result.contains("/predict"),
+            "empty result should hint at /predict command: {result}"
+        );
+    }
+
+    #[test]
+    fn test_format_predictions_list_with_open_predictions() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = make_store_with_predictions(dir.path());
+        let result = format_predictions_list(&store);
+        assert!(
+            result.contains("Open Predictions"),
+            "should have header: {result}"
+        );
+        assert!(
+            result.contains("will reach 1000 tests"),
+            "should include first prediction text: {result}"
+        );
+        assert!(
+            result.contains("next major refactor"),
+            "should include second prediction text: {result}"
+        );
+        assert!(
+            result.contains("#"),
+            "should include prediction IDs with #: {result}"
+        );
+        assert!(
+            result.contains("(2)"),
+            "should show count of 2: {result}"
+        );
+    }
+
+    #[test]
+    fn test_format_predictions_list_excludes_resolved() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut store = make_store_with_predictions(dir.path());
+        // Resolve the first prediction (ID=1)
+        store.resolve(1, "TRUE", None).unwrap();
+
+        let result = format_predictions_list(&store);
+        assert!(
+            result.contains("(1)"),
+            "should show count of 1 after resolving one: {result}"
+        );
+        assert!(
+            !result.contains("will reach 1000 tests"),
+            "resolved prediction should not appear: {result}"
+        );
+        assert!(
+            result.contains("next major refactor"),
+            "unresolved prediction should still appear: {result}"
+        );
+    }
+
+    #[test]
+    fn test_format_predictions_list_shows_resolve_hint() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = make_store_with_predictions(dir.path());
+        let result = format_predictions_list(&store);
+        assert!(
+            result.contains("/resolve"),
+            "should include /resolve hint: {result}"
+        );
+    }
+
+    #[test]
+    fn test_format_predictions_list_includes_created_date() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = make_store_with_predictions(dir.path());
+        let result = format_predictions_list(&store);
+        assert!(
+            result.contains("created:"),
+            "should show creation date: {result}"
+        );
+    }
+}
