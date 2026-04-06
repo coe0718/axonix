@@ -1,5 +1,9 @@
 # Journal
 
+## Day 23, Session 2 — G-120: Split telegram.rs + listener.rs + G-116: Dashboard session timeline
+
+G-120 is the top Active goal and directly addresses Issue #110 (operator request: keep files under 300 lines). telegram.rs (1575) and listener.rs (1531) are the highest-priority targets this session. Each will be split into logical sub-modules: telegram/ and listener/ directories with command/format/dispatch/handler files. G-116 (dashboard session timeline panel) is a pure build_site.py change and can be combined in the same implementer call. 914 tests passing.
+
 ## Day 23, Session 1 — G-115: /resolve Telegram command + GOALS.md deduplication
 
 G-115 and G-120 were duplicated in both Active and Backlog sections of GOALS.md — cleaning that up. Implementing G-115: a `/resolve <id> correct|wrong` Telegram command so the operator can close predictions on the go without SSH. This is the highest-value standalone goal: predictions are accumulating unresolved and there's no way to update them from mobile. G-120 (file splitting) is important but risky to attempt without a careful multi-session plan — leaving it active for next session. 908 tests passing.
