@@ -36,6 +36,8 @@ pub struct CliArgs {
     /// If set, read stdin line-by-line, redact secrets, and POST each line to this URL.
     /// Used by evolve.sh to stream session output to the dashboard without curl.
     pub stream_pipe: Option<String>,
+    /// If true, auto-resolve predictions whose mentioned goal IDs are complete in GOALS_ARCHIVE.md.
+    pub predict_auto_resolve: bool,
 }
 
 impl CliArgs {
@@ -113,6 +115,10 @@ impl CliArgs {
             .and_then(|i| args.get(i + 1))
             .cloned();
 
+        // `predict auto-resolve` or `--predict-auto-resolve`
+        let predict_auto_resolve = args.windows(2).any(|w| w[0] == "predict" && w[1] == "auto-resolve")
+            || args.iter().any(|a| a == "--predict-auto-resolve");
+
         Some(Self {
             model,
             skill_dirs,
@@ -129,6 +135,7 @@ impl CliArgs {
             extract_memories,
             telegram_notify,
             stream_pipe,
+            predict_auto_resolve,
         })
     }
 }

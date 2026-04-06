@@ -521,6 +521,10 @@ with open('GOALS.md', 'w') as f:
     f.writelines(collapsed)
 PYEOF
 
+# ── Step 5b-iii: Auto-resolve predictions whose goals are now complete ──
+echo "→ Auto-resolving predictions..."
+./target/debug/axonix predict auto-resolve 2>/dev/null || true
+
 # Rebuild website
 echo "→ Rebuilding website..."
 python3 scripts/build_site.py || true

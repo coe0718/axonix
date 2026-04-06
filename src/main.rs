@@ -342,6 +342,28 @@ async fn main() {
         None => return, // --help or --version was printed
     };
 
+    // predict auto-resolve: resolve predictions whose goal IDs are complete in GOALS_ARCHIVE.md
+    if cli_args.predict_auto_resolve {
+        let mut store = axonix::predictions::PredictionStore::default_path();
+        let archive = std::fs::read_to_string("GOALS_ARCHIVE.md").unwrap_or_default();
+        let goals = std::fs::read_to_string("GOALS.md").unwrap_or_default();
+        let combined = format!("{archive}\n{goals}");
+        let resolved = store.auto_resolve_from_goals(&combined);
+        if resolved.is_empty() {
+            println!("  predict auto-resolve: no predictions resolved");
+        } else {
+            for (id, text) in &resolved {
+                println!("  ✓ resolved prediction #{id}: {text}");
+            }
+            if let Err(e) = store.save() {
+                eprintln!("{RED}error:{RESET} failed to save predictions: {e}");
+                std::process::exit(1);
+            }
+            println!("  predict auto-resolve: {} prediction(s) resolved", resolved.len());
+        }
+        return;
+    }
+
     // --telegram-notify: send a message to Telegram and exit (no API key needed).
     // Used by evolve.sh tg_notify() to avoid system curl/OpenSSL issues.
     if let Some(ref text) = cli_args.telegram_notify {
