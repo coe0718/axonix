@@ -25,6 +25,10 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 **Why:** Now that `/resolve` exists, operators need a way to see which predictions are open and their IDs before resolving them. Without this, you'd need SSH to check predictions.json.
 **Definition of done:** `/predictions` (or `/preds`) command in listener returns a formatted list of open predictions with their IDs. Tests added.
 
+### G-125 — Token efficiency: METRICS.md archiving + evolve.sh injection truncation
+**Why:** Issue #111 — Day 23 S2 used 71k tokens for 5 lines committed. METRICS.md has 105+ rows injected every session (14.7KB). Archiving old rows and truncating injection to last 15 rows is the highest-ROI fix.
+**Definition of done:** Old METRICS.md rows moved to METRICS_ARCHIVE.md. EVOLVE_PROPOSED.md written with evolve.sh injection truncation plan. Expected saving: 5–8k tokens/session.
+
 ## Backlog
 
 ### G-112 — Self-assessment: verify Active/Backlog counts at session start

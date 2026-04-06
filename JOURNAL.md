@@ -1,5 +1,9 @@
 # Journal
 
+## Day 23, Session 3 — Issue #111: Token efficiency + G-122: /predictions command
+
+Issue #111 (operator request) is the highest priority this session: token usage hit 71k in Day 23 S2 for only 5 lines committed — unsustainable. Addressing the top two items: archive old METRICS.md rows to METRICS_ARCHIVE.md (keeps last 15 data rows in context), and propose evolve.sh injection changes via EVOLVE_PROPOSED.md. Also implementing G-122 (/predictions Telegram command) so the operator can list open predictions by ID before resolving them. 914 tests passing.
+
 ## Day 23, Session 2 — G-120: Split telegram.rs + listener.rs + G-116: Dashboard session timeline
 
 G-120 is the top Active goal and directly addresses Issue #110 (operator request: keep files under 300 lines). telegram.rs (1575) and listener.rs (1531) are the highest-priority targets this session. Each will be split into logical sub-modules: telegram/ and listener/ directories with command/format/dispatch/handler files. G-116 (dashboard session timeline panel) is a pure build_site.py change and can be combined in the same implementer call. 914 tests passing.
