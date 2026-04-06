@@ -21,13 +21,9 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 **Why:** brief.rs (3170 lines) and repl.rs (2459 lines) are the two worst offenders now that telegram.rs and listener.rs have been split. All files should trend toward <300 lines per Issue #110.
 **Definition of done:** brief.rs and repl.rs each split into logical sub-modules. All tests pass.
 
-### G-125 — Token efficiency: evolve.sh GOALS.md injection + LEARNINGS.md pruning
-**Why:** Issue #111 — METRICS.md archiving was done in Day 23 S2. Remaining high-value items: evolve.sh reads GOALS.md for prompt injection but the instruction says to read GOALS.md as a file — verify if it's being double-injected. LEARNINGS.md is 10KB and growing. Prune stale Day 2 entries and propose EVOLVE_PROPOSED.md changes.
-**Definition of done:** EVOLVE_PROPOSED.md written with concrete evolve.sh changes. LEARNINGS.md stale sections removed. Expected context saving: 3-5k tokens/session.
-
-### G-127 — Prediction auto-resolve: close verifiable predictions at session start
-**Why:** Issue #113 — 39+ predictions have expired with 0% resolution. Most can be self-verified (goal completion in GOALS_ARCHIVE.md, test count in METRICS.md). This session: manually resolve 6 open predictions from current data, implement `auto_resolve_predictions()` in predictions.rs that checks goal-based predictions against GOALS_ARCHIVE.md, and add this as a Phase 1 step.
-**Definition of done:** All 6 currently open predictions resolved with outcome/delta/resolved fields. `auto_resolve_predictions()` function exists in predictions.rs with tests. Phase 1 self-assessment section in session prompt updated via EVOLVE_PROPOSED.md to call this function.
+### G-126 — LEARNINGS.md staleness pruning (continued)
+**Why:** LEARNINGS.md still has sections dating back to Day 11. The Day 2 bottleneck and OpenClaw sections were removed this session, but the Infrastructure Knowledge section should be audited — some items (e.g. "stream_server is already running — G-004") reference resolved goals. Issue #111.
+**Definition of done:** LEARNINGS.md audited for stale goal references; outdated items removed or updated with a "resolved" note. File stays under 5KB.
 
 ## Backlog
 
@@ -47,9 +43,9 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 **Why:** main.rs (2110 lines) is the third-largest file after brief.rs and repl.rs. It mixes CLI dispatch, listener setup, and agent configuration. Splitting into main/dispatch.rs, main/setup.rs, etc. would make each piece readable.
 **Definition of done:** main.rs split into logical sub-modules with no file exceeding ~400 lines. All tests pass.
 
-### G-126 — LEARNINGS.md staleness pruning
-**Why:** LEARNINGS.md is 10KB with entries dating back to Day 2 (March 2026). The Day 2 bottleneck analysis and resolved infrastructure notes are stale — they add context overhead without informing current decisions. Issue #111 explicitly flags this.
-**Definition of done:** Stale Day 2 entries moved to LEARNINGS_ARCHIVE.md or removed. File reduced below 5KB. Each remaining section has a last-relevant date. Expected saving: ~3k tokens/session.
+### G-128 — Issue #112 remaining: brief.rs meta-health terminal display cleanup
+**Why:** Issue #112 noted that meta-system warnings (stale ~?k tokens) don't belong in the morning brief. The Telegram fix was done in Day 23 S4. The terminal brief still shows a full `🔧 META-SYSTEM` section with all 3 health checks regardless of status. It should only show the section if there are non-metrics warnings.
+**Definition of done:** Terminal brief's META-SYSTEM section omits the METRICS.md stale-token warning (same filter as Telegram). Shows nothing if all remaining checks are OK. Issue #112 fully closed.
 
 ## Completed
 
@@ -58,8 +54,8 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] [G-127] Prediction auto-resolve: auto_resolve_from_goals() + resolve 6 open predictions — Day 23 S4
+- [x] [G-125] Token efficiency: LEARNINGS.md pruned + EVOLVE_PROPOSED.md written — Day 23 S4
 - [x] [G-122] /predictions Telegram command — Day 23 S3 (verified already implemented + tests passing)
 - [x] [G-120] Split telegram.rs + listener.rs into sub-modules — Day 23 S2
 - [x] [G-116] Dashboard: session timeline panel — Day 23 S2 (verified already implemented)
-- [x] [G-115] Telegram /resolve command — Day 23 S1
-- [x] [G-113] Telegram /predict command — Day 22 S3
