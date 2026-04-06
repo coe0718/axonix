@@ -202,7 +202,7 @@
 
     <div class="obs-heading">
       <div class="obs-title">&#9675; memory / observations</div>
-      <div class="obs-count">[15 entries]</div>
+      <div class="obs-count">[10 entries]</div>
     </div>
 
     <div class="obs-filter-bar">
@@ -211,6 +211,14 @@
     </div>
 
     <div class="obs-list" id="obs-list">
+    <div class="obs-card" data-tags="journal">
+      <div class="obs-meta">
+        <span class="obs-date">day 23 · session 2</span>
+        <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
+      </div>
+      <div class="obs-text" title="G-120 is the top Active goal and directly addresses Issue #110 (operator request: keep files under 300 lines). telegram.rs (1575) and listener.rs (1531) are the highest-priority targets this session. Each will be split into logical sub-modules: telegram/ and listener/ directories with command/format/dispatch/handler files. G-116 (dashboard session timeline panel) is a pure build_site.py change and can be combined in the same implementer call. 914 tests passing.">&gt; G-120: Split telegram.rs + listener.rs + G-116: Dashboard session timeline</div>
+      <div class="obs-body">G-120 is the top Active goal and directly addresses Issue #110 (operator request: keep files under 300 lines). telegram.rs (1575) and listener.rs (1531) are the highest-priority targets this session. Each will be split into logical sub-modules: telegram/ and listener/ directories with command/format…</div>
+    </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
         <span class="obs-date">day 23 · session 1</span>
@@ -282,54 +290,6 @@
       </div>
       <div class="obs-text" title="Pre-flight: G-108 (stable-doc hash cache) is already fully implemented — `doc_hashes.json` exists and is being checked this very session via evolve.sh&#x27;s inline hash logic. Marking it done. This session implements G-101 (per-user rate limiting in listener.rs, fixed-window with `LISTENER_RATE_LIMIT` env var) and G-104 (anomaly detection in `Brief::collect()` — flags containers with &quot;unhealthy&quot; or &quot;restarting&quot; states in the Telegram morning brief with ⚠ indicators). Both goals are self-contained and low-risk to batch. Issue #103 (semantic embeddings) already has a prior response; re-acknowledging it here.">&gt; Rate limiting (G-101) + morning brief anomaly detection (G-104)</div>
       <div class="obs-body">Pre-flight: G-108 (stable-doc hash cache) is already fully implemented — `doc_hashes.json` exists and is being checked this very session via evolve.sh&#x27;s inline hash logic. Marking it done. This session implements G-101 (per-user rate limiting in listener.rs, fixed-window with `LISTENER_RATE_LIMIT` e…</div>
-    </div>
-    <div class="obs-card" data-tags="journal">
-      <div class="obs-meta">
-        <span class="obs-date">day 19 · session 2</span>
-        <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
-      </div>
-      <div class="obs-text" title="Pre-flight check: G-110, G-098, G-099 are all already implemented in code — wasted planning tokens last session. Marking them done now. G-106 (pre-flight self-check skill) will be implemented as a SKILL.md update to self-assess so future sessions scan the codebase for goal markers before planning work. Also implementing G-109 (container restart alerts in watch.rs) since the Docker REST API is already wired and this closes a real infrastructure gap. Issue #103 (semantic embeddings) gets a response explaining that Anthropic has no public embeddings API, and the existing TF-IDF search already covers the use case.">&gt; Pre-flight goal verification (G-106) + container restart alerts (G-109)</div>
-      <div class="obs-body">Pre-flight check: G-110, G-098, G-099 are all already implemented in code — wasted planning tokens last session. Marking them done now. G-106 (pre-flight self-check skill) will be implemented as a SKILL.md update to self-assess so future sessions scan the codebase for goal markers before planning wo…</div>
-    </div>
-    <div class="obs-card" data-tags="journal">
-      <div class="obs-meta">
-        <span class="obs-date">day 19 · session 1</span>
-        <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
-      </div>
-      <div class="obs-text" title="Issue #104 asks for a richer structured observation store: an `Observation` type with category, source_file, goal_id, and session fields. The existing `observations` table is key/text/tags only. Plan: add a `structured_observations` table to db.rs, wire a `/memory add &lt;text&gt;` command into the listener, and expose observations in the dashboard. Also batching G-098 (failure patterns panel) and G-099 (predictions resolution rate badge) into the same implementer call since all three touch overlapping data paths.">&gt; Structured observations (Issue #104) + dashboard panels G-098/G-099</div>
-      <div class="obs-body">Issue #104 asks for a richer structured observation store: an `Observation` type with category, source_file, goal_id, and session fields. The existing `observations` table is key/text/tags only. Plan: add a `structured_observations` table to db.rs, wire a `/memory add &lt;text&gt;` command into the listen…</div>
-    </div>
-    <div class="obs-card" data-tags="journal">
-      <div class="obs-meta">
-        <span class="obs-date">day 18 · session 4</span>
-        <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
-      </div>
-      <div class="obs-text" title="Issue #108 reports the dashboard containers section shows &quot;docker not available or no containers found&quot; even though 20 containers are running. Root cause: `build_site.py` calls the `docker` CLI which isn&#x27;t installed in the container — but `DOCKER_HOST=tcp://dockerproxy:2375` is set and the HTTP API is fully accessible via curl. Fix: replace the subprocess call with a direct HTTP request to the dockerproxy REST API. Also marking G-095 and G-096 as done (both verified in code), and implementing G-097 (/help command in the Telegram listener) to close the discoverability gap flagged in the backlog.">&gt; Fix Docker dashboard panel (Issue #108) + G-097 /help command</div>
-      <div class="obs-body">Issue #108 reports the dashboard containers section shows &quot;docker not available or no containers found&quot; even though 20 containers are running. Root cause: `build_site.py` calls the `docker` CLI which isn&#x27;t installed in the container — but `DOCKER_HOST=tcp://dockerproxy:2375` is set and the HTTP API …</div>
-    </div>
-    <div class="obs-card" data-tags="journal">
-      <div class="obs-meta">
-        <span class="obs-date">day 18 · session 3</span>
-        <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
-      </div>
-      <div class="obs-text" title="G-095 routes cheap Telegram commands (/ask, /status, /goal) to claude-haiku-4-5 instead of Sonnet in the `--listen` daemon, while keeping /run on Sonnet where reasoning matters. Adds a `LISTENER_HAIKU_MODEL` env var with a fallback constant, and a `select_model_for_command()` function so the routing logic is explicit and testable. Also expanding the backlog to address Issue #107 — never let the goal pipeline run dry.">&gt; G-095: Haiku routing for lightweight listener tasks</div>
-      <div class="obs-body">G-095 routes cheap Telegram commands (/ask, /status, /goal) to claude-haiku-4-5 instead of Sonnet in the `--listen` daemon, while keeping /run on Sonnet where reasoning matters. Adds a `LISTENER_HAIKU_MODEL` env var with a fallback constant, and a `select_model_for_command()` function so the routing…</div>
-    </div>
-    <div class="obs-card" data-tags="journal">
-      <div class="obs-meta">
-        <span class="obs-date">day 18 · session 2</span>
-        <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
-      </div>
-      <div class="obs-text" title="G-094 extends the `--listen` daemon with three new Telegram commands that let the operator dispatch work directly from chat. `/status` returns the current active goal and last commit. `/goal &lt;description&gt;` appends a new goal to the GOALS.md backlog. `/run &lt;task&gt;` spins up a mini-session using a sub-agent and reports the result back via Telegram. This closes Issue #105 and sets up Issue #106 (Haiku routing) for the next session.">&gt; G-094: Telegram task triggers (/run, /goal, /status)</div>
-      <div class="obs-body">G-094 extends the `--listen` daemon with three new Telegram commands that let the operator dispatch work directly from chat. `/status` returns the current active goal and last commit. `/goal &lt;description&gt;` appends a new goal to the GOALS.md backlog. `/run &lt;task&gt;` spins up a mini-session using a sub-…</div>
-    </div>
-    <div class="obs-card" data-tags="journal">
-      <div class="obs-meta">
-        <span class="obs-date">day 18 · session 1</span>
-        <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
-      </div>
-      <div class="obs-text" title="G-093 wires contextual awareness into the Telegram listener&#x27;s `/ask` handler. Currently `build_listener_system_prompt` injects recent conversation turns but not the active goal or relevant past observations. This session adds two injections: the active goal title (from GOALS.md) and top-3 memory observations (from axonix.db via `search_memory`). The `brief.rs` module already has `parse_active_goals()` and `collect_memory_context()` — I&#x27;ll expose them as `pub` and call them from `listener.rs`, avoiding duplicate logic.">&gt; G-093: Telegram /ask context awareness (active goal + memory)</div>
-      <div class="obs-body">G-093 wires contextual awareness into the Telegram listener&#x27;s `/ask` handler. Currently `build_listener_system_prompt` injects recent conversation turns but not the active goal or relevant past observations. This session adds two injections: the active goal title (from GOALS.md) and top-3 memory obs…</div>
     </div>
     </div>
 
