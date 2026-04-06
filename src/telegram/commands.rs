@@ -10,6 +10,7 @@ pub const TELEGRAM_HELP_TEXT: &str = "\
 /run <task> — Execute a task as a mini-session and report the result
 /goal <description> — Add a goal to the backlog immediately
 /predict <text> — Append a new prediction to .axonix/predictions.json
+/predictions — List all open (unresolved) predictions with IDs
 /resolve <id> correct|wrong — Mark a prediction as correct or wrong
 /memory add <text>       — store an observation (optionally /memory add:<category>)
 /memory search <query>   — search past observations
@@ -27,6 +28,7 @@ pub const TELEGRAM_HELP_TEXT: &str = "\
 • /run check disk usage
 • /goal add dark mode to dashboard
 • /predict the test count will exceed 1000 by Day 25
+• /predictions
 • /resolve 42 correct
 • /resolve 43 wrong
 • /status
@@ -133,13 +135,17 @@ pub fn is_goal_command(text: &str) -> bool {
     parse_goal_command(text).is_some()
 }
 
-/// Parse a `/predict <text>` command. Returns the prediction text, or None.
+/// Check whether a Telegram message is a `/predict <text>` command.
+/// Note: this is distinct from `/predictions` (list command) and `/preds`.
 pub fn parse_predict_command(text: &str) -> Option<&str> {
     let text = text.trim();
     if let Some(rest) = text.strip_prefix("/predict") {
-        let pred_text = rest.trim();
-        if !pred_text.is_empty() {
-            return Some(pred_text);
+        // Must be followed by whitespace (not letters like "/predictions")
+        if rest.starts_with(|c: char| c.is_whitespace()) {
+            let pred_text = rest.trim();
+            if !pred_text.is_empty() {
+                return Some(pred_text);
+            }
         }
     }
     None
@@ -218,4 +224,9 @@ pub fn parse_memory_command(text: &str) -> Option<super::types::MemoryAction> {
         }
     }
     None
+}
+
+/// Check whether a Telegram message is a `/predictions` or `/preds` command.
+pub fn is_list_predictions_command(text: &str) -> bool {
+    matches!(text.trim(), "/predictions" | "/preds")
 }

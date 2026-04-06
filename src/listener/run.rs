@@ -19,7 +19,7 @@ use super::prompt::{
 };
 use super::handlers::{
     append_goal_to_backlog, append_prediction, resolve_prediction,
-    compute_prediction_accuracy, run_mini_session,
+    compute_prediction_accuracy, run_mini_session, list_open_predictions,
 };
 
 /// Run the always-on Telegram listener loop.
@@ -352,6 +352,11 @@ pub async fn run_listener(
                         }
                         Err(e) => format!("⚠️ Could not resolve prediction: {e}"),
                     };
+                    let _ = tg.reply_to(&reply, message_id).await;
+                    stats.messages_handled += 1;
+                }
+                BotCommand::ListPredictions { message_id } => {
+                    let reply = list_open_predictions();
                     let _ = tg.reply_to(&reply, message_id).await;
                     stats.messages_handled += 1;
                 }

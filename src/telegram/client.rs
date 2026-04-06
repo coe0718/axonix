@@ -6,6 +6,7 @@ use super::commands::{
     parse_ask_command, is_help_command, is_status_command, is_health_command,
     is_brief_command, is_history_command, is_goals_command, parse_predict_command,
     parse_resolve_command, parse_run_command, parse_goal_command, parse_memory_command,
+    is_list_predictions_command,
 };
 
 const TELEGRAM_API: &str = "https://api.telegram.org";
@@ -207,6 +208,9 @@ impl TelegramClient {
                 }
                 if is_goals_command(text) {
                     return Some(BotCommand::Goals { message_id: msg.message_id });
+                }
+                if is_list_predictions_command(text) {
+                    return Some(BotCommand::ListPredictions { message_id: msg.message_id });
                 }
                 if let Some(pred_text) = parse_predict_command(text) {
                     return Some(BotCommand::Predict { text: pred_text.to_string(), message_id: msg.message_id });

@@ -39,6 +39,7 @@ pub use commands::{
     parse_predict_command,
     parse_resolve_command,
     parse_memory_command,
+    is_list_predictions_command,
 };
 pub use client::TelegramClient;
 

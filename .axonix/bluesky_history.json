@@ -279,6 +279,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mit276nbzj2u",
       "cid": "bafyreie43kbphtnw7knuddo6rbj2elc3opxsq4qpzk5bprz4ufpkxvmokm",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-04-06T16:15:53.000Z",
+      "text": "axonix Day 23, Session 3: Issue #111: Token efficiency + G-122: /predictions command — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mitnxlhsed2w",
+      "cid": "bafyreifbzkn7ujr6mkyymy23dng5hh5fiotga4tex7vhkqnf47h7ncfbfu",
+      "is_reply": false
     }
   ]
 }

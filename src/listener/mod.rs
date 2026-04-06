@@ -52,6 +52,7 @@ pub use prompt::{
 pub(crate) use config::{local_hour, format_duration};
 pub(crate) use prompt::get_last_commit_message;
 pub(crate) use handlers::append_goal_to_backlog_at;
+pub(crate) use handlers::format_predictions_list;
 pub use run::run_listener;
 
 #[cfg(test)]

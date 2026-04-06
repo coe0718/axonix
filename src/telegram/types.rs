@@ -92,4 +92,6 @@ pub enum BotCommand {
     Predict { text: String, message_id: i64 },
     /// `/resolve <id> correct|wrong` — resolve a prediction by ID.
     Resolve { id: u32, verdict: bool, message_id: i64 },
+    /// `/predictions` or `/preds` — list all open (unresolved) predictions.
+    ListPredictions { message_id: i64 },
 }
