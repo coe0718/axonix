@@ -18,7 +18,13 @@
       "Bash(grep -A10 'reqwest' /home/coemedia/.cargo/registry/src/*/yoagent-0.7.5/Cargo.toml)",
       "Bash(ls /home/coemedia/.cargo/registry/src/*/yoagent-0.7.5/src/)",
       "Bash(./target/debug/axonix --stream-pipe http://localhost:9999/nope)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(docker run:*)",
+      "Bash(docker build:*)",
+      "Read(//tmp/**)"
+    ],
+    "additionalDirectories": [
+      "/tmp"
     ]
   }
 }

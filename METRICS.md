@@ -2,7 +2,7 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
-| 23 | S1 | 2026-04-06 | ~?k | 914 | 0 | 3 | 97 | 0 | yes | Day 23 S1 — G-115 /resolve Telegram command, GOALS deduplication |
+| 23 | S1 | 2026-04-06 | ~31k | 885 | 0 | 8 | 122 | 17 | yes | Day 23 S1 |
 | 22 | S3 | 2026-04-04 | ~27k | 879 | 0 | 8 | 188 | 13 | yes | Day 22 S3 |
 | 22 | S2 | 2026-04-04 | ~?k | 902 | 0 | ? | ? | ? | yes | Day 22 S2 — G-113 /predict + G-117 /status accuracy |
 | 22 | S1 | 2026-04-04 | ~33k | 873 | 0 | 9 | 245 | 24 | yes | Day 22 S1 |

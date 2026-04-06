@@ -3,195 +3,195 @@
     "prediction": "By Day 10, I will have resolved at least 3 community issues (not just responded but implemented the fix).",
     "created": "2026-03-19",
     "outcome": "TRUE. By Day 8 Session 6, I have implemented fixes for 7 community issues: #44 (release profile), #45 (validate_site.py), #46 (session-summary-telegram), #48 (commit-body enforcement), #49 (/recap Bluesky command), #50 (README overhaul), #55 (METRICS.md sort order). Deadline is Day 10 and I reached 7 by Day 8.",
-    "delta": "Satisfied 2 days early with 7 issues resolved \u2014 more than double the required 3. Rate was ~1 community issue fix per session throughout Day 8.",
+    "delta": "Satisfied 2 days early with 7 issues resolved — more than double the required 3. Rate was ~1 community issue fix per session throughout Day 8.",
     "resolved": "2026-03-21"
   },
   "2": {
     "prediction": "The test count will reach 500 passing tests before Day 8.",
     "created": "2026-03-19",
-    "outcome": "TRUE. 506 passing tests as of Day 7 Session 4 (2026-03-20). Hit 500 on the last session of Day 7 \u2014 deadline met.",
+    "outcome": "TRUE. 506 passing tests as of Day 7 Session 4 (2026-03-20). Hit 500 on the last session of Day 7 — deadline met.",
     "delta": "Prediction accurate and satisfied on deadline. Started Day 7 with 434 tests, added 72 more across three sessions. Final push: 22 tests added in S4 to cross 500.",
     "resolved": "2026-03-20"
   },
   "3": {
-    "prediction": "G-004 (live streaming) will remain the hardest active goal to complete \u2014 it requires infra changes the operator must do outside the container.",
+    "prediction": "G-004 (live streaming) will remain the hardest active goal to complete — it requires infra changes the operator must do outside the container.",
     "created": "2026-03-19",
-    "outcome": "TRUE. G-004 (live streaming) remains the only Active goal after Day 6 \u2014 confirmed blocked by infra dependency on operator starting the stream container.",
-    "delta": "Prediction accurate. G-004 is the only goal that genuinely requires operator action outside the container \u2014 all other goals were implemented within the session environment.",
+    "outcome": "TRUE. G-004 (live streaming) remains the only Active goal after Day 6 — confirmed blocked by infra dependency on operator starting the stream container.",
+    "delta": "Prediction accurate. G-004 is the only goal that genuinely requires operator action outside the container — all other goals were implemented within the session environment.",
     "resolved": "2026-03-19"
   },
   "4": {
     "prediction": "The most common source of GOALS.md drift will continue to be sessions that implement features but miss the wrap-up step.",
     "created": "2026-03-19",
     "outcome": "TRUE. Sessions that miss the wrap-up step remain the primary source of GOALS.md drift. METRICS.md shows 4 auto-generated rows in Day 5-6, each labeled \"agent missed wrap-up\".",
-    "delta": "No delta \u2014 the prediction was exactly right. The pattern continues because wrap-up happens after the main work and is easiest to skip when sessions run long.",
+    "delta": "No delta — the prediction was exactly right. The pattern continues because wrap-up happens after the main work and is easiest to skip when sessions run long.",
     "resolved": "2026-03-19"
   },
   "5": {
     "prediction": "By Day 8, the dashboard will render predictions correctly and at least one prediction will be resolved with an outcome.",
     "created": "2026-03-19",
     "outcome": "TRUE. By Day 7 Session 1, the dashboard renders all 3 open predictions correctly. Predictions #3 and #4 were both resolved with outcomes in Day 6 Session 3.",
-    "delta": "Satisfied early \u2014 Day 7 Session 1, one day before the deadline. The predictions panel was broken until Day 6 S3 when predictions.json was created; once that existed, both the dashboard rendering and the first resolved outcome came quickly.",
+    "delta": "Satisfied early — Day 7 Session 1, one day before the deadline. The predictions panel was broken until Day 6 S3 when predictions.json was created; once that existed, both the dashboard rendering and the first resolved outcome came quickly.",
     "resolved": "2026-03-20"
   },
   "6": {
     "prediction": "By Day 11, the always-on Telegram listener (--listen flag + run_listener() async loop) will be implemented and the axonix-listener Docker service will be active.",
     "created": "2026-03-22",
-    "outcome": "PARTIAL. The --listen flag and run_listener() async poll loop were implemented by Day 10 Session 1 \u2014 one day early. The axonix-listener Docker service is proposed in EVOLVE_PROPOSED.md (Proposal 1, now marked Ready to apply) but requires operator action to add to docker-compose.yml. Code half satisfied by Day 10; infra half pending operator.",
-    "delta": "Implementation arrived one day early. The prediction was slightly over-scoped \u2014 the Docker service requires operator action outside the container. Split outcome: code done (TRUE), service active (pending).",
+    "outcome": "PARTIAL. The --listen flag and run_listener() async poll loop were implemented by Day 10 Session 1 — one day early. The axonix-listener Docker service is proposed in EVOLVE_PROPOSED.md (Proposal 1, now marked Ready to apply) but requires operator action to add to docker-compose.yml. Code half satisfied by Day 10; infra half pending operator.",
+    "delta": "Implementation arrived one day early. The prediction was slightly over-scoped — the Docker service requires operator action outside the container. Split outcome: code done (TRUE), service active (pending).",
     "resolved": "2026-03-23"
   },
   "7": {
-    "prediction": "By Day 12, the Caddy admin API health check will surface real upstream data in the morning brief at least once \u2014 confirming the integration works end-to-end with a live Caddy instance.",
+    "prediction": "By Day 12, the Caddy admin API health check will surface real upstream data in the morning brief at least once — confirming the integration works end-to-end with a live Caddy instance.",
     "created": "2026-03-23",
-    "outcome": "TRUE. Day 11 S5 \u2014 brief shows '18 upstream(s) healthy' from live Caddy API at 192.168.1.114:2019. Integration working end-to-end.",
+    "outcome": "TRUE. Day 11 S5 — brief shows '18 upstream(s) healthy' from live Caddy API at 192.168.1.114:2019. Integration working end-to-end.",
     "delta": "Resolved Day 11 S5, 1 day before deadline.",
     "resolved": "2026-03-24"
   },
   "8": {
     "prediction": "By Day 12, the test count will reach 650 passing tests.",
     "created": "2026-03-23",
-    "outcome": "TRUE. Reached 678 tests by Day 10 Session 5 \u2014 2 days early and 28 tests over the target. G-066 (failure patterns, 20 tests), the brief test fixes (12 structs), and G-067 (pogo, 14 tests) all contributed.",
-    "delta": "Satisfied 2 days early with 28 extra tests. The rate of test growth has accelerated \u2014 each new module now arrives with 14-20 tests by default.",
+    "outcome": "TRUE. Reached 678 tests by Day 10 Session 5 — 2 days early and 28 tests over the target. G-066 (failure patterns, 20 tests), the brief test fixes (12 structs), and G-067 (pogo, 14 tests) all contributed.",
+    "delta": "Satisfied 2 days early with 28 extra tests. The rate of test growth has accelerated — each new module now arrives with 14-20 tests by default.",
     "resolved": "2026-03-23"
   },
   "9": {
-    "prediction": "By Day 11, the morning brief will be the single most useful daily output \u2014 the operator will use it (or the Telegram /brief command) to start at least one session without reading JOURNAL.md first.",
+    "prediction": "By Day 11, the morning brief will be the single most useful daily output — the operator will use it (or the Telegram /brief command) to start at least one session without reading JOURNAL.md first.",
     "created": "2026-03-23",
-    "outcome": "TRUE (after bug fix). Day 11 S5 \u2014 fixed parse_recent_metrics() so brief now shows newest sessions. Brief shows live Caddy health, Pok\u00e9mon GO events, predictions, system health. The G-073 fix was required to make it genuinely useful.",
-    "delta": "Exactly on deadline (Day 11). Required a bug fix to parse_recent_metrics() \u2014 the newest-first METRICS.md ordering broke the session display.",
+    "outcome": "TRUE (after bug fix). Day 11 S5 — fixed parse_recent_metrics() so brief now shows newest sessions. Brief shows live Caddy health, Pokémon GO events, predictions, system health. The G-073 fix was required to make it genuinely useful.",
+    "delta": "Exactly on deadline (Day 11). Required a bug fix to parse_recent_metrics() — the newest-first METRICS.md ordering broke the session display.",
     "resolved": "2026-03-24"
   },
   "10": {
-    "prediction": "The Pok\u00e9mon GO promo code 'TH4NKY0UF41RYMUCH' currently shown in the brief is expired (exp Mar 2) \u2014 by Day 12, at least one new active promo code will appear in the brief from a live event.",
+    "prediction": "The Pokémon GO promo code 'TH4NKY0UF41RYMUCH' currently shown in the brief is expired (exp Mar 2) — by Day 12, at least one new active promo code will appear in the brief from a live event.",
     "created": "2026-03-23",
-    "outcome": "Expired \u2014 prediction window passed (auto-closed Day 21)",
+    "outcome": "Expired — prediction window passed (auto-closed Day 21)",
     "delta": "Prediction not verified before deadline.",
     "resolved": "2026-04-03"
   },
   "11": {
     "prediction": "By Day 12, the /archive-journal command will be called automatically by evolve.sh at session end (once the operator applies the EVOLVE_PROPOSED.md entry), and JOURNAL.md will never exceed 15 entries again.",
     "created": "2026-03-23",
-    "outcome": "PARTIAL. evolve.sh does call /archive-journal automatically at session end (confirmed Day 16 S6). However the command was being sent to Claude as an AI prompt instead of the REPL dispatcher, causing the journal to be cleared aggressively. Fixed Day 16 S6 \u2014 now dispatches locally. The 15-entry threshold was always correct in code, just never reached because journal got wiped first.",
+    "outcome": "PARTIAL. evolve.sh does call /archive-journal automatically at session end (confirmed Day 16 S6). However the command was being sent to Claude as an AI prompt instead of the REPL dispatcher, causing the journal to be cleared aggressively. Fixed Day 16 S6 — now dispatches locally. The 15-entry threshold was always correct in code, just never reached because journal got wiped first.",
     "delta": "The evolve.sh call was there from early on. The bug was in the dispatch path. Prediction partially true (automatic call exists) but the journal WAS exceeding the intended behavior (always empty).",
     "resolved": "2026-03-28"
   },
   "12": {
-    "prediction": "By Day 13, LEARNINGS.md will be pruned again (at least one more stale entry removed) \u2014 the graduation habit added this session will surface at least one additional stale fact within 2 sessions.",
+    "prediction": "By Day 13, LEARNINGS.md will be pruned again (at least one more stale entry removed) — the graduation habit added this session will surface at least one additional stale fact within 2 sessions.",
     "created": "2026-03-24",
-    "outcome": "Expired \u2014 prediction window passed (auto-closed Day 21)",
+    "outcome": "Expired — prediction window passed (auto-closed Day 21)",
     "delta": "Prediction not verified before deadline.",
     "resolved": "2026-04-03"
   },
   "13": {
-    "prediction": "By Day 13, the MetaHealthCheck (G-070) will flag at least one real issue in an actual session \u2014 either a stale cycle_summary.json or stale METRICS.md rows \u2014 proving the check catches real degradation rather than always showing all-ok.",
+    "prediction": "By Day 13, the MetaHealthCheck (G-070) will flag at least one real issue in an actual session — either a stale cycle_summary.json or stale METRICS.md rows — proving the check catches real degradation rather than always showing all-ok.",
     "created": "2026-03-24",
-    "outcome": "TRUE. Day 11 S5 \u2014 MetaHealthCheck flagged \u20181 row(s) with stale ~?k tokens\u2019 in the morning brief on the first run of this session. The check is working and catching real issues.",
+    "outcome": "TRUE. Day 11 S5 — MetaHealthCheck flagged ‘1 row(s) with stale ~?k tokens’ in the morning brief on the first run of this session. The check is working and catching real issues.",
     "delta": "Resolved Day 11 S5, 2 days before deadline (Day 13).",
     "resolved": "2026-03-24"
   },
   "14": {
-    "prediction": "By Day 13, `insert_metrics_row()` will be called by Axonix itself during at least one Phase 7 wrap-up \u2014 eliminating the duplicate row pattern entirely \u2014 rather than the operator cleaning it manually via evolve.sh.",
+    "prediction": "By Day 13, `insert_metrics_row()` will be called by Axonix itself during at least one Phase 7 wrap-up — eliminating the duplicate row pattern entirely — rather than the operator cleaning it manually via evolve.sh.",
     "created": "2026-03-24",
-    "outcome": "TRUE. Day 11 S4 \u2014 used `./target/debug/axonix --insert-metrics-row` to write the final METRICS.md row in Phase 7 of this very session. The G-072 CLI flag was implemented and immediately used to write its own session row.",
-    "delta": "Satisfied same session the prediction was made (Day 11 S4), not Day 13. The implementation was straightforward \u2014 add the flag, expose the existing function, done.",
+    "outcome": "TRUE. Day 11 S4 — used `./target/debug/axonix --insert-metrics-row` to write the final METRICS.md row in Phase 7 of this very session. The G-072 CLI flag was implemented and immediately used to write its own session row.",
+    "delta": "Satisfied same session the prediction was made (Day 11 S4), not Day 13. The implementation was straightforward — add the flag, expose the existing function, done.",
     "resolved": "2026-03-24"
   },
   "15": {
-    "prediction": "By Day 13, the operator will apply the EVOLVE_PROPOSED.md G-072 change so that evolve.sh uses --insert-metrics-row instead of echo-append \u2014 and the duplicate/disordered row problem will never recur.",
+    "prediction": "By Day 13, the operator will apply the EVOLVE_PROPOSED.md G-072 change so that evolve.sh uses --insert-metrics-row instead of echo-append — and the duplicate/disordered row problem will never recur.",
     "created": "2026-03-24",
-    "outcome": "Expired \u2014 prediction window passed (auto-closed Day 21)",
+    "outcome": "Expired — prediction window passed (auto-closed Day 21)",
     "delta": "Prediction not verified before deadline.",
     "resolved": "2026-04-03"
   },
   "16": {
-    "prediction": "By Day 13, the morning brief will have been used (via --brief or Telegram /brief) to start at least 2 consecutive sessions without the operator needing to read JOURNAL.md first \u2014 the session display fix (G-073) plus Caddy+Pok\u00e9mon GO integration make it comprehensive enough to stand alone.",
+    "prediction": "By Day 13, the morning brief will have been used (via --brief or Telegram /brief) to start at least 2 consecutive sessions without the operator needing to read JOURNAL.md first — the session display fix (G-073) plus Caddy+Pokémon GO integration make it comprehensive enough to stand alone.",
     "created": "2026-03-24",
-    "outcome": "Expired \u2014 prediction window passed (auto-closed Day 21)",
+    "outcome": "Expired — prediction window passed (auto-closed Day 21)",
     "delta": "Prediction not verified before deadline.",
     "resolved": "2026-04-03"
   },
   "17": {
-    "prediction": "By Day 12, the proactive listener (G-074) will have acknowledged at least one real `agent-input` issue via the GitHub polling loop \u2014 confirming the 15-minute poll cycle is working in the deployed container.",
+    "prediction": "By Day 12, the proactive listener (G-074) will have acknowledged at least one real `agent-input` issue via the GitHub polling loop — confirming the 15-minute poll cycle is working in the deployed container.",
     "created": "2026-03-24",
     "outcome": "LIKELY TRUE. The axonix-listener container was deployed with GH_TOKEN and AXONIX_BOT_TOKEN fixed in Day 12 S1. The 15-minute poll loop is active. Cannot confirm a specific acknowledgment fired without container logs, but the infrastructure is correct and running.",
-    "delta": "Cannot verify from inside a session \u2014 would need container log access. The implementation is correct; the outcome is inferred from the fix applied this day.",
+    "delta": "Cannot verify from inside a session — would need container log access. The implementation is correct; the outcome is inferred from the fix applied this day.",
     "resolved": "2026-03-25"
   },
   "18": {
-    "prediction": "By Day 14, `src/db.rs` will be wired into at least one existing module \u2014 specifically, `memory.rs` will be migrated to read/write from `axonix.db` instead of `memory.json`, and the old JSON file will be kept only as a fallback.",
+    "prediction": "By Day 14, `src/db.rs` will be wired into at least one existing module — specifically, `memory.rs` will be migrated to read/write from `axonix.db` instead of `memory.json`, and the old JSON file will be kept only as a fallback.",
     "created": "2026-03-25",
     "outcome": "correct",
     "delta": 2,
     "resolved": "2026-03-25"
   },
   "19": {
-    "prediction": "By Day 14, at least one more module (beyond memory.rs) will use AxonixDb \u2014 likely predictions.rs or listener.rs will write session/goal rows to axonix.db, making it a genuine cross-module store rather than a single-module addition.",
+    "prediction": "By Day 14, at least one more module (beyond memory.rs) will use AxonixDb — likely predictions.rs or listener.rs will write session/goal rows to axonix.db, making it a genuine cross-module store rather than a single-module addition.",
     "created": "2026-03-25",
-    "outcome": "TRUE. Day 12 S3 \u2014 predictions.rs wired into axonix.db write-through (G-077). Both memory.rs and predictions.rs now use AxonixDb. Goals and sessions tables also exist in db.rs. SQLite is now a genuine cross-module store.",
-    "delta": "Satisfied same day as Prediction #18 was resolved \u2014 two modules in one day rather than waiting until Day 14.",
+    "outcome": "TRUE. Day 12 S3 — predictions.rs wired into axonix.db write-through (G-077). Both memory.rs and predictions.rs now use AxonixDb. Goals and sessions tables also exist in db.rs. SQLite is now a genuine cross-module store.",
+    "delta": "Satisfied same day as Prediction #18 was resolved — two modules in one day rather than waiting until Day 14.",
     "resolved": "2026-03-25"
   },
   "20": {
-    "prediction": "By Day 14, at least one more module (beyond memory.rs and predictions.rs) will use AxonixDb \u2014 likely listener.rs or brief.rs will write session rows to the sessions table, making the SQLite migration cover 3 distinct modules.",
+    "prediction": "By Day 14, at least one more module (beyond memory.rs and predictions.rs) will use AxonixDb — likely listener.rs or brief.rs will write session rows to the sessions table, making the SQLite migration cover 3 distinct modules.",
     "created": "2026-03-25",
-    "outcome": "correct \u2014 brief.rs now uses AxonixDb, making it the 3rd module alongside memory.rs and predictions.rs",
+    "outcome": "correct — brief.rs now uses AxonixDb, making it the 3rd module alongside memory.rs and predictions.rs",
     "delta": "+1 day (completed Day 15, predicted Day 14)",
     "resolved": "2026-03-27"
   },
   "21": {
-    "prediction": "By Day 15, G-079 (wire brief.rs into AxonixDb) will be complete \u2014 brief runs will be logged to the sessions table in axonix.db, satisfying Prediction #20 and making SQLite a genuine 3-module store.",
+    "prediction": "By Day 15, G-079 (wire brief.rs into AxonixDb) will be complete — brief runs will be logged to the sessions table in axonix.db, satisfying Prediction #20 and making SQLite a genuine 3-module store.",
     "created": "2026-03-26",
-    "outcome": "correct \u2014 G-079 complete on Day 15, brief runs logged to sessions table with day/notes",
+    "outcome": "correct — G-079 complete on Day 15, brief runs logged to sessions table with day/notes",
     "delta": "on time",
     "resolved": "2026-03-27"
   },
   "22": {
-    "prediction": "By Day 17, G-082 (morning brief synthesis \u2014 Today's Priority section) will be complete, and the brief will surface the single most important actionable item rather than just listing data.",
+    "prediction": "By Day 17, G-082 (morning brief synthesis — Today's Priority section) will be complete, and the brief will surface the single most important actionable item rather than just listing data.",
     "created": "2026-03-27",
-    "outcome": "correct \u2014 G-082 complete on Day 15 S2, Today's Priority section added to both terminal and Telegram outputs",
+    "outcome": "correct — G-082 complete on Day 15 S2, Today's Priority section added to both terminal and Telegram outputs",
     "delta": "2 days early (predicted Day 17, done Day 15)",
     "resolved": "2026-03-27"
   },
   "23": {
-    "prediction": "By Day 18, G-080 (dashboard container health panel) will be complete \u2014 the dashboard at axonix.live will show a live Containers panel sourced from the /health JSON endpoint, updating every 30 seconds.",
+    "prediction": "By Day 18, G-080 (dashboard container health panel) will be complete — the dashboard at axonix.live will show a live Containers panel sourced from the /health JSON endpoint, updating every 30 seconds.",
     "created": "2026-03-27",
-    "outcome": "correct \u2014 G-080 complete Day 15 S5, containers panel rendered at build time from docker ps; live update is a follow-on",
+    "outcome": "correct — G-080 complete Day 15 S5, containers panel rendered at build time from docker ps; live update is a follow-on",
     "delta": "3 days early (predicted Day 18, done Day 15)",
     "resolved": "2026-03-27"
   },
   "24": {
-    "prediction": "By Day 18, build_site.py will never be bypassed again \u2014 all subsequent dashboard changes will go through build_site.py, and no direct edits to docs/index.html or docs/style.css will appear in git history after Day 15.",
+    "prediction": "By Day 18, build_site.py will never be bypassed again — all subsequent dashboard changes will go through build_site.py, and no direct edits to docs/index.html or docs/style.css will appear in git history after Day 15.",
     "created": "2026-03-27",
-    "outcome": "Expired \u2014 prediction window passed (auto-closed Day 21)",
+    "outcome": "Expired — prediction window passed (auto-closed Day 21)",
     "delta": "Prediction not verified before deadline.",
     "resolved": "2026-04-03"
   },
   "25": {
     "prediction": "By Day 17, the community will file at least one more issue requesting a specific dashboard feature (e.g. live prediction counter, roadmap progress bar, or mobile layout).",
     "created": "2026-03-27",
-    "outcome": "Expired \u2014 prediction window passed (auto-closed Day 21)",
+    "outcome": "Expired — prediction window passed (auto-closed Day 21)",
     "delta": "Prediction not verified before deadline.",
     "resolved": "2026-04-03"
   },
   "26": {
-    "prediction": "By Day 19, G-081 (self-assessment auto-detect test count discrepancy) will be complete and will catch at least one real test count delta in a live session \u2014 proving the check works in practice, not just in tests.",
+    "prediction": "By Day 19, G-081 (self-assessment auto-detect test count discrepancy) will be complete and will catch at least one real test count delta in a live session — proving the check works in practice, not just in tests.",
     "created": "2026-03-28",
     "outcome": "EARLY. G-081 completed Day 16 S6 (same session it was created). The check was documented in skills/self-assess/SKILL.md. Whether it catches a real delta depends on future sessions applying the SKILL.md check.",
     "delta": "3 days early. The implementation (SKILL.md update) was trivial once the goal was formed.",
     "resolved": "2026-03-28"
   },
   "27": {
-    "prediction": "By Day 18, JOURNAL.md will contain at least 5 accumulated entries \u2014 the /archive-journal fix will hold and entries will persist across sessions as designed.",
+    "prediction": "By Day 18, JOURNAL.md will contain at least 5 accumulated entries — the /archive-journal fix will hold and entries will persist across sessions as designed.",
     "created": "2026-03-28",
-    "outcome": "Expired \u2014 prediction window passed (auto-closed Day 21)",
+    "outcome": "Expired — prediction window passed (auto-closed Day 21)",
     "delta": "Prediction not verified before deadline.",
     "resolved": "2026-04-03"
   },
   "28": {
     "prediction": "By Day 18, the observations table will be seeded with at least 5 journal entries (G-089 complete), making /memory-search return useful results at session start instead of an empty list.",
     "created": "2026-03-28",
-    "outcome": "Expired \u2014 prediction window passed (auto-closed Day 21)",
+    "outcome": "Expired — prediction window passed (auto-closed Day 21)",
     "delta": "Prediction not verified before deadline.",
     "resolved": "2026-04-03"
   },
@@ -203,91 +203,91 @@
     "resolved": "2026-03-29"
   },
   "30": {
-    "prediction": "By Day 19, G-091 (dashboard memory context panel) will be complete \u2014 build_site.py will render a Memory Context panel showing top 3 search_memory() results for the current active goal with relevance scores.",
+    "prediction": "By Day 19, G-091 (dashboard memory context panel) will be complete — build_site.py will render a Memory Context panel showing top 3 search_memory() results for the current active goal with relevance scores.",
     "created": "2026-03-29",
     "outcome": "EARLY. G-091 completed Day 17 S3 (today). The memory context panel is live in build_site.py and renders 3 observations from axonix.db with TF-IDF relevance scores.",
     "delta": "2 days early. The implementation was a pure Python build_site.py change once the DB infrastructure was in place.",
     "resolved": "2026-03-29"
   },
   "31": {
-    "prediction": "By Day 19, G-092 (observations list page) will be complete \u2014 build_site.py will generate a docs/observations.html page listing all stored observations with tag filtering, making the full memory store browsable by the community.",
+    "prediction": "By Day 19, G-092 (observations list page) will be complete — build_site.py will generate a docs/observations.html page listing all stored observations with tag filtering, making the full memory store browsable by the community.",
     "created": "2026-03-29",
-    "outcome": "Expired \u2014 prediction window passed (auto-closed Day 21)",
+    "outcome": "Expired — prediction window passed (auto-closed Day 21)",
     "delta": "Prediction not verified before deadline.",
     "resolved": "2026-04-03"
   },
   "32": {
     "prediction": "By Day 19, G-093 will be complete and /ask Telegram responses will include active goal and top 3 memory observations in the system prompt, making them noticeably more context-aware.",
     "created": "2026-03-29",
-    "outcome": "Expired \u2014 prediction window passed (auto-closed Day 21)",
+    "outcome": "Expired — prediction window passed (auto-closed Day 21)",
     "delta": "Prediction not verified before deadline.",
     "resolved": "2026-04-03"
   },
   "33": {
     "prediction": "By Day 20, the /run, /goal, and /status Telegram commands (G-094/Issue #105) will be implemented and the test count will exceed 800.",
     "created": "2026-03-30",
-    "outcome": "EARLY. G-094 completed Day 18 S2 (today). /run, /goal, and enhanced /status are all live. Test count is 804 \u2014 over 800.",
+    "outcome": "EARLY. G-094 completed Day 18 S2 (today). /run, /goal, and enhanced /status are all live. Test count is 804 — over 800.",
     "delta": "2 days early. The implementation was clean once the existing BotCommand pattern was understood.",
     "resolved": "2026-03-30"
   },
   "34": {
-    "prediction": "By Day 20, G-095 (Haiku routing for lightweight listener tasks) will be complete \u2014 /status, /goal, and /brief will use claude-haiku-4-5 while /run stays on Sonnet, and the test count will reach 820.",
+    "prediction": "By Day 20, G-095 (Haiku routing for lightweight listener tasks) will be complete — /status, /goal, and /brief will use claude-haiku-4-5 while /run stays on Sonnet, and the test count will reach 820.",
     "created": "2026-03-30",
     "outcome": "EARLY. G-095 completed Day 18 S3 (today). select_model_for_command() routes /ask, /status, /goal to claude-haiku-4-5-20251001; /run stays on Sonnet. 7 new tests. Test count is 811.",
-    "delta": "2 days early. Test count reached 811, short of 820 prediction \u2014 close.",
+    "delta": "2 days early. Test count reached 811, short of 820 prediction — close.",
     "resolved": "2026-03-30"
   },
   "35": {
-    "prediction": "By Day 20, G-096 (morning brief 7am Telegram push) will be complete \u2014 the listener daemon will send the morning brief automatically at 07:00 local time, and the operator will receive at least one automated brief before Day 21.",
+    "prediction": "By Day 20, G-096 (morning brief 7am Telegram push) will be complete — the listener daemon will send the morning brief automatically at 07:00 local time, and the operator will receive at least one automated brief before Day 21.",
     "created": "2026-03-30",
-    "outcome": "EARLY. G-096 verified already complete Day 18 S4 \u2014 listener.rs already had the daily_brief_hour scheduler (sending at config.daily_brief_hour=7). No new code needed.",
-    "delta": "Completed before prediction resolved \u2014 the code was already there from a prior session.",
+    "outcome": "EARLY. G-096 verified already complete Day 18 S4 — listener.rs already had the daily_brief_hour scheduler (sending at config.daily_brief_hour=7). No new code needed.",
+    "delta": "Completed before prediction resolved — the code was already there from a prior session.",
     "resolved": "2026-03-30"
   },
   "36": {
-    "prediction": "By Day 20, the Dashboard Docker panel fix (Issue #108) will hold \u2014 the containers section will show all running containers at every build, and the 'docker not available' message will not reappear.",
+    "prediction": "By Day 20, the Dashboard Docker panel fix (Issue #108) will hold — the containers section will show all running containers at every build, and the 'docker not available' message will not reappear.",
     "created": "2026-03-30",
-    "outcome": "TRUE. Dashboard containers section showed real running containers at Day 20 S1 build \u2014 no \"docker not available\" message. The fix from Day 18 S3 held.",
-    "delta": "Prediction accurate \u2014 Docker REST API approach was stable.",
+    "outcome": "TRUE. Dashboard containers section showed real running containers at Day 20 S1 build — no \"docker not available\" message. The fix from Day 18 S3 held.",
+    "delta": "Prediction accurate — Docker REST API approach was stable.",
     "resolved": "2026-04-02"
   },
   "37": {
     "prediction": "By Day 21, the pre-flight goal verification (G-106) will catch at least one already-completed Active goal and save planning time in a documented session.",
     "created": "2026-03-31",
     "outcome": "TRUE. Day 21 Session 3 self-assessment found G-106 (morning brief) and G-109 (/brief Telegram command) were already fully implemented via the listener's daily_brief_hour mechanism. Both were marked [x] and removed from Active/Backlog. Exactly the scenario predicted.",
-    "delta": "Confirmed on deadline. The structured Phase 1 check is working \u2014 pre-flight goal verification directly saved planning time this session.",
+    "delta": "Confirmed on deadline. The structured Phase 1 check is working — pre-flight goal verification directly saved planning time this session.",
     "resolved": "2026-04-03"
   },
   "38": {
-    "prediction": "By Day 22, at least one real observation will be semantically embedded via the Ollama endpoint (192.168.1.108:11434), and semantic_search_memory() will return non-empty results during a listener /ask session \u2014 confirming the end-to-end pipeline works in production.",
+    "prediction": "By Day 22, at least one real observation will be semantically embedded via the Ollama endpoint (192.168.1.108:11434), and semantic_search_memory() will return non-empty results during a listener /ask session — confirming the end-to-end pipeline works in production.",
     "created": "2026-04-02",
-    "outcome": null,
-    "delta": null,
-    "resolved": null
+    "outcome": "Expired — prediction window passed (auto-closed Day 21)",
+    "delta": "Prediction not verified before deadline.",
+    "resolved": "2026-04-03"
   },
   "39": {
-    "prediction": "By Day 23, G-103 (Caddy health panel on dashboard) will be complete \u2014 the build_site.py Caddy panel will successfully show upstream status and TLS cert info from the admin API.",
+    "prediction": "By Day 23, G-103 (Caddy health panel on dashboard) will be complete — the build_site.py Caddy panel will successfully show upstream status and TLS cert info from the admin API.",
     "created": "2026-04-03",
     "outcome": "correct",
-    "delta": "Completed Day 21 S2 \u2014 one day early (predicted Day 23)",
+    "delta": "Completed Day 21 S2 — one day early (predicted Day 23)",
     "resolved": "2026-04-03"
   },
   "40": {
-    "prediction": "By Day 23, G-106 (morning brief via Telegram) will be implemented and automatically delivered \u2014 the operator will receive a daily 07:00 brief without SSH access.",
+    "prediction": "By Day 23, G-106 (morning brief via Telegram) will be implemented and automatically delivered — the operator will receive a daily 07:00 brief without SSH access.",
     "created": "2026-04-03",
     "outcome": null,
     "delta": null,
     "resolved": null
   },
   "41": {
-    "prediction": "By Day 23, G-110 (Telegram /goals command) will be implemented and the operator will have used it at least once \u2014 confirmed by a listener log entry or session note.",
+    "prediction": "By Day 23, G-110 (Telegram /goals command) will be implemented and the operator will have used it at least once — confirmed by a listener log entry or session note.",
     "created": "2026-04-03",
     "outcome": null,
     "delta": null,
     "resolved": null
   },
   "42": {
-    "prediction": "By Day 24, G-113 (/predict Telegram command) and G-117 (/status prediction accuracy) will both be implemented \u2014 the operator will be able to add predictions and see accuracy from Telegram without SSH.",
+    "prediction": "By Day 24, G-113 (/predict Telegram command) and G-117 (/status prediction accuracy) will both be implemented — the operator will be able to add predictions and see accuracy from Telegram without SSH.",
     "created": "2026-04-04",
     "outcome": null,
     "delta": null,
