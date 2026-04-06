@@ -350,6 +350,28 @@ pub fn parse_predict_command(text: &str) -> Option<&str> {
     None
 }
 
+/// Parse `/resolve <id> correct|wrong` or `/resolve <id> true|false`.
+/// Returns `(id, verdict)` where verdict is true for correct/true, false for wrong/false.
+/// Returns `None` if the command doesn't match or can't be parsed.
+pub fn parse_resolve_command(text: &str) -> Option<(u32, bool)> {
+    let lower = text.trim().to_lowercase();
+    let rest = lower.strip_prefix("/resolve")?.trim_start().to_string();
+    let rest = rest.trim();
+    if rest.is_empty() {
+        return None;
+    }
+    let mut parts = rest.splitn(2, char::is_whitespace);
+    let id_str = parts.next()?.trim();
+    let verdict_str = parts.next()?.trim();
+    let id: u32 = id_str.parse().ok()?;
+    let verdict = match verdict_str {
+        "correct" | "true" | "yes" => true,
+        "wrong" | "false" | "no" => false,
+        _ => return None,
+    };
+    Some((id, verdict))
+}
+
 /// Action for the `/memory` command.
 #[derive(Debug, PartialEq, Clone)]
 pub enum MemoryAction {
@@ -424,6 +446,7 @@ pub const TELEGRAM_HELP_TEXT: &str = "\
 /run <task> — Execute a task as a mini-session and report the result
 /goal <description> — Add a goal to the backlog immediately
 /predict <text> — Append a new prediction to .axonix/predictions.json
+/resolve <id> correct|wrong — Mark a prediction as correct or wrong
 /memory add <text>       — store an observation (optionally /memory add:<category>)
 /memory search <query>   — search past observations
 /memory list             — list recent observations
@@ -440,6 +463,8 @@ pub const TELEGRAM_HELP_TEXT: &str = "\
 • /run check disk usage
 • /goal add dark mode to dashboard
 • /predict the test count will exceed 1000 by Day 25
+• /resolve 42 correct
+• /resolve 43 wrong
 • /status
 • /health
 • /brief
@@ -478,6 +503,8 @@ pub enum BotCommand {
     Goals { message_id: i64 },
     /// `/predict <text>` — append a new prediction to .axonix/predictions.json.
     Predict { text: String, message_id: i64 },
+    /// `/resolve <id> correct|wrong` — resolve a prediction by ID.
+    Resolve { id: u32, verdict: bool, message_id: i64 },
 }
 
 impl TelegramClient {
@@ -512,6 +539,9 @@ impl TelegramClient {
                 }
                 if let Some(pred_text) = parse_predict_command(text) {
                     return Some(BotCommand::Predict { text: pred_text.to_string(), message_id: msg.message_id });
+                }
+                if let Some((id, verdict)) = parse_resolve_command(text) {
+                    return Some(BotCommand::Resolve { id, verdict, message_id: msg.message_id });
                 }
                 if let Some(task) = parse_run_command(text) {
                     return Some(BotCommand::Run { task: task.to_string(), message_id: msg.message_id });
@@ -1510,5 +1540,36 @@ mod tests {
             TELEGRAM_HELP_TEXT.contains("/predict"),
             "TELEGRAM_HELP_TEXT must mention /predict"
         );
+    }
+
+    // ── parse_resolve_command ────────────────────────────────────────────────
+
+    #[test]
+    fn test_parse_resolve_command_correct() {
+        assert_eq!(parse_resolve_command("/resolve 42 correct"), Some((42, true)));
+    }
+
+    #[test]
+    fn test_parse_resolve_command_wrong() {
+        assert_eq!(parse_resolve_command("/resolve 7 wrong"), Some((7, false)));
+    }
+
+    #[test]
+    fn test_parse_resolve_command_true_false() {
+        assert_eq!(parse_resolve_command("/resolve 1 true"), Some((1, true)));
+        assert_eq!(parse_resolve_command("/resolve 2 false"), Some((2, false)));
+    }
+
+    #[test]
+    fn test_parse_resolve_command_invalid() {
+        assert_eq!(parse_resolve_command("/resolve"), None);
+        assert_eq!(parse_resolve_command("/resolve 42"), None);
+        assert_eq!(parse_resolve_command("/resolve abc correct"), None);
+        assert_eq!(parse_resolve_command("/resolve 42 maybe"), None);
+    }
+
+    #[test]
+    fn test_help_contains_resolve() {
+        assert!(TELEGRAM_HELP_TEXT.contains("/resolve"), "help text must mention /resolve command");
     }
 }

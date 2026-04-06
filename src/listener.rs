@@ -451,6 +451,17 @@ fn append_prediction(text: &str) -> Result<u32, String> {
     Ok(id)
 }
 
+/// Resolve a prediction by ID with a correct/wrong verdict.
+/// Maps `true` → `"TRUE"` outcome, `false` → `"FALSE"` outcome.
+/// Returns Ok(prediction_text) on success, Err(message) on failure.
+fn resolve_prediction(id: u32, correct: bool) -> Result<String, String> {
+    let mut store = crate::predictions::PredictionStore::default_path();
+    let outcome = if correct { "TRUE" } else { "FALSE" };
+    let text = store.resolve(id, outcome, None)?;
+    store.save().map_err(|e| format!("saved resolve but failed to persist: {e}"))?;
+    Ok(text)
+}
+
 /// Compute prediction accuracy from `.axonix/predictions.json`.
 ///
 /// Returns a formatted string like `"8/12 correct — 67%"` when there are resolved
@@ -843,6 +854,17 @@ pub async fn run_listener(
                     let reply = match append_prediction(&text) {
                         Ok(id) => format!("✅ Prediction #{id} saved: {text}"),
                         Err(e) => format!("❌ Failed to save prediction: {e}"),
+                    };
+                    let _ = tg.reply_to(&reply, message_id).await;
+                    stats.messages_handled += 1;
+                }
+                BotCommand::Resolve { id, verdict, message_id } => {
+                    let reply = match resolve_prediction(id, verdict) {
+                        Ok(text) => {
+                            let label = if verdict { "✅ correct" } else { "❌ wrong" };
+                            format!("Prediction #{id} marked {label}:\n_{text}_")
+                        }
+                        Err(e) => format!("⚠️ Could not resolve prediction: {e}"),
                     };
                     let _ = tg.reply_to(&reply, message_id).await;
                     stats.messages_handled += 1;
@@ -1494,6 +1516,11 @@ mod haiku_routing_tests {
     #[test]
     fn test_predict_uses_haiku() {
         assert_eq!(select_model_for_command("/predict anything", SONNET, HAIKU), HAIKU);
+    }
+
+    #[test]
+    fn test_resolve_uses_haiku() {
+        assert_eq!(select_model_for_command("/resolve 42 correct", SONNET, HAIKU), HAIKU);
     }
 
     #[test]
