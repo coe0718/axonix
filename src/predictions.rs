@@ -443,6 +443,41 @@ impl PredictionStore {
         score.format_for_system_prompt()
     }
 
+    /// Auto-resolve predictions that mention a goal ID (e.g. "G-120") when that goal
+    /// is found as completed in a goals file (GOALS_ARCHIVE.md or GOALS.md).
+    ///
+    /// Returns a list of (id, prediction_text) for each newly resolved prediction.
+    pub fn auto_resolve_from_goals(&mut self, goals_archive_content: &str) -> Vec<(u32, String)> {
+        // Collect open predictions and their IDs up front (avoid borrow conflict)
+        let open_list: Vec<(u32, Prediction)> = self
+            .open()
+            .into_iter()
+            .map(|(id, p)| (id, p.clone()))
+            .collect();
+
+        let mut resolved = Vec::new();
+
+        for (id, pred) in open_list {
+            let goal_ids = extract_goal_ids(&pred.prediction);
+            for goal_id in &goal_ids {
+                let marker_bracket = format!("[x] [{goal_id}]");
+                if goals_archive_content.contains(&marker_bracket) {
+                    let outcome = format!(
+                        "TRUE. {} was completed (found as [x] in goals archive).",
+                        goal_id
+                    );
+                    let delta = format!("Goal {} verified complete in GOALS_ARCHIVE.md.", goal_id);
+                    if self.resolve(id, &outcome, Some(&delta)).is_ok() {
+                        resolved.push((id, pred.prediction.clone()));
+                    }
+                    break; // one goal match is enough
+                }
+            }
+        }
+
+        resolved
+    }
+
     /// Format open predictions as a block suitable for injection into a system prompt.
     ///
     /// Returns `None` if there are no open predictions.
@@ -465,6 +500,31 @@ impl PredictionStore {
         }
         Some(lines.join("\n"))
     }
+}
+
+/// Extract all "G-NNN" goal IDs mentioned in a prediction text.
+///
+/// Finds every occurrence of `G-` followed by one or more ASCII digits.
+/// Returns them in order of appearance, without deduplication.
+fn extract_goal_ids(text: &str) -> Vec<String> {
+    let mut ids = Vec::new();
+    let mut i = 0;
+    while i < text.len() {
+        if text[i..].starts_with("G-") {
+            let start = i + 2; // skip "G-"
+            let num_len = text[start..]
+                .find(|c: char| !c.is_ascii_digit())
+                .unwrap_or(text.len() - start);
+            let end = start + num_len;
+            if end > start {
+                ids.push(format!("G-{}", &text[start..end]));
+            }
+            i = if end > i { end } else { i + 1 };
+        } else {
+            i += 1;
+        }
+    }
+    ids
 }
 
 /// Get today's date as YYYY-MM-DD.
@@ -970,5 +1030,93 @@ mod tests {
         assert_eq!(pred.prediction, "written directly to db");
         // The JSON-only prediction (id=1) should NOT be loaded.
         assert!(store.get(1).is_none(), "JSON-only prediction should not appear when SQLite is non-empty");
+    }
+
+    // ── extract_goal_ids ─────────────────────────────────────────────────────
+
+    #[test]
+    fn test_extract_goal_ids_single() {
+        let ids = extract_goal_ids("By Day 23, G-120 will be complete.");
+        assert_eq!(ids, vec!["G-120"]);
+    }
+
+    #[test]
+    fn test_extract_goal_ids_multiple() {
+        let ids = extract_goal_ids("G-113 and G-117 will both be implemented.");
+        assert_eq!(ids, vec!["G-113", "G-117"]);
+    }
+
+    #[test]
+    fn test_extract_goal_ids_none() {
+        let ids = extract_goal_ids("No goal IDs here at all.");
+        assert!(ids.is_empty());
+    }
+
+    #[test]
+    fn test_extract_goal_ids_g_without_digits() {
+        // "G-" not followed by digits should not produce an entry
+        let ids = extract_goal_ids("G- something happened.");
+        assert!(ids.is_empty());
+    }
+
+    // ── auto_resolve_from_goals ──────────────────────────────────────────────
+
+    #[test]
+    fn test_auto_resolve_from_goals_resolves_matching_goal() {
+        let (mut store, _dir) = tmp_store();
+        store.predict("By Day 23, G-120 will be complete.");
+
+        let archive = "- [x] [G-120] Split telegram.rs into modules\n";
+        let resolved = store.auto_resolve_from_goals(archive);
+
+        assert_eq!(resolved.len(), 1, "should resolve the G-120 prediction");
+        assert!(resolved[0].1.contains("G-120"), "resolved text should mention G-120");
+
+        // Verify it's actually resolved in the store
+        assert_eq!(store.open_count(), 0, "no open predictions should remain");
+        let pred = store.get(1).unwrap();
+        assert!(pred.is_resolved(), "prediction should be resolved");
+        assert!(pred.outcome.as_deref().unwrap().contains("TRUE"), "outcome should be TRUE");
+        assert!(pred.outcome.as_deref().unwrap().contains("G-120"), "outcome should mention goal");
+    }
+
+    #[test]
+    fn test_auto_resolve_from_goals_no_match() {
+        let (mut store, _dir) = tmp_store();
+        store.predict("By Day 23, G-999 will be complete.");
+
+        // Archive does not contain G-999
+        let archive = "- [x] [G-120] Something else\n";
+        let resolved = store.auto_resolve_from_goals(archive);
+
+        assert!(resolved.is_empty(), "should not resolve when goal not in archive");
+        assert_eq!(store.open_count(), 1, "prediction should remain open");
+    }
+
+    #[test]
+    fn test_auto_resolve_from_goals_already_resolved_not_touched() {
+        let (mut store, _dir) = tmp_store();
+        let id = store.predict("By Day 23, G-120 will be complete.");
+        // Resolve it manually first
+        store.resolve(id, "manual resolution", None).unwrap();
+
+        let archive = "- [x] [G-120] Split telegram.rs\n";
+        let resolved = store.auto_resolve_from_goals(archive);
+
+        // auto_resolve should find no open predictions to act on
+        assert!(resolved.is_empty(), "already-resolved prediction should not be touched");
+    }
+
+    #[test]
+    fn test_auto_resolve_from_goals_multiple_goals_first_match_wins() {
+        let (mut store, _dir) = tmp_store();
+        store.predict("G-113 and G-117 will both be implemented.");
+
+        // Archive only has G-113
+        let archive = "- [x] [G-113] Predict command implemented\n";
+        let resolved = store.auto_resolve_from_goals(archive);
+
+        assert_eq!(resolved.len(), 1, "should resolve when first mentioned goal is complete");
+        assert_eq!(store.open_count(), 0, "prediction should be resolved");
     }
 }

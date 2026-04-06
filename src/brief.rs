@@ -249,9 +249,8 @@ impl Brief {
                 if ls.completed.is_empty() {
                     out.push_str("   (no completed items recorded)\n");
                 }
-                match ls.test_count {
-                    Some(n) => out.push_str(&format!("   🧪 {n} tests\n")),
-                    None => out.push_str("   🧪 ? tests\n"),
+                if let Some(n) = ls.test_count {
+                    out.push_str(&format!("   🧪 {n} tests\n"));
                 }
             }
             None => {
@@ -414,25 +413,32 @@ impl Brief {
         out.push('\n');
 
         // Predictions
-        out.push_str("🔮 *Open Predictions*\n");
-        if self.open_predictions.is_empty() {
-            out.push_str("_(none)_\n");
-        } else {
+        if !self.open_predictions.is_empty() {
+            out.push_str("🔮 *Open Predictions*\n");
             for (id, date, text) in &self.open_predictions {
                 out.push_str(&format!("• #{id} [{date}] {}\n", truncate_str(text, 50)));
             }
-        }
-        // Calibration line (compact)
-        if let Some(cal) = &self.calibration {
+            // Calibration line (compact)
+            if let Some(cal) = &self.calibration {
+                out.push_str(&format!(
+                    "📊 Calibration: {}/{} ({:.0}%) — {}\n",
+                    cal.correct,
+                    cal.total_resolved,
+                    cal.hit_rate * 100.0,
+                    cal.direction_bias,
+                ));
+            }
+            out.push('\n');
+        } else if let Some(cal) = &self.calibration {
+            // No open predictions but still show calibration
             out.push_str(&format!(
-                "📊 Calibration: {}/{} ({:.0}%) — {}\n",
+                "📊 Calibration: {}/{} ({:.0}%) — {}\n\n",
                 cal.correct,
                 cal.total_resolved,
                 cal.hit_rate * 100.0,
                 cal.direction_bias,
             ));
         }
-        out.push('\n');
 
         // Health (compact)
         match &self.health {
@@ -491,9 +497,8 @@ impl Brief {
                 for item in ls.completed.iter().take(5) {
                     out.push_str(&format!("✓ {}\n", truncate_str(item, 60)));
                 }
-                match ls.test_count {
-                    Some(n) => out.push_str(&format!("🧪 {n} tests\n")),
-                    None => out.push_str("🧪 ? tests\n"),
+                if let Some(n) = ls.test_count {
+                    out.push_str(&format!("🧪 {n} tests\n"));
                 }
             }
             None => {
@@ -515,12 +520,19 @@ impl Brief {
             out.push_str("_(no data)_\n");
         }
 
-        // Meta-system health (only show if there are issues)
+        // Meta-system health (only show non-METRICS.md issues)
         if let Some(ref mh) = self.meta_health {
-            if !mh.all_ok() {
+            let issues: Vec<String> = mh.issues()
+                .into_iter()
+                .filter(|msg| !msg.contains("METRICS.md"))
+                .collect();
+            if !issues.is_empty() {
                 out.push('\n');
-                out.push_str(&mh.format_telegram());
-                out.push('\n');
+                out.push_str("⚠ meta-system issues:\n");
+                for issue in &issues {
+                    out.push_str(issue);
+                    out.push('\n');
+                }
             }
         }
 
@@ -2170,7 +2182,7 @@ More text.\n\
         assert!(output.contains("624 tests"), "should show numeric test count");
     }
 
-    /// Last session shows "? tests" when test_count is None in terminal format
+    /// Last session omits test count line when test_count is None in terminal format
     #[test]
     fn test_last_session_terminal_no_test_count() {
         let brief = Brief {
@@ -2199,7 +2211,8 @@ More text.\n\
             infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
-        assert!(output.contains("? tests"), "should show '? tests' when count is None");
+        // When test_count is None, no test count line is shown (cleaner than "? tests")
+        assert!(!output.contains("? tests"), "should not show '? tests' noise when count is None");
     }
 
     // ── LastSessionSummary — telegram format ──────────────────────────────────────
@@ -2333,7 +2346,7 @@ More text.\n\
         assert!(output.contains("624 tests"), "telegram should show numeric test count");
     }
 
-    /// Telegram format shows "? tests" when test_count is None
+    /// Telegram format omits test count line when test_count is None
     #[test]
     fn test_last_session_telegram_no_test_count() {
         let brief = Brief {
@@ -2362,7 +2375,8 @@ More text.\n\
             infrastructure_anomalies: vec![],
         };
         let output = brief.format_telegram();
-        assert!(output.contains("? tests"), "telegram should show '? tests' when count is None");
+        // When test_count is None, no test count line is shown (cleaner than "? tests")
+        assert!(!output.contains("? tests"), "should not show '? tests' noise in telegram when count is None");
     }
 
     // ── LastSessionSummary — edge cases ───────────────────────────────────────────

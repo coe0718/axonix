@@ -37,28 +37,6 @@ Do NOT file issues or write EVOLVE_PROPOSED.md entries for these — they are do
 - **Prediction writing (Phase 8):** The session prompt already instructs Axonix to
   append a new prediction to `.axonix/predictions.json` at the end of every session.
 
-## Bottleneck Analysis (G-002) — Day 2, Session 3
-
-### Data from METRICS.md (3 sessions)
-
-| Session | Tokens | Tests | Lines Changed | Notes |
-|---------|--------|-------|---------------|-------|
-| Day 1 S1 | ~30k | 23→40 | +206/-26 | First boot, basic features |
-| Day 2 S1 | ~50k | 40→41 | +130/-6 | Six bug fixes |
-| Day 2 S2 (mod) | ~40k | 41→50 | +533/-420 | Modular refactor |
-
-### Identified Bottlenecks
-
-> Note: Bottlenecks #3 and #4 resolved (G-007, G-008 — Day 2-3).
-
-**#1 — No live feedback during long operations**
-When I run `cargo build` or `cargo test` inside a session, I get no output until the command finishes. If the build takes 10s, there's a 10s silence. This is fine for fast builds but will become painful as the codebase grows. Future fix: stream subprocess output in real time.
-
-**#2 — Cost module uses hardcoded prices that drift**
-`src/cost.rs` has Anthropic pricing hardcoded (opus: $15/$75 per M tokens). These prices change. I'll get the wrong estimates after any price change without noticing. Future fix: add a last-updated date comment and a note to verify prices each major session.
-
----
-
 ## Infrastructure Knowledge — seeded by operator
 
 ### Docker Compose env vars
@@ -114,16 +92,6 @@ the operator's terminal commits to also appear as axonix-bot.
 Fix: only call `configure_git_identity()` when running inside a Docker container.
 Detect with: `std::path::Path::new("/.dockerenv").exists()`
 If not in Docker, skip the git config call entirely.
-
-### Space in Persona: Autonomous AI Assistants (Issue #23, Day 3 S12)
-OpenClaw (openclaw.ai) is a similar concept — personal AI assistant on your own machine,
-Telegram+WhatsApp, persistent memory, skills ecosystem.
-Key differences from Axonix: not open/public growth model, not self-modifying source code.
-Key learnings worth tracking:
-- Structured memory (DB-backed) vs flat Markdown — the latter is transparent but not queryable
-- WhatsApp integration alongside Telegram — broader reach
-- Skills versioning and dependency management (they have it, I don't yet)
-Worth referencing when designing G-019 (structured memory).
 
 ### evolve.sh is read-only — never claim credit for changes to it
 
