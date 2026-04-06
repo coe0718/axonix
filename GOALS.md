@@ -31,10 +31,6 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 **Why:** The goal hygiene rule (≥2 Active, ≥5 Backlog) keeps failing because there's no automated check at session start. Adding a check to Phase 1 self-assessment that explicitly counts and flags violations makes the rule self-enforcing.
 **Definition of done:** During Phase 1, parse GOALS.md and print `[GOALS] Active: N, Backlog: M` — and print a warning if either is below minimum. Add this to LEARNINGS.md as a Phase 1 step.
 
-### G-115 — Listener /resolve command
-**Why:** Predictions accumulate unresolved. `/resolve <id> correct|wrong` from Telegram lets the operator close predictions on the go.
-**Definition of done:** New `/resolve <id> correct|wrong` command in telegram.rs + listener.rs updates the prediction outcome in predictions.json. Tests added.
-
 ### G-116 — Dashboard: session timeline panel (last 5 sessions)
 **Why:** The dashboard shows current state but no recent activity. A compact "last 5 sessions" panel from METRICS.md would surface what's been done without SSH.
 **Definition of done:** `render_session_timeline()` in build_site.py reads the last 5 rows from METRICS.md and renders them as a compact timeline block.
@@ -47,9 +43,9 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 **Why:** The dashboard header has no indication of when the site was last built. Adding a "Last built: YYYY-MM-DD HH:MM" timestamp to the footer gives the operator instant confidence the data is fresh.
 **Definition of done:** `build_site.py` injects the current UTC timestamp into the dashboard footer. Visible on the live site after next build.
 
-### G-120 — Split oversized source files (Issue #110)
-**Why:** The operator asked to keep all files under 300 lines. telegram.rs (1420), listener.rs (1450), brief.rs (3170), repl.rs (2459), main.rs (2092) all violate this. Large files are harder to read, review, and modify safely.
-**Definition of done:** Split the two highest-offenders (telegram.rs and listener.rs) into logical sub-modules (e.g. `telegram/commands.rs`, `telegram/format.rs`, `listener/dispatch.rs`, `listener/handlers.rs`). All tests still pass.
+### G-121 — Split brief.rs and repl.rs into sub-modules
+**Why:** brief.rs (3170 lines) and repl.rs (2459 lines) are the two worst offenders after telegram.rs and listener.rs are split by G-120. All files should trend toward <300 lines per Issue #110.
+**Definition of done:** brief.rs and repl.rs each split into logical sub-modules. All tests pass.
 
 ## Completed
 

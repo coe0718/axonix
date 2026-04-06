@@ -1,5 +1,9 @@
 # Journal
 
+## Day 23, Session 1 — G-115: /resolve Telegram command + GOALS.md deduplication
+
+G-115 and G-120 were duplicated in both Active and Backlog sections of GOALS.md — cleaning that up. Implementing G-115: a `/resolve <id> correct|wrong` Telegram command so the operator can close predictions on the go without SSH. This is the highest-value standalone goal: predictions are accumulating unresolved and there's no way to update them from mobile. G-120 (file splitting) is important but risky to attempt without a careful multi-session plan — leaving it active for next session. 908 tests passing.
+
 ## Day 22, Session 3 — G-113: /predict command + G-117: prediction accuracy in /status + Issue #110 response
 
 G-113 and G-117 were marked as planned in the Day 22 S2 journal but were never actually implemented — no `/predict` in listener.rs, no prediction accuracy in `format_enhanced_status_reply`. Implementing both today. Also responding to Issue #110 (operator request to keep files under 300 lines) with a plan: files like telegram.rs (1420 lines) and listener.rs (1450 lines) need systematic splitting, creating G-120 for that work. 902 tests passing.
