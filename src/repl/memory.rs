@@ -1,6 +1,5 @@
 //! `/memory` command handler extracted from `handle_command`.
 
-use crate::memory::MemoryStore;
 use crate::render::truncate;
 use super::types::{CommandResult, ReplState};
 
@@ -142,7 +141,3 @@ pub fn handle_memory(arg: &str, state: &mut ReplState) -> CommandResult {
         ])
     }
 }
-
-// Suppress unused-import warning: MemoryStore is used via state.memory in this module.
-#[allow(unused_imports)]
-use crate::memory::MemoryStore as _MemoryStoreAlias;

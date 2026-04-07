@@ -43,6 +43,7 @@ mod session_helpers;
 mod telegram_poll;
 mod prompt_runner;
 
+#[allow(unused_imports)]
 use agent_setup::{build_tools, make_agent, build_system_prompt, stream_redact};
 #[allow(unused_imports)]
 pub(self) use agent_setup::build_tools as _build_tools_for_tests;

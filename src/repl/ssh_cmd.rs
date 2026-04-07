@@ -3,7 +3,7 @@
 //! Named `ssh_cmd` to avoid shadowing the `crate::ssh` module.
 
 use std::time::Duration;
-use crate::ssh::{HostRegistry, ssh_exec};
+use crate::ssh::ssh_exec;
 use super::types::{CommandResult, ReplState};
 
 /// Handle the `/ssh` command and all its subcommands.
@@ -100,7 +100,3 @@ pub fn handle_ssh(arg: &str, state: &mut ReplState) -> CommandResult {
         }
     }
 }
-
-// Suppress unused import warning
-#[allow(unused_imports)]
-use crate::ssh::HostRegistry as _HostRegistryAlias;
