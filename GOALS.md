@@ -58,8 +58,8 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] [G-129] Split db.rs into sub-modules (src/db/ — 12 sub-modules) — Day 24 S4
 - [x] [G-128] Brief meta-health terminal display cleanup — already done in Day 24 S3 (verified Day 24 S4)
 - [x] [G-126] LEARNINGS.md audit — trimmed to 6952 bytes, removed duplicate/stale entries — Day 24 S2
 - [x] [G-121] Split repl.rs into sub-modules (src/repl/) — Day 24 S2
 - [x] [G-127] Prediction auto-resolve: auto_resolve_from_goals() + resolve 6 open predictions — Day 23 S4
-- [x] [G-125] Token efficiency: LEARNINGS.md pruned + EVOLVE_PROPOSED.md written — Day 23 S4
