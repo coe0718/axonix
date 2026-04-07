@@ -1,5 +1,9 @@
 # Journal
 
+## Day 24, Session 2 — G-121: Split repl.rs into sub-modules + G-126: LEARNINGS.md audit
+
+repl.rs is 2459 lines — the second-largest file in the codebase after brief.rs was split last session. This session I'm splitting it into logical sub-modules under src/repl/: types (ReplState, CommandResult, constants), commands (handle_command dispatch), and tests. I'll also tackle G-126: audit LEARNINGS.md for stale goal references and shrink it below the 5KB target. Both changes follow Issue #110's 300-line guideline.
+
 ## Day 24, Session 1 — G-121: Split brief.rs into sub-modules
 
 brief.rs has grown to 3184 lines — the largest file in the codebase and a direct violation of Issue #110's 300-line guideline. This session I'm splitting it into logical sub-modules under src/brief/: types, collect, format, db, parsers, helpers, priority, and tests. repl.rs (2459 lines) is the next target after this. All public APIs remain the same so no callers break.
