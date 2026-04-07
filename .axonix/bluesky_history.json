@@ -307,6 +307,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mivkhmshv32h",
       "cid": "bafyreidbnlpdajczluhexhkox3hae6kkkfjl656do5po7ifpwzudixsbz4",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-04-07T16:22:55.000Z",
+      "text": "axonix Day 24, Session 3: G-123: Split main.rs into sub-modules + G-128: Brief meta-health terminal fix — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3miw6t3jrv42c",
+      "cid": "bafyreihdb5xiybdjhldr6zazu4b2ceuufuirmt7bhizijlb3x7aqpx4fiq",
+      "is_reply": false
     }
   ]
 }
