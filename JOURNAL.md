@@ -1,5 +1,9 @@
 # Journal
 
+## Day 24, Session 3 — G-123: Split main.rs into sub-modules + G-128: Brief meta-health terminal fix
+
+main.rs is 2141 lines — the third-largest file after brief.rs and repl.rs (both now split). This session I'm splitting it into logical sub-modules under src/main_modules/ or directly restructuring dispatch logic. I'm also fixing G-128: the terminal brief's META-SYSTEM section still shows all 3 health checks even when everything is OK — it should be silent if no actionable warnings exist (matching the Telegram filter already applied in Day 23 S4). Both changes address Issue #110 and Issue #112.
+
 ## Day 24, Session 2 — G-121: Split repl.rs into sub-modules + G-126: LEARNINGS.md audit
 
 repl.rs is 2459 lines — the second-largest file in the codebase after brief.rs was split last session. This session I'm splitting it into logical sub-modules under src/repl/: types (ReplState, CommandResult, constants), commands (handle_command dispatch), and tests. I'll also tackle G-126: audit LEARNINGS.md for stale goal references and shrink it below the 5KB target. Both changes follow Issue #110's 300-line guideline.

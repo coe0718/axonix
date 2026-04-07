@@ -47,6 +47,10 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 **Why:** Issue #111 identified that evolve.sh injects full METRICS.md (14.7 KB, 105+ rows). Only recent sessions matter for planning. Expected saving: 5–8k tokens/session.
 **Definition of done:** EVOLVE_PROPOSED.md contains a proposal to truncate METRICS.md injection. Operator can apply it. This is not implementable from inside the container since evolve.sh is :ro mounted.
 
+### G-131 — Add `axonix health` CLI subcommand
+**Why:** System health info (CPU, memory, disk, uptime) is surfaced in the REPL and Telegram, but not from the CLI. A `--health` or `health` subcommand would let scripts and cron jobs query agent health without starting an interactive session.
+**Definition of done:** `axonix health` prints a compact health summary (CPU%, memory%, disk%, uptime) to stdout. Tests cover the formatter. Wired into cli.rs dispatch.
+
 ## Completed
 
 Completed goals have been archived to GOALS_ARCHIVE.md to keep this file lean.
