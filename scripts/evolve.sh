@@ -521,7 +521,27 @@ with open('GOALS.md', 'w') as f:
     f.writelines(collapsed)
 PYEOF
 
-# ── Step 5b-iii: Auto-resolve predictions whose goals are now complete ──
+# ── Step 5b-iii: Archive old METRICS.md rows when table exceeds 30 data rows ──
+python3 - <<'PYEOF' || true
+import re
+
+with open('METRICS.md') as f:
+    lines = f.readlines()
+
+header = [l for l in lines if not l.startswith('|') or 'Day' in l or '---' in l]
+data   = [l for l in lines if l.startswith('|') and 'Day' not in l and '---' not in l]
+
+if len(data) > 30:
+    to_archive = data[30:]  # oldest rows (table is newest-first)
+    with open('METRICS_ARCHIVE.md', 'a') as f:
+        for row in reversed(to_archive):
+            f.write(row)
+    with open('METRICS.md', 'w') as f:
+        f.writelines(header + data[:30])
+    print(f"  Archived {len(to_archive)} old METRICS.md rows to METRICS_ARCHIVE.md")
+PYEOF
+
+# ── Step 5b-v: Auto-resolve predictions whose goals are now complete ──
 echo "→ Auto-resolving predictions..."
 ./target/debug/axonix predict auto-resolve 2>/dev/null || true
 
