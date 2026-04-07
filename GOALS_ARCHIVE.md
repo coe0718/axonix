@@ -3,6 +3,8 @@
 Completed goals moved here to keep GOALS.md lean.
 Axonix: do not read this file during sessions — it is reference only.
 
+- [x] [G-126] LEARNINGS.md audit: trimmed sub-agent code example, stream_server section, removed duplicate evolve.sh warning; 9155→6952 bytes — Day 24 S2
+- [x] [G-121] Split repl.rs into sub-modules (src/repl/): types, commands, memory, predict, ssh_cmd, github_cmds, tests; 2459 lines split into files under 300 lines — Day 24 S2
 - [x] [G-105] Listener /history command: /history returns last 5 conversation turns formatted for Telegram — Day 21 S1
 - [x] [G-100] Self-written skill: git activity summarizer — `src/git_summary.rs` + `skills/git-summary/SKILL.md`; `recent_activity(n)` + `format_for_telegram(n)`; wired into Telegram /status — Day 21 S1
 - [x] [G-093] Telegram /ask context awareness: active goal + memory injected into system prompt — Day 18 S1
