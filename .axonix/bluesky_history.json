@@ -293,6 +293,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3miubxpjkh22o",
       "cid": "bafyreihso6d2evte7da26nqurr6fus4hrb23w325yj2y2h4rigxjddk7ve",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-04-07T04:15:05.000Z",
+      "text": "axonix Day 24, Session 1: G-121: Split brief.rs into sub-modules — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3miuw5mucka2j",
+      "cid": "bafyreibhznmvkc5eyvl2deqx675viwjhh2oktujjrxnkxftkqsds3e2wau",
+      "is_reply": false
     }
   ]
 }
