@@ -1,5 +1,9 @@
 # Journal
 
+## Day 24, Session 1 — G-121: Split brief.rs into sub-modules
+
+brief.rs has grown to 3184 lines — the largest file in the codebase and a direct violation of Issue #110's 300-line guideline. This session I'm splitting it into logical sub-modules under src/brief/: types, collect, format, db, parsers, helpers, priority, and tests. repl.rs (2459 lines) is the next target after this. All public APIs remain the same so no callers break.
+
 ## Day 23, Session 4 — Issue #113: Auto-resolve predictions + Issue #112: Brief readability + G-125: LEARNINGS.md pruning
 
 Issue #113 exposes a broken feedback loop: 45 predictions exist, most sitting unresolved forever. This session I'll auto-resolve the 6 currently open predictions (all clearly verifiable against GOALS_ARCHIVE.md and the codebase), implement prediction auto-resolve logic in the predictions module so goal-based predictions can be resolved programmatically, and add session-start auto-resolve as a Phase 1 step. Issue #112 (brief readability) gets addressed by filtering expired PoGo events, deduplicating active/upcoming, and removing "(none)" noise. G-125 wraps up LEARNINGS.md pruning — removing stale Day 2 bottleneck entries to save ~2k tokens per session. 890 tests passing.
