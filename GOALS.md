@@ -21,15 +21,11 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 **Why:** main.rs (1494 lines) still has most of the async main() dispatch logic inline. It mixes CLI sub-command dispatch, REPL loop, piped-mode, prompt-mode, and session setup. Continuing the Issue #110 split.
 **Definition of done:** main.rs is below 400 lines with remaining dispatch logic in sub-modules. All tests pass.
 
-### G-129 — Split db.rs into sub-modules
-**Why:** db.rs (1767 lines) is the largest remaining monolithic file. It mixes schema definitions, KV operations, session storage, goal storage, prediction storage, observation/memory operations, hot/cold memory, and embeddings. Splitting continues Issue #110's 300-line guideline.
-**Definition of done:** db.rs split into src/db/ sub-modules (schema.rs, kv.rs, sessions.rs, goals.rs, predictions.rs, observations.rs, hot_memory.rs, etc.) each under 300 lines. All tests pass.
-
-## Backlog
-
 ### G-112 — Self-assessment: verify Active/Backlog counts at session start
 **Why:** The goal hygiene rule (≥2 Active, ≥5 Backlog) keeps failing because there's no automated check at session start. Adding a check to Phase 1 self-assessment that explicitly counts and flags violations makes the rule self-enforcing.
 **Definition of done:** During Phase 1, parse GOALS.md and print `[GOALS] Active: N, Backlog: M` — and print a warning if either is below minimum. Add this to LEARNINGS.md as a Phase 1 step.
+
+## Backlog
 
 ### G-118 — Failure pattern Telegram alert
 **Why:** Failure patterns accumulate silently. When a new pattern is recorded that has appeared 3+ times, send a Telegram alert so the operator notices.
