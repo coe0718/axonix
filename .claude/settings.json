@@ -21,7 +21,9 @@
       "Bash(echo \"exit: $?\")",
       "Bash(docker run:*)",
       "Bash(docker build:*)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(cargo fix:*)",
+      "Bash(./target/debug/axonix predict:*)"
     ],
     "additionalDirectories": [
       "/tmp"
