@@ -76,15 +76,15 @@ impl Brief {
         }
         out.push('\n');
 
-        // Meta-system health
-        out.push_str("🔧 META-SYSTEM\n");
+        // Meta-system health — only show if there are warnings (mirrors Telegram filter)
         if let Some(ref mh) = self.meta_health {
-            out.push_str(&mh.format_terminal());
-            out.push('\n');
-        } else {
-            out.push_str("   (not checked)\n");
+            if !mh.all_ok() {
+                out.push_str("🔧 META-SYSTEM\n");
+                out.push_str(&mh.format_terminal_issues());
+                out.push('\n');
+                out.push('\n');
+            }
         }
-        out.push('\n');
 
         // Open predictions
         out.push_str("🔮 OPEN PREDICTIONS\n");

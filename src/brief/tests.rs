@@ -1663,7 +1663,7 @@ More text.\n\
         assert!(brief.meta_health.is_some(), "meta_health should be Some when set");
     }
 
-    /// format_terminal output contains "META-SYSTEM" section header
+    /// format_terminal output contains "META-SYSTEM" section header when there are issues
     #[test]
     fn test_brief_format_terminal_includes_meta_system() {
         let mh = crate::meta_health::MetaHealthCheck::run_with_paths(
@@ -1692,7 +1692,7 @@ More text.\n\
             infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
-        assert!(output.contains("META-SYSTEM"), "format_terminal should include META-SYSTEM section: {output}");
+        assert!(output.contains("META-SYSTEM"), "format_terminal should include META-SYSTEM section when there are issues: {output}");
     }
 
     /// When meta_health has issues, telegram format mentions them
@@ -1732,7 +1732,7 @@ More text.\n\
         );
     }
 
-    /// When meta_health is None, format_terminal shows "(not checked)"
+    /// When meta_health is None, format_terminal does NOT show META-SYSTEM section
     #[test]
     fn test_brief_format_terminal_meta_health_none_shows_not_checked() {
         let brief = Brief {
@@ -1756,8 +1756,44 @@ More text.\n\
             infrastructure_anomalies: vec![],
         };
         let output = brief.format_terminal();
-        assert!(output.contains("META-SYSTEM"), "META-SYSTEM section always present");
-        assert!(output.contains("not checked"), "should show '(not checked)' when meta_health is None");
+        assert!(!output.contains("META-SYSTEM"), "META-SYSTEM section should be absent when meta_health is None");
+    }
+
+    /// When meta_health is all_ok, format_terminal does NOT show META-SYSTEM section
+    #[test]
+    fn test_brief_format_terminal_meta_health_all_ok_section_absent() {
+        use std::io::Write;
+        use tempfile::NamedTempFile;
+        let mut pf = NamedTempFile::new().unwrap();
+        write!(pf, "{{}}").unwrap();
+        let mut cf = NamedTempFile::new().unwrap();
+        write!(cf, "{{}}").unwrap();
+        let mut mf = NamedTempFile::new().unwrap();
+        write!(mf, "| 11 | S1 | 2026-03-24 | ~22k | 700 | 0 | 1 | 3 | 12 | yes | ok |\n").unwrap();
+        let mh = crate::meta_health::MetaHealthCheck::run_with_paths(pf.path(), cf.path(), mf.path());
+        assert!(mh.all_ok(), "sanity: meta_health should be all_ok");
+        let brief = Brief {
+            active_goals: vec![],
+            open_predictions: vec![],
+            recent_sessions: vec![],
+            note: None,
+            health: None,
+            bluesky_stats: None,
+            caddy: None,
+            docker: None,
+            calibration: None,
+            last_session: None,
+            failure_summary: None,
+            pogo: None,
+            meta_health: Some(mh),
+            today_priority: String::new(),
+            recent_journal: vec![],
+            predictions_due_soon: vec![],
+            memory_context: vec![],
+            infrastructure_anomalies: vec![],
+        };
+        let output = brief.format_terminal();
+        assert!(!output.contains("META-SYSTEM"), "META-SYSTEM section should be absent when all checks are OK: {output}");
     }
 
     // ── synthesize_priority ───────────────────────────────────────────────────────

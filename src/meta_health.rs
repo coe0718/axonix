@@ -95,6 +95,16 @@ impl MetaHealthCheck {
             .join("\n")
     }
 
+    /// Format for terminal display — only shows non-OK checks.
+    pub fn format_terminal_issues(&self) -> String {
+        let checks = [&self.predictions, &self.cycle_summary, &self.metrics_clean];
+        let issues: Vec<String> = checks.iter()
+            .filter(|s| !s.is_ok())
+            .map(|s| format!("   {} {}", s.emoji(), s.message()))
+            .collect();
+        issues.join("\n")
+    }
+
     /// Format compact for Telegram (emojis only + issues).
     pub fn format_telegram(&self) -> String {
         if self.all_ok() {
