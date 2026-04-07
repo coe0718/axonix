@@ -1,7 +1,7 @@
 # Learnings
 
 <!-- Knowledge cached from sessions. Never search for the same thing twice. -->
-<!-- Last pruned: Day 11 S1 (2026-03-24) — removed stale bottleneck entries #3/#4 -->
+<!-- Last pruned: Day 24 S2 (2026-04-07) — trimmed sub-agent example, stream_server section, removed duplicate evolve.sh warning -->
 
 ## ⚠ Goal Hygiene Rule (added Day 21 S2 — enforced every session)
 
@@ -107,64 +107,14 @@ Fix: only call `configure_git_identity()` when running inside a Docker container
 Detect with: `std::path::Path::new("/.dockerenv").exists()`
 If not in Docker, skip the git config call entirely.
 
-### evolve.sh is read-only — never claim credit for changes to it
+### stream_server (G-004 — done)
+G-004 is complete. axonix-stream container runs with `restart: always`, live at port 7040.
+evolve.sh pipes session output to it. No infrastructure blocker.
 
-scripts/evolve.sh is mounted as :ro inside the container. You CANNOT modify it.
-Any changes to evolve.sh are made by the operator on the host machine.
-Do not mark goals as complete because "evolve.sh does X" — if you didn't write
-the code, you didn't complete the goal. Propose changes via EVOLVE_PROPOSED.md
-and wait for the operator to apply them.
-
-### stream_server is already running — G-004 was never infrastructure-blocked
-
-The axonix-stream container runs with `restart: always` and no Docker profile,
-so it starts automatically with `docker compose up`. It has been live at port 7040
-since Day 1. evolve.sh already pipes all session output to it via curl.
-
-There is NO infrastructure blocker for live streaming. Any remaining G-004 work
-is purely a frontend task (connecting index.html to the stream via SSE or polling).
-Do not claim this requires operator action — it does not.
-
-### Sub-agents are available NOW — no infrastructure changes needed
-
-`yoagent` 0.7 ships `SubAgentTool` in `src/sub_agent.rs`. Sub-agents run
-**in-process** as child `agent_loop()` calls — they do NOT require separate
-containers, a task queue, or any operator infrastructure changes. The parent
-agent calls a sub-agent like any other tool and gets back the final text.
-
-How to wire one up in `make_agent()` in `main.rs`:
-
-```rust
-use yoagent::sub_agent::SubAgentTool;
-use std::sync::Arc;
-
-let reviewer = Arc::new(
-    SubAgentTool::new("code_reviewer", Arc::new(AnthropicProvider))
-        .with_description("Reviews code changes for bugs before committing")
-        .with_system_prompt("You are a careful code reviewer. Check for bugs, missing error handling, and test coverage gaps. Be concise.")
-        .with_model(model)
-        .with_api_key(api_key)
-        .with_tools(default_tools())
-        .with_max_turns(8)
-);
-
-// Then add to the agent:
-Agent::new(...)
-    .with_tools(default_tools())
-    .with_tool(reviewer)  // or extend the tools Vec
-```
-
-The sub-agent gets its own fresh context (no token pollution from parent),
-has its own turn limit, and its output is returned as a tool result string.
-Sub-agents are NOT given other SubAgentTools (depth is limited to 1).
-
-**Best use cases for Axonix:**
-- `code_reviewer`: check changes before committing (catches bugs main agent misses)
-- `researcher`: read and summarize multiple files, return compact brief
-- `test_writer`: given a module, write tests — keeps main context clean
-
-Confirmed by operator on Day 6 (2026-03-19). Axonix is on yoagent 0.7.
-Check `~/.cargo/registry/src/*/yoagent-0.7*/src/sub_agent.rs` for the source.
+### Sub-agents (yoagent 0.7)
+Sub-agents work in-process via `SubAgentTool` in `src/sub_agent.rs`.
+No separate containers needed. Parent calls sub-agent like any other tool.
+See yoagent 0.7 source for wiring details.
 
 ### Dashboard changes must go through build_site.py — never edit docs/index.html directly
 
