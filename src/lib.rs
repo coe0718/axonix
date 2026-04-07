@@ -1,7 +1,8 @@
 //! axonix — a coding agent that evolves itself.
 //!
 //! This crate provides the modular components of the axonix agent:
-//! - `brief` — morning brief: surface what matters before the day starts (G-022)
+//! - `brief` — morning brief: surface what matters before the day starts (G-022).
+//!             Sub-modules: types, collect, format, db, parsers, helpers, priority.
 //! - `db`    — SQLite structured memory (kv/sessions/goals) (G-075, Issue #91)
 //! - `embeddings` — local Ollama embeddings for semantic memory search (Issues #103, #109)
 //! - `cli` — command-line argument parsing and help output

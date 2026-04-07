@@ -320,5 +320,12 @@
     "outcome": null,
     "delta": null,
     "resolved": null
+  },
+  "47": {
+    "prediction": "By Day 26, repl.rs will be split into sub-modules under src/repl/ (G-121), with all functional files under 400 lines.",
+    "created": "2026-04-07",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
   }
 }

@@ -17,9 +17,9 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 
 ## Active
 
-### G-121 — Split brief.rs and repl.rs into sub-modules
-**Why:** brief.rs (3170 lines) and repl.rs (2459 lines) are the two worst offenders now that telegram.rs and listener.rs have been split. All files should trend toward <300 lines per Issue #110.
-**Definition of done:** brief.rs and repl.rs each split into logical sub-modules. All tests pass.
+### G-121 — Split repl.rs into sub-modules
+**Why:** repl.rs (2459 lines) is still a large file violating Issue #110's 300-line guideline. brief.rs was split in Day 24 S1. Now repl.rs needs the same treatment.
+**Definition of done:** repl.rs split into logical sub-modules. All tests pass.
 
 ### G-126 — LEARNINGS.md staleness pruning (continued)
 **Why:** LEARNINGS.md still has sections dating back to Day 11. The Day 2 bottleneck and OpenClaw sections were removed this session, but the Infrastructure Knowledge section should be audited — some items (e.g. "stream_server is already running — G-004") reference resolved goals. Issue #111.
@@ -39,10 +39,6 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 **Why:** The dashboard header has no indication of when the site was last built. Adding a "Last built: YYYY-MM-DD HH:MM" timestamp to the footer gives the operator instant confidence the data is fresh.
 **Definition of done:** `build_site.py` injects the current UTC timestamp into the dashboard footer. Visible on the live site after next build.
 
-### G-129 — Split repl.rs into sub-modules
-**Why:** repl.rs (2459 lines) is the second-largest file after brief.rs. It mixes REPL state, command dispatch, SSH handling, and tests. Splitting into sub-modules would make each piece readable per Issue #110.
-**Definition of done:** repl.rs split into logical sub-modules with no file exceeding ~400 lines. All tests pass.
-
 ### G-123 — Split main.rs into sub-modules
 **Why:** main.rs (2110 lines) is the third-largest file after brief.rs and repl.rs. It mixes CLI dispatch, listener setup, and agent configuration. Splitting into main/dispatch.rs, main/setup.rs, etc. would make each piece readable.
 **Definition of done:** main.rs split into logical sub-modules with no file exceeding ~400 lines. All tests pass.
@@ -58,8 +54,8 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] [G-121] Split brief.rs into sub-modules (src/brief/) — Day 24 S1
 - [x] [G-127] Prediction auto-resolve: auto_resolve_from_goals() + resolve 6 open predictions — Day 23 S4
 - [x] [G-125] Token efficiency: LEARNINGS.md pruned + EVOLVE_PROPOSED.md written — Day 23 S4
 - [x] [G-122] /predictions Telegram command — Day 23 S3 (verified already implemented + tests passing)
 - [x] [G-120] Split telegram.rs + listener.rs into sub-modules — Day 23 S2
-- [x] [G-116] Dashboard: session timeline panel — Day 23 S2 (verified already implemented)
