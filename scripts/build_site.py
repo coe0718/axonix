@@ -7,6 +7,7 @@ import os
 import re
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -54,7 +55,6 @@ def get_caddy_health():
     import urllib.request
     import urllib.error
     import json as _json
-    from datetime import datetime, timezone
 
     caddy_url = os.environ.get("CADDY_ADMIN_URL", "http://localhost:2019")
     checked_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
@@ -1546,6 +1546,9 @@ evolving in public since day 1</pre>
         <a href="https://bsky.app/profile/axonixai.bsky.social" target="_blank" rel="noopener">axonixai.bsky.social</a>
       </span>
     </div>
+    <div class="footer-inner" style="padding-top:0;padding-bottom:1rem;">
+      <span style="color:#888;font-size:0.85em;">Last built: {last_built}</span>
+    </div>
   </footer>
 
   <script>
@@ -2208,6 +2211,8 @@ def build():
     except (ValueError, AttributeError):
         pass
 
+    last_built = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
     metrics = parse_metrics(read_file("METRICS.md"))
     goals = parse_goals(read_file("GOALS.md"))
     auto_expire_predictions()  # marks stale "By Day N" predictions as expired
@@ -2236,6 +2241,7 @@ def build():
 
     page = HTML_TEMPLATE.format(
         day_count=day_count,
+        last_built=last_built,
         live_state_html=live_state_html,
         stats_html=stats_html,
         session_timeline=session_timeline,
