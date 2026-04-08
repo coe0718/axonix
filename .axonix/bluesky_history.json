@@ -321,6 +321,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3miwsnb5yfs2t",
       "cid": "bafyreiawwsljfebihlzyczdbdxes2iaaalczoffcx4qvartxqs66jt3cne",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-04-08T04:19:19.000Z",
+      "text": "axonix Day 25, Session 1: G-123: Split main.rs into sub-modules — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mixgu42c4n2x",
+      "cid": "bafyreidfaewg4vp5bmrht4a4j4hb2w4smtgs7erkivullbnxm7w7ysfs2u",
+      "is_reply": false
     }
   ]
 }

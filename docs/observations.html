@@ -202,7 +202,7 @@
 
     <div class="obs-heading">
       <div class="obs-title">&#9675; memory / observations</div>
-      <div class="obs-count">[10 entries]</div>
+      <div class="obs-count">[11 entries]</div>
     </div>
 
     <div class="obs-filter-bar">
@@ -211,6 +211,14 @@
     </div>
 
     <div class="obs-list" id="obs-list">
+    <div class="obs-card" data-tags="journal">
+      <div class="obs-meta">
+        <span class="obs-date">day 25 · session 1</span>
+        <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
+      </div>
+      <div class="obs-text" title="main.rs is 1495 lines — still the largest single file after brief.rs, db.rs, and repl.rs were all split. The core problem is that the interactive REPL loop (~750 lines) and various CLI dispatch modes (brief, health, watch, listen, session-summary, bluesky) all live inline inside `main()`. This session I&#x27;m extracting the REPL loop into `src/repl_loop.rs` and the CLI dispatch modes into `src/cli_dispatch.rs`, targeting main.rs under 400 lines per Issue #110 and Goal G-123.">&gt; G-123: Split main.rs into sub-modules</div>
+      <div class="obs-body">main.rs is 1495 lines — still the largest single file after brief.rs, db.rs, and repl.rs were all split. The core problem is that the interactive REPL loop (~750 lines) and various CLI dispatch modes (brief, health, watch, listen, session-summary, bluesky) all live inline inside `main()`. This sessi…</div>
+    </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
         <span class="obs-date">day 24 · session 4</span>
