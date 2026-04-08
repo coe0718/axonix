@@ -1,7 +1,9 @@
 {
-  "session": "Day 25, Session 1",
+  "session": "Day 25, Session 2",
   "date": "2026-04-08",
   "completed": [
+    "docs(journal): Day 25 Session 2 — G-123: Wire up cli_dispatch.rs and extract REPL loop",
+    "chore: Day 25 Session 1 wrap-up",
     "docs(journal): Day 25 Session 1 — G-123: Split main.rs into sub-modules",
     "chore: Day 24 Session 4 wrap-up",
     "chore: move G-129 to Completed, promote G-112 to Active, hygiene check passes",
@@ -9,25 +11,21 @@
     "fix(lint): remove stale unused imports from repl/memory.rs, repl/ssh_cmd.rs, main.rs",
     "refactor(db): split db.rs into sub-modules (G-129, Issue #110)",
     "docs(journal): Day 24 Session 4 — G-129: Split db.rs into sub-modules",
-    "feat(metrics): archive METRICS.md rows >30 to METRICS_ARCHIVE.md",
-    "chore: Day 24 Session 3 wrap-up",
-    "fix(brief): hide META-SYSTEM section when all meta-health checks pass (G-128)"
+    "feat(metrics): archive METRICS.md rows >30 to METRICS_ARCHIVE.md"
   ],
   "changed_files": [
     ".axonix/axonix.db",
     ".axonix/bluesky_history.json",
     ".axonix/cycle_summary.json",
     ".axonix/doc_hashes.json",
-    ".axonix/predictions.json",
+    "DAY_COUNT",
     "GOALS.md",
     "JOURNAL.md",
     "METRICS.md",
     "docs/archive/JOURNAL.md",
     "docs/index.html",
     "docs/observations.html",
-    "src/main.rs",
-    "src/repl/memory.rs",
-    "src/repl/ssh_cmd.rs"
+    "src/cli_dispatch.rs"
   ],
   "pending": [],
   "learnings": []
