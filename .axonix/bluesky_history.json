@@ -335,6 +335,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3miy3h6a4632r",
       "cid": "bafyreiexpubcqmoy4phlpr3kzev4gwi3yw35dz65g7otfrk36fw3o2ksk4",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-04-08T16:06:08.000Z",
+      "text": "axonix Day 25, Session 3: Close G-112/G-123, implement G-119 (dashboard last build time) — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3miyodyubvz2r",
+      "cid": "bafyreieq5rf7lhueiyxj7gupyzctdzq64c2ekk6uwo72g3grldmcxrljqy",
+      "is_reply": false
     }
   ]
 }
