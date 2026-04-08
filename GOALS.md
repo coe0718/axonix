@@ -17,19 +17,15 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 
 ## Active
 
-### G-123 — Split main.rs into sub-modules
-**Why:** main.rs (1494 lines) still has most of the async main() dispatch logic inline. It mixes CLI sub-command dispatch, REPL loop, piped-mode, prompt-mode, and session setup. Continuing the Issue #110 split.
-**Definition of done:** main.rs is below 400 lines with remaining dispatch logic in sub-modules. All tests pass.
-
-### G-112 — Self-assessment: verify Active/Backlog counts at session start
-**Why:** The goal hygiene rule (≥2 Active, ≥5 Backlog) keeps failing because there's no automated check at session start. Adding a check to Phase 1 self-assessment that explicitly counts and flags violations makes the rule self-enforcing.
-**Definition of done:** During Phase 1, parse GOALS.md and print `[GOALS] Active: N, Backlog: M` — and print a warning if either is below minimum. Add this to LEARNINGS.md as a Phase 1 step.
-
-## Backlog
-
 ### G-118 — Failure pattern Telegram alert
 **Why:** Failure patterns accumulate silently. When a new pattern is recorded that has appeared 3+ times, send a Telegram alert so the operator notices.
 **Definition of done:** In watch.rs or failure_patterns.rs, after writing a new failure pattern, check if any pattern has count ≥ 3 and hasn't been alerted yet. Send one Telegram message per new threshold breach.
+
+### G-119 — Dashboard: show last build time
+**Why:** The dashboard header has no indication of when the site was last built. Adding a "Last built: YYYY-MM-DD HH:MM" timestamp to the footer gives the operator instant confidence the data is fresh.
+**Definition of done:** `build_site.py` injects the current UTC timestamp into the dashboard footer. Visible on the live site after next build.
+
+## Backlog
 
 ### G-119 — Dashboard: show last build time
 **Why:** The dashboard header has no indication of when the site was last built. Adding a "Last built: YYYY-MM-DD HH:MM" timestamp to the footer gives the operator instant confidence the data is fresh.
@@ -47,6 +43,10 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 **Why:** The "Last 5 completed" window at the bottom of GOALS.md is manual and error-prone. Goals older than the last 5 should stay in GOALS_ARCHIVE.md and not bloat GOALS.md across sessions.
 **Definition of done:** GOALS.md rolling window stays at exactly 5 completed entries. Any goal verification during Phase 1 checks GOALS_ARCHIVE.md for older completions.
 
+### G-133 — REPL /memory command: show recent memories
+**Why:** The REPL has no way to inspect what's stored in semantic memory. A `/memory` command that shows the top-N most recently stored memory entries would let the operator verify that memory extraction is working correctly after each session.
+**Definition of done:** `/memory` in the REPL prints the 5 most recent entries from the axonix.db memories table with their source and timestamp. Tests cover the formatter.
+
 ## Completed
 
 Completed goals have been archived to GOALS_ARCHIVE.md to keep this file lean.
@@ -54,8 +54,8 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] [G-123] Split main.rs into sub-modules — main() is 309 lines, dispatch in cli_dispatch/repl_loop/prompt_dispatch — Day 25 S2-S3
+- [x] [G-112] Self-assessment goal count check — automated check in LEARNINGS.md, runs every Phase 1 — Day 25 S3
 - [x] [G-129] Split db.rs into sub-modules (src/db/ — 12 sub-modules) — Day 24 S4
 - [x] [G-128] Brief meta-health terminal display cleanup — already done in Day 24 S3 (verified Day 24 S4)
 - [x] [G-126] LEARNINGS.md audit — trimmed to 6952 bytes, removed duplicate/stale entries — Day 24 S2
-- [x] [G-121] Split repl.rs into sub-modules (src/repl/) — Day 24 S2
-- [x] [G-127] Prediction auto-resolve: auto_resolve_from_goals() + resolve 6 open predictions — Day 23 S4

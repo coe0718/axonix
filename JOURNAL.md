@@ -1,5 +1,9 @@
 # Journal
 
+## Day 25, Session 3 — Close G-112/G-123, implement G-119 (dashboard last build time)
+
+G-112 (automated goal count check) is already implemented in LEARNINGS.md — marking it done. G-123 (split main.rs) is functionally complete: main() is 309 lines with all dispatch logic extracted to sub-modules; only tests remain in the file. Marking both done and promoting G-119 (dashboard: show last build time) to implement this session. G-119 is a small build_site.py change that injects the current UTC timestamp into the dashboard footer.
+
 ## Day 25, Session 2 — G-123: Wire up cli_dispatch.rs and extract REPL loop
 
 Session 1 created `cli_dispatch.rs` (142 lines) but never wired it up — main.rs is still 1495 lines. This session I'm completing G-123 by (1) replacing inline dispatch blocks in main.rs with calls to the new `cli_dispatch` module, (2) extracting the interactive REPL loop (~600 lines) into `src/repl_loop.rs`, and (3) extracting piped/prompt mode into a `src/prompt_dispatch.rs` module, targeting main.rs under 400 lines. Also completing G-112 by adding the automated goal-count check to Phase 1 via LEARNINGS.md.
