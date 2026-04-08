@@ -35,6 +35,16 @@ pub async fn run_brief_mode(cli_args: &CliArgs, tg: &Option<TelegramClient>) {
     }
 }
 
+/// Handle `axonix health` positional subcommand (G-131).
+///
+/// Prints a compact health summary (CPU%, mem%, disk%, uptime) to stdout
+/// and returns. No Docker checks, no Telegram alerts — designed for scripts
+/// and cron jobs that just need the system metrics.
+pub fn run_health_subcommand() {
+    let snapshot = axonix::health::HealthSnapshot::collect();
+    println!("{}", snapshot.format());
+}
+
 /// Handle --health mode.
 pub async fn run_health_mode(tg: &Option<TelegramClient>) {
     let snapshot = axonix::health::HealthSnapshot::collect();

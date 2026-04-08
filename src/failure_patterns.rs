@@ -92,6 +92,10 @@ pub struct FailurePatternStore {
     pub path: PathBuf,
     /// All events, in insertion order (oldest first).
     pub events: Vec<FailureEvent>,
+    /// In-memory set of failure type labels for which a threshold alert has
+    /// already been issued this session. Resets on restart (acceptable trade-off:
+    /// avoids cross-session re-alerting without adding persistence complexity).
+    pub alerted_types: std::collections::HashSet<String>,
 }
 
 impl FailurePatternStore {
@@ -100,6 +104,7 @@ impl FailurePatternStore {
         Self {
             path: path.into(),
             events: Vec::new(),
+            alerted_types: std::collections::HashSet::new(),
         }
     }
 
@@ -217,6 +222,32 @@ impl FailurePatternStore {
     pub fn count_by_type(&self, ft: &FailureType) -> usize {
         let target = ft.key();
         self.events.iter().filter(|ev| ev.failure_type.key() == target).count()
+    }
+
+    /// Return failure type labels that are newly at or above `threshold` this session.
+    ///
+    /// A label is "newly" at threshold if its count has just reached `threshold`
+    /// AND it has not been returned by a previous call to this method on the same
+    /// store instance (tracked in `alerted_types`). Each label is returned at most
+    /// once per store lifetime (i.e., per session).
+    ///
+    /// This is the hook for Telegram threshold alerts (G-118): call this after
+    /// `log_failure` + `save`, then send one alert per returned label.
+    pub fn types_newly_at_threshold(&mut self, threshold: usize) -> Vec<String> {
+        // Build per-type counts from events
+        let mut counts: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+        for ev in &self.events {
+            *counts.entry(ev.failure_type.key()).or_insert(0) += 1;
+        }
+        let mut newly_breached = Vec::new();
+        for (key, count) in &counts {
+            if *count >= threshold && !self.alerted_types.contains(key) {
+                self.alerted_types.insert(key.clone());
+                newly_breached.push(key.clone());
+            }
+        }
+        newly_breached.sort(); // deterministic order for tests
+        newly_breached
     }
 
     /// Total number of logged failure events.
@@ -530,5 +561,68 @@ mod tests {
         // "network" and "disk" are distinct Other values
         assert_eq!(store.count_by_type(&FailureType::Other("network".to_string())), 2);
         assert_eq!(store.count_by_type(&FailureType::Other("disk".to_string())), 1);
+    }
+
+    // ── G-118: types_newly_at_threshold tests ─────────────────────────────────
+
+    #[test]
+    fn test_types_newly_at_threshold_below_threshold() {
+        let mut store = FailurePatternStore::new("/tmp/fp_test_tnath_below.json");
+        store.log_failure(FailureType::FalseCompletion, "a", "S1", "2026-01-01");
+        store.log_failure(FailureType::FalseCompletion, "b", "S2", "2026-01-02");
+        // count is 2, threshold is 3 — should not breach
+        let newly = store.types_newly_at_threshold(3);
+        assert!(newly.is_empty(), "2 events below threshold-3 should return empty: {newly:?}");
+    }
+
+    #[test]
+    fn test_types_newly_at_threshold_at_threshold() {
+        let mut store = FailurePatternStore::new("/tmp/fp_test_tnath_at.json");
+        store.log_failure(FailureType::FalseCompletion, "a", "S1", "2026-01-01");
+        store.log_failure(FailureType::FalseCompletion, "b", "S2", "2026-01-02");
+        store.log_failure(FailureType::FalseCompletion, "c", "S3", "2026-01-03");
+        // count is 3, threshold is 3 — should breach once
+        let newly = store.types_newly_at_threshold(3);
+        assert_eq!(newly.len(), 1, "exactly one type should breach: {newly:?}");
+        assert_eq!(newly[0], "FalseCompletion");
+    }
+
+    #[test]
+    fn test_types_newly_at_threshold_only_once_per_session() {
+        let mut store = FailurePatternStore::new("/tmp/fp_test_tnath_once.json");
+        for _ in 0..3 {
+            store.log_failure(FailureType::InfraBlindness, "x", "S1", "2026-01-01");
+        }
+        let first = store.types_newly_at_threshold(3);
+        assert_eq!(first.len(), 1, "first call should return one breached type");
+        // Add a 4th event for the same type — still should not re-alert
+        store.log_failure(FailureType::InfraBlindness, "y", "S2", "2026-01-02");
+        let second = store.types_newly_at_threshold(3);
+        assert!(second.is_empty(), "second call should not re-alert the same type: {second:?}");
+    }
+
+    #[test]
+    fn test_types_newly_at_threshold_multiple_types() {
+        let mut store = FailurePatternStore::new("/tmp/fp_test_tnath_multi.json");
+        // FalseCompletion × 3, MissedWrapUp × 3, FalseClaim × 2
+        for _ in 0..3 {
+            store.log_failure(FailureType::FalseCompletion, "a", "S1", "2026-01-01");
+            store.log_failure(FailureType::MissedWrapUp, "b", "S2", "2026-01-02");
+        }
+        store.log_failure(FailureType::FalseClaim, "c", "S3", "2026-01-03");
+        store.log_failure(FailureType::FalseClaim, "d", "S4", "2026-01-04");
+        let newly = store.types_newly_at_threshold(3);
+        // sorted deterministically
+        assert_eq!(newly.len(), 2, "two types should breach threshold-3: {newly:?}");
+        assert!(newly.contains(&"FalseCompletion".to_string()));
+        assert!(newly.contains(&"MissedWrapUp".to_string()));
+        assert!(!newly.contains(&"FalseClaim".to_string()), "FalseClaim count=2 should not breach");
+    }
+
+    #[test]
+    fn test_types_newly_at_threshold_empty_store() {
+        let mut store = FailurePatternStore::new("/tmp/fp_test_tnath_empty.json");
+        let newly = store.types_newly_at_threshold(3);
+        assert!(newly.is_empty(), "empty store returns no breached types");
     }
 }

@@ -38,6 +38,8 @@ pub struct CliArgs {
     pub stream_pipe: Option<String>,
     /// If true, auto-resolve predictions whose mentioned goal IDs are complete in GOALS_ARCHIVE.md.
     pub predict_auto_resolve: bool,
+    /// If true, print a compact health summary (CPU%, mem%, disk%, uptime) and exit. Scriptable.
+    pub health_subcommand: bool,
 }
 
 impl CliArgs {
@@ -119,6 +121,9 @@ impl CliArgs {
         let predict_auto_resolve = args.windows(2).any(|w| w[0] == "predict" && w[1] == "auto-resolve")
             || args.iter().any(|a| a == "--predict-auto-resolve");
 
+        // `axonix health` positional subcommand (bare "health" arg, not --health flag)
+        let health_subcommand = args.iter().skip(1).any(|a| a.as_str() == "health");
+
         Some(Self {
             model,
             skill_dirs,
@@ -136,6 +141,7 @@ impl CliArgs {
             telegram_notify,
             stream_pipe,
             predict_auto_resolve,
+            health_subcommand,
         })
     }
 }
@@ -156,6 +162,9 @@ pub fn print_help() {
     println!("  --watch                 Start health watch loop: alert via Telegram when thresholds exceeded");
     println!("  --health                Print system health + Docker container status; alert on unhealthy containers");
     println!("  --listen                Run always-on Telegram listener daemon (polls for /ask commands)");
+    println!();
+    println!("Subcommands:");
+    println!("  health                  Print CPU%, mem%, disk%, uptime and exit (scriptable; no Docker/Telegram)");
     println!("  --write-summary <label> Write .axonix/cycle_summary.json from real git/GOALS data and exit");
     println!("  --session-summary-telegram  Read .axonix/cycle_summary.json and send a compact summary to Telegram");
     println!("  --insert-metrics-row <row>  Insert a row into METRICS.md (ordered, deduplicated)");
@@ -488,6 +497,7 @@ mod tests {
         assert!(!cli.watch, "watch default false");
         assert!(!cli.listen, "listen default false");
         assert!(!cli.health, "health default false");
+        assert!(!cli.health_subcommand, "health_subcommand default false");
         assert!(cli.prompt.is_none(), "prompt default None");
         assert!(cli.bluesky_post.is_none(), "bluesky_post default None");
         assert!(!cli.brief_telegram, "brief_telegram default false");
@@ -643,5 +653,20 @@ mod tests {
         let args: Vec<String> = vec!["axonix".into()];
         let cli = CliArgs::parse(&args).unwrap();
         assert!(!cli.health, "health should be false by default");
+    }
+
+    #[test]
+    fn test_cli_health_subcommand() {
+        let args: Vec<String> = vec!["axonix".into(), "health".into()];
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(cli.health_subcommand, "health subcommand should be set");
+        assert!(!cli.health, "health flag should not be set");
+    }
+
+    #[test]
+    fn test_cli_health_subcommand_false_by_default() {
+        let args: Vec<String> = vec!["axonix".into()];
+        let cli = CliArgs::parse(&args).unwrap();
+        assert!(!cli.health_subcommand, "health_subcommand default false");
     }
 }

@@ -290,9 +290,19 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
 
         "/failures" => {
             use crate::failure_patterns::FailurePatternStore;
-            let store = FailurePatternStore::default_path();
+            let mut store = FailurePatternStore::default_path();
             let summary = store.failure_summary();
             let mut lines: Vec<String> = summary.lines().map(|l| format!("  {l}")).collect();
+            // G-118: check for threshold-3 breaches and surface them inline.
+            let newly_breached = store.types_newly_at_threshold(3);
+            if !newly_breached.is_empty() {
+                lines.push(String::new());
+                lines.push("  ⚠️  Threshold alert (G-118): the following failure types have 3+ occurrences:".to_string());
+                for label in &newly_breached {
+                    lines.push(format!("     • {label}"));
+                }
+                lines.push("  Consider reviewing and addressing these patterns.".to_string());
+            }
             lines.push(String::new());
             CommandResult::Handled(lines)
         }

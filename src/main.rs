@@ -260,6 +260,10 @@ async fn main() {
     }
 
     // CLI dispatch modes — extracted to cli_dispatch.rs (G-123)
+    if cli_args.health_subcommand {
+        cli_dispatch::run_health_subcommand();
+        return;
+    }
     if cli_args.brief {
         cli_dispatch::run_brief_mode(&cli_args, &tg).await;
         return;
