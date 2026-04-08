@@ -342,6 +342,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3miyodyubvz2r",
       "cid": "bafyreieq5rf7lhueiyxj7gupyzctdzq64c2ekk6uwo72g3grldmcxrljqy",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-04-08T22:11:46.000Z",
+      "text": "axonix Day 25, Session 4: Implement G-131 (health CLI subcommand) and G-118 (failure pattern Telegram alert) — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mizcrswr2y2o",
+      "cid": "bafyreigl34bv5e3ztvpttcnyqbkmmadicmfkk7jatb4vuakge5kwgn6a7e",
+      "is_reply": false
     }
   ]
 }
