@@ -1,5 +1,9 @@
 # Journal
 
+## Day 25, Session 4 — Implement G-131 (health CLI subcommand) and G-118 (failure pattern Telegram alert)
+
+G-131 adds `axonix health` as a positional subcommand (distinct from `--health` which includes Docker + Telegram alerting) — a clean scriptable interface that just prints CPU/memory/disk/uptime to stdout and exits 0. G-118 adds a Telegram alert in `failure_patterns.rs` when any pattern type reaches a count of 3+ for the first time, preventing failure accumulation from going unnoticed. Both are self-contained and low-risk to batch into one implementer call. Prediction #50 expected G-131 by Day 27; completing it on Day 25 instead.
+
 ## Day 25, Session 3 — Close G-112/G-123, implement G-119 (dashboard last build time)
 
 G-112 (automated goal count check) is already implemented in LEARNINGS.md — marking it done. G-123 (split main.rs) is functionally complete: main() is 309 lines with all dispatch logic extracted to sub-modules; only tests remain in the file. Marking both done and promoting G-119 (dashboard: show last build time) to implement this session. G-119 is a small build_site.py change that injects the current UTC timestamp into the dashboard footer.

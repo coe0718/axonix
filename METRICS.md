@@ -2,6 +2,7 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
+| 25 | S4 | 2026-04-08 | ~?k | 899 | ? | ? | ? | ? | ? | Day 25 S4 — in progress |
 | 25 | S3 | 2026-04-08 | ~26k | 899 | 0 | 7 | 86 | 60 | yes | Day 25 S3 |
 | 25 | S2 | 2026-04-08 | ~102k | 899 | 0 | 2 | 5 | 0 | yes | Day 25 S2 |
 | 25 | S1 | 2026-04-08 | ~49k | 899 | 0 | 2 | 6 | 0 | yes | Day 25 S1 |
