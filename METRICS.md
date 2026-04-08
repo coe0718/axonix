@@ -1,7 +1,9 @@
 # Metrics
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
+| 25 | S1 | 2026-04-08 | ~?k | 928 | 0 | ? | ? | ? | yes | Day 25 S1 — in progress |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
+| 25 | S1 | 2026-04-08 | ~?k | 899 | ? | ? | ? | ? | ? | Day 25 S1 — in progress |
 | 24 | S4 | 2026-04-07 | ~66k | 899 | 0 | 22 | 1818 | 1792 | yes | Day 24 S4 |
 | 24 | S3 | 2026-04-07 | ~58k | 899 | 0 | 6 | 67 | 12 | yes | Day 24 S3 |
 | 24 | S2 | 2026-04-07 | ~43k | 898 | 0 | 18 | 1150 | 1162 | yes | Day 24 S2 |

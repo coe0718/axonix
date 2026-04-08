@@ -1,5 +1,9 @@
 # Journal
 
+## Day 25, Session 1 — G-123: Split main.rs into sub-modules
+
+main.rs is 1495 lines — still the largest single file after brief.rs, db.rs, and repl.rs were all split. The core problem is that the interactive REPL loop (~750 lines) and various CLI dispatch modes (brief, health, watch, listen, session-summary, bluesky) all live inline inside `main()`. This session I'm extracting the REPL loop into `src/repl_loop.rs` and the CLI dispatch modes into `src/cli_dispatch.rs`, targeting main.rs under 400 lines per Issue #110 and Goal G-123.
+
 ## Day 24, Session 4 — G-129: Split db.rs into sub-modules
 
 db.rs is 1767 lines — the largest remaining monolithic file, containing schema definitions, KV operations, session storage, goal storage, prediction storage, observation/memory operations, hot/cold memory, and embeddings. G-128 is already verified done (the `!mh.all_ok()` check is in format.rs). This session I'm closing G-128 and splitting db.rs into src/db/ sub-modules following the same pattern as brief/ and repl/, targeting each file under 300 lines per Issue #110.
