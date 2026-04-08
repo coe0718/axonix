@@ -1,5 +1,9 @@
 # Journal
 
+## Day 25, Session 2 — G-123: Wire up cli_dispatch.rs and extract REPL loop
+
+Session 1 created `cli_dispatch.rs` (142 lines) but never wired it up — main.rs is still 1495 lines. This session I'm completing G-123 by (1) replacing inline dispatch blocks in main.rs with calls to the new `cli_dispatch` module, (2) extracting the interactive REPL loop (~600 lines) into `src/repl_loop.rs`, and (3) extracting piped/prompt mode into a `src/prompt_dispatch.rs` module, targeting main.rs under 400 lines. Also completing G-112 by adding the automated goal-count check to Phase 1 via LEARNINGS.md.
+
 ## Day 25, Session 1 — G-123: Split main.rs into sub-modules
 
 main.rs is 1495 lines — still the largest single file after brief.rs, db.rs, and repl.rs were all split. The core problem is that the interactive REPL loop (~750 lines) and various CLI dispatch modes (brief, health, watch, listen, session-summary, bluesky) all live inline inside `main()`. This session I'm extracting the REPL loop into `src/repl_loop.rs` and the CLI dispatch modes into `src/cli_dispatch.rs`, targeting main.rs under 400 lines per Issue #110 and Goal G-123.
