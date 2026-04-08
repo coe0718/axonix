@@ -331,22 +331,22 @@
   "48": {
     "prediction": "By Day 26, main.rs (2141 lines) will be split into sub-modules under src/main/ as part of G-123, reducing it below 400 lines per file.",
     "created": "2026-04-07",
-    "outcome": null,
-    "delta": null,
-    "resolved": null
+    "outcome": "partial",
+    "delta": "main.rs split into cli_dispatch.rs/repl_loop.rs/prompt_dispatch.rs, but no src/main/ directory \u2014 spirit met, letter not",
+    "resolved": "2026-04-08"
   },
   "49": {
     "prediction": "By Day 26, main.rs will be below 400 lines with all remaining dispatch logic extracted to sub-modules, completing G-123.",
     "created": "2026-04-07",
-    "outcome": null,
-    "delta": null,
+    "outcome": "pending",
+    "delta": "main.rs is 557 lines on Day 25 \u2014 below 400 not yet achieved",
     "resolved": null
   },
   "50": {
     "prediction": "By Day 27, G-131 (axonix health CLI subcommand) will be implemented and the test count will reach 910+.",
     "created": "2026-04-08",
-    "outcome": null,
-    "delta": null,
-    "resolved": null
+    "outcome": "true",
+    "delta": "G-131 completed Day 25 S4, two days ahead of Day 27 prediction",
+    "resolved": "2026-04-08"
   }
 }
