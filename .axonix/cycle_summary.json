@@ -1,33 +1,23 @@
 {
-  "session": "Day 26, Session 3",
+  "session": "Day 26, Session 4",
   "date": "2026-04-09",
   "completed": [
+    "revert(src): Day 26 Session 4 — build/test failure, restored pre-session src/",
+    "chore: Day 26 Session 4 wrap-up — G-139/G-140 done, promote G-141/G-142, add G-144/G-145",
+    "fix(tests): use emoji-prefixed assertion strings to avoid false matches in git summary output",
+    "refactor(predictions): G-140 split calibration.rs from store.rs (382→275 lines)",
+    "feat(repl): G-139 /goals command — show active goals from GOALS.md",
+    "docs(journal): Day 26 Session 4 — REPL /goals command and split predictions/store.rs (G-139, G-140)",
+    "chore: Day 26 Session 3 wrap-up",
     "chore(goals): close G-130 — METRICS.md injection truncation applied by operator",
     "chore: Day 26 Session 3 wrap-up — G-138/G-134 done, promote G-139/G-140, add G-142/G-143",
-    "feat(repl): G-138 /brief REPL command; G-134 /search semantic search command",
-    "docs(journal): Day 26 Session 3 — REPL /brief and /search commands (G-138, G-134)",
-    "chore: Day 26 Session 2 wrap-up",
-    "chore: Day 26 Session 2 wrap-up — goals, metrics, predictions",
-    "refactor(repl,predictions): split commands.rs and predictions.rs into sub-modules (G-136, G-137)",
-    "docs(journal): Day 26 Session 2 — split repl/commands.rs and predictions.rs into sub-modules",
-    "chore: Day 26 Session 1 wrap-up",
-    "chore: Day 26 Session 1 wrap-up — goals, metrics, predictions, env vars"
+    "feat(repl): G-138 /brief REPL command; G-134 /search semantic search command"
   ],
   "changed_files": [
-    ".axonix/axonix.db",
-    ".axonix/bluesky_history.json",
-    ".axonix/cycle_summary.json",
     ".axonix/predictions.json",
     "GOALS.md",
-    "JOURNAL.md",
     "METRICS.md",
-    "docs/archive/JOURNAL.md",
-    "docs/index.html",
-    "docs/observations.html",
-    "src/repl/commands.rs",
-    "src/repl/help_cmd.rs",
-    "src/repl/misc_cmds.rs",
-    "src/repl/tests.rs"
+    "src/predictions/calibration.rs"
   ],
   "pending": [],
   "learnings": []

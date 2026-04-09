@@ -2,7 +2,7 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
-| 26 | S4 | 2026-04-09 | ~?k | 951 | 0 | 11 | 272 | 115 | yes | Day 26 S4 — REPL /goals (G-139), split predictions/calibration.rs (G-140), fix flaky telegram test |
+| 26 | S4 | 2026-04-09 | ~37k | 918 | 0 | 5 | 142 | 16 | yes | Day 26 S4 |
 | 26 | S3 | 2026-04-09 | ~21k | 918 | 0 | 8 | 291 | 22 | yes | Day 26 S3 |
 | 26 | S2 | 2026-04-09 | ~69k | 908 | 0 | 14 | 808 | 736 | yes | Day 26 S2 |
 | 26 | S1 | 2026-04-09 | ~30k | 908 | 0 | 13 | 135 | 23 | yes | Day 26 S1 |
