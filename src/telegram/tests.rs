@@ -666,8 +666,10 @@ fn test_format_enhanced_status_reply_with_goal_and_commit() {
 #[test]
 fn test_format_enhanced_status_reply_without_goal_or_commit() {
     let reply = TelegramClient::format_enhanced_status_reply("m", 0, None, None, None);
-    assert!(!reply.contains("active goal"), "no goal section if None: {reply}");
-    assert!(!reply.contains("last commit"), "no commit section if None: {reply}");
+    // Use the exact format string "🎯 active goal:" rather than a substring
+    // that could appear in git commit messages in the status summary.
+    assert!(!reply.contains("🎯 active goal:"), "no goal section if None: {reply}");
+    assert!(!reply.contains("📝 last commit:"), "no commit section if None: {reply}");
 }
 
 #[test]
