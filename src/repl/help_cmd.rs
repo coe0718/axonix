@@ -37,6 +37,8 @@ pub fn help_lines(skill_names: &[String]) -> Vec<String> {
         "    /failures          Show logged failure patterns across sessions".to_string(),
         "    /archive-journal   Archive old journal entries to docs/archive/JOURNAL.md".to_string(),
         "    /memory-search <q>  Search stored observations by keyword".to_string(),
+        "    /brief             Run the morning brief interactively".to_string(),
+        "    /search <query>    Semantic similarity search over the embeddings store".to_string(),
     ];
     if !skill_names.is_empty() {
         lines.push("    /skills        Show loaded skills".to_string());

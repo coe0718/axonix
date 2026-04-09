@@ -263,6 +263,17 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
 
         "/archive-journal" => misc_cmds::handle_archive_journal(),
 
+        "/brief" => misc_cmds::handle_brief(),
+
+        s if s == "/search" || s.starts_with("/search ") => {
+            let arg = if s == "/search" {
+                ""
+            } else {
+                s.trim_start_matches("/search ").trim()
+            };
+            misc_cmds::handle_search(arg)
+        }
+
         s if s == "/memory-search" || s.starts_with("/memory-search ") => {
             let arg = if s == "/memory-search" {
                 ""

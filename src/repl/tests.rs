@@ -1411,3 +1411,148 @@ use super::*;
         let all = lines.join("\n");
         assert!(all.contains("/failures"), "/help should document /failures command");
     }
+
+    // ── G-138: /brief ─────────────────────────────────────────────────────────
+
+    /// /brief should be dispatched to the brief handler (not "unknown command").
+    #[test]
+    fn test_brief_not_unknown_command() {
+        let mut s = state();
+        let result = handle_command("/brief", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled, got {result:?}");
+        };
+        let all = lines.join("\n");
+        assert!(
+            !all.contains("Unknown command"),
+            "/brief should not be treated as unknown: {all}"
+        );
+    }
+
+    /// /brief should return a Handled result (not Quit, NotACommand, etc.).
+    #[test]
+    fn test_brief_returns_handled() {
+        let mut s = state();
+        let result = handle_command("/brief", &mut s, &[]);
+        assert!(
+            matches!(result, CommandResult::Handled(_)),
+            "/brief should return CommandResult::Handled"
+        );
+    }
+
+    /// /brief output should include the AXONIX header text.
+    #[test]
+    fn test_brief_output_contains_header() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/brief", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(
+            all.contains("AXONIX"),
+            "/brief output should contain AXONIX header: {all}"
+        );
+    }
+
+    /// /help should document /brief.
+    #[test]
+    fn test_help_includes_brief_command() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/help", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("/brief"), "/help should document /brief: {all}");
+    }
+
+    // ── G-134: /search ────────────────────────────────────────────────────────
+
+    /// /search with no query should return a helpful usage message.
+    #[test]
+    fn test_search_empty_query_returns_usage() {
+        let mut s = state();
+        let result = handle_command("/search", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled, got {result:?}");
+        };
+        let all = lines.join("\n");
+        assert!(
+            all.contains("Usage"),
+            "/search with no query should show usage: {all}"
+        );
+    }
+
+    /// /search with only whitespace after the command is treated as empty.
+    #[test]
+    fn test_search_whitespace_only_query_returns_usage() {
+        let mut s = state();
+        // "/search  " — two spaces, no real query
+        let result = handle_command("/search  ", &mut s, &[]);
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled, got {result:?}");
+        };
+        let all = lines.join("\n");
+        assert!(
+            all.contains("Usage"),
+            "/search with whitespace-only query should show usage: {all}"
+        );
+    }
+
+    /// /search <query> should not return "unknown command".
+    #[test]
+    fn test_search_not_unknown_command() {
+        let mut s = state();
+        // Point Ollama at an unreachable port so embed() fails gracefully.
+        std::env::set_var("OLLAMA_URL", "http://127.0.0.1:1");
+        let result = handle_command("/search hello world", &mut s, &[]);
+        std::env::remove_var("OLLAMA_URL");
+        let CommandResult::Handled(lines) = result else {
+            panic!("expected Handled, got {result:?}");
+        };
+        let all = lines.join("\n");
+        assert!(
+            !all.contains("Unknown command"),
+            "/search should not be treated as unknown: {all}"
+        );
+    }
+
+    /// /search returns Handled even when Ollama is unreachable.
+    #[test]
+    fn test_search_ollama_unreachable_returns_handled() {
+        let mut s = state();
+        std::env::set_var("OLLAMA_URL", "http://127.0.0.1:1");
+        let result = handle_command("/search rust lifetime", &mut s, &[]);
+        std::env::remove_var("OLLAMA_URL");
+        assert!(
+            matches!(result, CommandResult::Handled(_)),
+            "/search should return Handled even if Ollama is down"
+        );
+    }
+
+    /// /search error output (when Ollama is down) should mention embedding failure.
+    #[test]
+    fn test_search_ollama_unreachable_shows_error() {
+        let mut s = state();
+        std::env::set_var("OLLAMA_URL", "http://127.0.0.1:1");
+        let CommandResult::Handled(lines) = handle_command("/search rust lifetime", &mut s, &[]) else {
+            std::env::remove_var("OLLAMA_URL");
+            panic!("expected Handled");
+        };
+        std::env::remove_var("OLLAMA_URL");
+        let all = lines.join("\n");
+        assert!(
+            all.contains("embedding failed") || all.contains("Ollama"),
+            "/search should explain the error: {all}"
+        );
+    }
+
+    /// /help should document /search.
+    #[test]
+    fn test_help_includes_search_command() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/help", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("/search"), "/help should document /search: {all}");
+    }
