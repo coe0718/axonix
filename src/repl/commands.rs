@@ -40,6 +40,7 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
                 "    /issues [N]         List open GitHub issues (default 10, sorted by reactions)".to_string(),
                 "    /memory list        Show persistent memory (facts across sessions)".to_string(),
                 "    /memory set/get/del Read and write persistent memory".to_string(),
+                "    /memory recent      Show 5 most recent semantic memories".to_string(),
                 "    /predict add <text> Log a prediction about a future outcome".to_string(),
                 "    /predict open       Show open (unresolved) predictions".to_string(),
                 "    /predict list       Show all predictions with outcomes".to_string(),

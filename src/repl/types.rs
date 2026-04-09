@@ -106,4 +106,6 @@ pub enum CommandResult {
     ArchiveJournal,
     /// `/memory-search <query>` — search stored observations by keyword.
     MemorySearch(String),
+    /// `/memory recent` — show the 5 most recently stored hot memories from axonix.db.
+    ShowRecentMemories,
 }

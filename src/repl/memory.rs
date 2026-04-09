@@ -126,6 +126,8 @@ pub fn handle_memory(arg: &str, state: &mut ReplState) -> CommandResult {
                 ])
             }
         }
+    } else if arg == "recent" {
+        CommandResult::ShowRecentMemories
     } else {
         CommandResult::Handled(vec![
             "  Usage:".to_string(),
@@ -134,10 +136,24 @@ pub fn handle_memory(arg: &str, state: &mut ReplState) -> CommandResult {
             "    /memory set <key> <value> Store a key-value pair".to_string(),
             "    /memory note <key> <text> Add a note to an existing key".to_string(),
             "    /memory del <key>         Delete a key".to_string(),
+            "    /memory recent            Show 5 most recent semantic memories".to_string(),
             String::new(),
             "  Key naming convention: category.attribute".to_string(),
             "  Example: nuc.ip, twitter.status, operator.tz".to_string(),
             String::new(),
         ])
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::repl::types::ReplState;
+
+    #[test]
+    fn test_memory_recent_returns_show_recent_memories() {
+        let mut state = ReplState::new("claude-3-5-haiku-20241022");
+        let result = handle_memory("recent", &mut state);
+        assert_eq!(result, CommandResult::ShowRecentMemories);
     }
 }

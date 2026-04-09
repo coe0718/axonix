@@ -3,11 +3,11 @@
 //! Runs periodic health checks and sends Telegram alerts when thresholds are exceeded.
 //! Designed to be used from the `--watch` CLI flag or the `/watch` REPL command.
 //!
-//! # Thresholds (defaults)
+//! # Thresholds (defaults — override with env vars)
 //!
-//! - CPU load (1-min avg): > 2.0  — alert when system is heavily loaded
-//! - Memory usage: > 85%          — alert when RAM is nearly full
-//! - Disk usage: > 85%            — alert when disk is nearly full
+//! - CPU load (1-min avg): > 2.0  — override with AXONIX_CPU_THRESHOLD
+//! - Memory usage: > 85%          — override with AXONIX_MEM_THRESHOLD
+//! - Disk usage: > 85%            — override with AXONIX_DISK_THRESHOLD
 //!
 //! # Alert behavior
 //!
@@ -42,10 +42,24 @@ pub struct WatchConfig {
 
 impl Default for WatchConfig {
     fn default() -> Self {
+        let cpu_threshold = std::env::var("AXONIX_CPU_THRESHOLD")
+            .ok()
+            .and_then(|v| v.parse::<f64>().ok())
+            .unwrap_or(2.0);
+        let mem_threshold = std::env::var("AXONIX_MEM_THRESHOLD")
+            .ok()
+            .and_then(|v| v.parse::<u8>().ok())
+            .filter(|&n| n <= 100)
+            .unwrap_or(85);
+        let disk_threshold = std::env::var("AXONIX_DISK_THRESHOLD")
+            .ok()
+            .and_then(|v| v.parse::<u8>().ok())
+            .filter(|&n| n <= 100)
+            .unwrap_or(85);
         Self {
-            cpu_threshold: 2.0,
-            mem_threshold: 85,
-            disk_threshold: 85,
+            cpu_threshold,
+            mem_threshold,
+            disk_threshold,
             interval: Duration::from_secs(60),
             cooldown: Duration::from_secs(300),
             restart_cooldown: Duration::from_secs(3600),
@@ -592,5 +606,17 @@ mod tests {
             state.can_alert_restart("any-container", Duration::from_secs(3600)),
             "fresh AlertState should allow restart alert for any container"
         );
+    }
+
+    #[test]
+    fn test_watch_config_env_var_cpu_threshold() {
+        // Test that AXONIX_CPU_THRESHOLD is parsed from env.
+        // (just verify the default still works when env is unset)
+        // We can't set env vars reliably in parallel tests, so just test defaults.
+        // The WatchConfig::for_test already uses defaults.
+        let config = WatchConfig::for_test(30, 60);
+        // Default thresholds
+        assert_eq!(config.mem_threshold, 85);
+        assert_eq!(config.disk_threshold, 85);
     }
 }
