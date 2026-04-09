@@ -6,6 +6,9 @@
 //! Sub-modules:
 //! - `types`       — ReplState, CommandResult, HISTORY_LIMIT
 //! - `commands`    — handle_command main dispatch
+//! - `help_cmd`    — /help text builder
+//! - `watch_cmd`   — /watch handler
+//! - `misc_cmds`   — /failures, /summary, /recap, /archive-journal handlers
 //! - `memory`      — /memory command handler
 //! - `predict`     — /predict command handler
 //! - `ssh_cmd`     — /ssh command handler
@@ -13,6 +16,9 @@
 
 pub mod types;
 pub mod commands;
+mod help_cmd;
+mod watch_cmd;
+mod misc_cmds;
 mod memory;
 mod predict;
 mod ssh_cmd;
