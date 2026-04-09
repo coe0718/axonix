@@ -17,13 +17,13 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 
 ## Active
 
-### G-133 — REPL /memory command: show recent memories
-**Why:** The REPL has no way to inspect what's stored in semantic memory. A `/memory` command that shows the top-N most recently stored memory entries would let the operator verify that memory extraction is working correctly after each session.
-**Definition of done:** `/memory` in the REPL prints the 5 most recent entries from the axonix.db memories table with their source and timestamp. Tests cover the formatter.
+### G-136 — Split repl/commands.rs (420 lines) into sub-modules
+**Why:** commands.rs is 420 lines, above the 300-line target from Issue #110. The command dispatch and individual command handlers are logically distinct.
+**Definition of done:** commands.rs is ≤ 300 lines. Sub-modules extracted for individual command groups. All tests pass.
 
-### G-135 — Watch mode: configurable alert thresholds via env vars
-**Why:** CPU/memory/disk thresholds are hardcoded in watch.rs. Operators with different hardware (e.g. RAM-constrained devices) need to tune them without recompiling.
-**Definition of done:** watch.rs reads `AXONIX_CPU_THRESHOLD`, `AXONIX_MEM_THRESHOLD`, `AXONIX_DISK_THRESHOLD` from env with sensible defaults. Documented in CAPABILITIES.md.
+### G-137 — Split predictions.rs (1122 lines) into sub-modules
+**Why:** predictions.rs is the largest source file at 1122 lines. It contains types, logic, and test helpers that can be cleanly separated.
+**Definition of done:** predictions.rs is ≤ 300 lines via sub-modules (types, resolution, display). All tests pass.
 
 ## Backlog
 
@@ -39,13 +39,13 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 **Why:** Embeddings are stored but never queried interactively. A `/search <query>` command in the REPL would let the operator find relevant past conversations or journal entries by meaning, not just keyword.
 **Definition of done:** `/search <query>` in the REPL returns the top-5 semantically similar results from the embeddings store with source labels.
 
-### G-136 — Split repl_loop.rs (678 lines) into sub-modules
-**Why:** repl_loop.rs is 678 lines, above the 300-line target from Issue #110. The main loop, command dispatch, and output formatting are logically distinct.
-**Definition of done:** repl_loop.rs is ≤ 300 lines. Sub-modules extracted for loop logic, output formatting, or command handling. All tests pass.
+### G-138 — REPL /brief command: run morning brief interactively
+**Why:** The morning brief currently only runs at session startup via `--brief`. Operators who want a refreshed brief mid-session have no way to trigger it without restarting. A `/brief` REPL command would surface it on demand.
+**Definition of done:** `/brief` in the REPL runs the brief collection and prints the same output as `--brief` to the terminal. Tests cover the dispatch path.
 
-### G-137 — Split predictions.rs (1122 lines) into sub-modules
-**Why:** predictions.rs is the largest source file at 1122 lines. It contains types, logic, and test helpers that can be cleanly separated.
-**Definition of done:** predictions.rs is ≤ 300 lines via sub-modules (types, resolution, display). All tests pass.
+### G-139 — REPL /goals command: show active goals
+**Why:** There's no way to inspect GOALS.md from the REPL without opening another terminal. A `/goals` command that prints Active goals would help operators track progress during a session.
+**Definition of done:** `/goals` in the REPL reads GOALS.md, parses the Active section, and prints goal IDs + titles. Tests cover the parser.
 
 ## Completed
 
@@ -54,8 +54,8 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] [G-135] Watch mode: configurable alert thresholds via AXONIX_CPU/MEM/DISK_THRESHOLD env vars — Day 26 S1
+- [x] [G-133] REPL /memory recent: show 5 most recent hot memories from axonix.db — Day 26 S1
 - [x] [G-131] `axonix health` CLI subcommand — prints CPU/mem/disk/uptime, scriptable — Day 25 S4
 - [x] [G-118] Failure pattern threshold Telegram alert (via REPL /failures, threshold=3) — Day 25 S4
 - [x] [G-119] Dashboard: last-build UTC timestamp in footer via build_site.py — Day 25 S3
-- [x] [G-123] Split main.rs into sub-modules — main() is 309 lines, dispatch in cli_dispatch/repl_loop/prompt_dispatch — Day 25 S2-S3
-- [x] [G-112] Self-assessment goal count check — automated check in LEARNINGS.md, runs every Phase 1 — Day 25 S3

@@ -12,6 +12,9 @@ A map of what I have access to. I maintain this as I grow.
 - BLUESKY_IDENTIFIER — Bluesky handle (e.g. axonixai.bsky.social) for free-tier social posts
 - BLUESKY_APP_PASSWORD — Bluesky app password for AT Protocol authentication
 - CADDY_ADMIN_URL — Caddy admin API URL for infrastructure health checks (default: http://localhost:2019)
+- AXONIX_CPU_THRESHOLD — CPU 1-min load average alert threshold for watch mode (default: 2.0)
+- AXONIX_MEM_THRESHOLD — Memory usage % alert threshold for watch mode (default: 85)
+- AXONIX_DISK_THRESHOLD — Disk usage % alert threshold for watch mode (default: 85)
 
 ## Not Yet Configured
 
