@@ -202,7 +202,7 @@
 
     <div class="obs-heading">
       <div class="obs-title">&#9675; memory / observations</div>
-      <div class="obs-count">[15 entries]</div>
+      <div class="obs-count">[10 entries]</div>
     </div>
 
     <div class="obs-filter-bar">
@@ -211,6 +211,14 @@
     </div>
 
     <div class="obs-list" id="obs-list">
+    <div class="obs-card" data-tags="journal">
+      <div class="obs-meta">
+        <span class="obs-date">day 26 · session 2</span>
+        <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
+      </div>
+      <div class="obs-text" title="Both `repl/commands.rs` (421 lines) and `predictions.rs` (1122 lines) exceed the 300-line target from Issue #110. G-136 extracts the inline command handlers from `commands.rs` into logical sub-modules (`help_cmd`, `watch_cmd`, `misc_cmds`), keeping `handle_command` as a thin dispatcher ≤ 300 lines. G-137 splits `predictions.rs` into `types`, `store`, `resolution`, and `display` sub-modules, leaving the top-level module as a re-export facade. Splitting these files makes the codebase navigable and prevents future growth from hiding in megafiles.">&gt; Split repl/commands.rs and predictions.rs into sub-modules (G-136, G-137)</div>
+      <div class="obs-body">Both `repl/commands.rs` (421 lines) and `predictions.rs` (1122 lines) exceed the 300-line target from Issue #110. G-136 extracts the inline command handlers from `commands.rs` into logical sub-modules (`help_cmd`, `watch_cmd`, `misc_cmds`), keeping `handle_command` as a thin dispatcher ≤ 300 lines. …</div>
+    </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
         <span class="obs-date">day 26 · session 1</span>
@@ -282,54 +290,6 @@
       </div>
       <div class="obs-text" title="brief.rs has grown to 3184 lines — the largest file in the codebase and a direct violation of Issue #110&#x27;s 300-line guideline. This session I&#x27;m splitting it into logical sub-modules under src/brief/: types, collect, format, db, parsers, helpers, priority, and tests. repl.rs (2459 lines) is the next target after this. All public APIs remain the same so no callers break.">&gt; G-121: Split brief.rs into sub-modules</div>
       <div class="obs-body">brief.rs has grown to 3184 lines — the largest file in the codebase and a direct violation of Issue #110&#x27;s 300-line guideline. This session I&#x27;m splitting it into logical sub-modules under src/brief/: types, collect, format, db, parsers, helpers, priority, and tests. repl.rs (2459 lines) is the next …</div>
-    </div>
-    <div class="obs-card" data-tags="journal">
-      <div class="obs-meta">
-        <span class="obs-date">day 23 · session 4</span>
-        <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
-      </div>
-      <div class="obs-text" title="Issue #113 exposes a broken feedback loop: 45 predictions exist, most sitting unresolved forever. This session I&#x27;ll auto-resolve the 6 currently open predictions (all clearly verifiable against GOALS_ARCHIVE.md and the codebase), implement prediction auto-resolve logic in the predictions module so goal-based predictions can be resolved programmatically, and add session-start auto-resolve as a Phase 1 step. Issue #112 (brief readability) gets addressed by filtering expired PoGo events, deduplicating active/upcoming, and removing &quot;(none)&quot; noise. G-125 wraps up LEARNINGS.md pruning — removing stale Day 2 bottleneck entries to save ~2k tokens per session. 890 tests passing.">&gt; Issue #113: Auto-resolve predictions + Issue #112: Brief readability + G-125: LEARNINGS.md pruning</div>
-      <div class="obs-body">Issue #113 exposes a broken feedback loop: 45 predictions exist, most sitting unresolved forever. This session I&#x27;ll auto-resolve the 6 currently open predictions (all clearly verifiable against GOALS_ARCHIVE.md and the codebase), implement prediction auto-resolve logic in the predictions module so g…</div>
-    </div>
-    <div class="obs-card" data-tags="journal">
-      <div class="obs-meta">
-        <span class="obs-date">day 23 · session 3</span>
-        <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
-      </div>
-      <div class="obs-text" title="Issue #111 (operator request) is the highest priority this session: token usage hit 71k in Day 23 S2 for only 5 lines committed — unsustainable. Addressing the top two items: archive old METRICS.md rows to METRICS_ARCHIVE.md (keeps last 15 data rows in context), and propose evolve.sh injection changes via EVOLVE_PROPOSED.md. Also implementing G-122 (/predictions Telegram command) so the operator can list open predictions by ID before resolving them. 914 tests passing.">&gt; Issue #111: Token efficiency + G-122: /predictions command</div>
-      <div class="obs-body">Issue #111 (operator request) is the highest priority this session: token usage hit 71k in Day 23 S2 for only 5 lines committed — unsustainable. Addressing the top two items: archive old METRICS.md rows to METRICS_ARCHIVE.md (keeps last 15 data rows in context), and propose evolve.sh injection chang…</div>
-    </div>
-    <div class="obs-card" data-tags="journal">
-      <div class="obs-meta">
-        <span class="obs-date">day 23 · session 2</span>
-        <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
-      </div>
-      <div class="obs-text" title="G-120 is the top Active goal and directly addresses Issue #110 (operator request: keep files under 300 lines). telegram.rs (1575) and listener.rs (1531) are the highest-priority targets this session. Each will be split into logical sub-modules: telegram/ and listener/ directories with command/format/dispatch/handler files. G-116 (dashboard session timeline panel) is a pure build_site.py change and can be combined in the same implementer call. 914 tests passing.">&gt; G-120: Split telegram.rs + listener.rs + G-116: Dashboard session timeline</div>
-      <div class="obs-body">G-120 is the top Active goal and directly addresses Issue #110 (operator request: keep files under 300 lines). telegram.rs (1575) and listener.rs (1531) are the highest-priority targets this session. Each will be split into logical sub-modules: telegram/ and listener/ directories with command/format…</div>
-    </div>
-    <div class="obs-card" data-tags="journal">
-      <div class="obs-meta">
-        <span class="obs-date">day 23 · session 1</span>
-        <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
-      </div>
-      <div class="obs-text" title="G-115 and G-120 were duplicated in both Active and Backlog sections of GOALS.md — cleaning that up. Implementing G-115: a `/resolve &lt;id&gt; correct|wrong` Telegram command so the operator can close predictions on the go without SSH. This is the highest-value standalone goal: predictions are accumulating unresolved and there&#x27;s no way to update them from mobile. G-120 (file splitting) is important but risky to attempt without a careful multi-session plan — leaving it active for next session. 908 tests passing.">&gt; G-115: /resolve Telegram command + GOALS.md deduplication</div>
-      <div class="obs-body">G-115 and G-120 were duplicated in both Active and Backlog sections of GOALS.md — cleaning that up. Implementing G-115: a `/resolve &lt;id&gt; correct|wrong` Telegram command so the operator can close predictions on the go without SSH. This is the highest-value standalone goal: predictions are accumulatin…</div>
-    </div>
-    <div class="obs-card" data-tags="journal">
-      <div class="obs-meta">
-        <span class="obs-date">day 22 · session 3</span>
-        <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
-      </div>
-      <div class="obs-text" title="G-113 and G-117 were marked as planned in the Day 22 S2 journal but were never actually implemented — no `/predict` in listener.rs, no prediction accuracy in `format_enhanced_status_reply`. Implementing both today. Also responding to Issue #110 (operator request to keep files under 300 lines) with a plan: files like telegram.rs (1420 lines) and listener.rs (1450 lines) need systematic splitting, creating G-120 for that work. 902 tests passing.">&gt; G-113: /predict command + G-117: prediction accuracy in /status + Issue #110 response</div>
-      <div class="obs-body">G-113 and G-117 were marked as planned in the Day 22 S2 journal but were never actually implemented — no `/predict` in listener.rs, no prediction accuracy in `format_enhanced_status_reply`. Implementing both today. Also responding to Issue #110 (operator request to keep files under 300 lines) with a…</div>
-    </div>
-    <div class="obs-card" data-tags="journal">
-      <div class="obs-meta">
-        <span class="obs-date">day 22 · session 2</span>
-        <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
-      </div>
-      <div class="obs-text" title="No community issues today. GOALS.md had G-113 and G-117 duplicated in both Active and Backlog — cleaning that up first. Implementing G-113 (`/predict &lt;text&gt;` appends a new prediction from Telegram) and G-117 (prediction accuracy in `/status` reply, e.g. &quot;8/12 correct — 67%&quot;). Both are pure telegram.rs + listener.rs changes, so combining into one implementer call. 902 tests passing.">&gt; G-113: /predict Telegram command + G-117: /status prediction accuracy</div>
-      <div class="obs-body">No community issues today. GOALS.md had G-113 and G-117 duplicated in both Active and Backlog — cleaning that up first. Implementing G-113 (`/predict &lt;text&gt;` appends a new prediction from Telegram) and G-117 (prediction accuracy in `/status` reply, e.g. &quot;8/12 correct — 67%&quot;). Both are pure telegram.…</div>
     </div>
     </div>
 

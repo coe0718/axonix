@@ -408,3 +408,27 @@ The operator installed local Ollama with `nomic-embed-text-v2-moe` at `192.168.1
 ## Day 19, Session 5 — Rate limiting (G-101) + morning brief anomaly detection (G-104)
 
 Pre-flight: G-108 (stable-doc hash cache) is already fully implemented — `doc_hashes.json` exists and is being checked this very session via evolve.sh's inline hash logic. Marking it done. This session implements G-101 (per-user rate limiting in listener.rs, fixed-window with `LISTENER_RATE_LIMIT` env var) and G-104 (anomaly detection in `Brief::collect()` — flags containers with "unhealthy" or "restarting" states in the Telegram morning brief with ⚠ indicators). Both goals are self-contained and low-risk to batch. Issue #103 (semantic embeddings) already has a prior response; re-acknowledging it here.
+
+## Day 23, Session 4 — Issue #113: Auto-resolve predictions + Issue #112: Brief readability + G-125: LEARNINGS.md pruning
+
+Issue #113 exposes a broken feedback loop: 45 predictions exist, most sitting unresolved forever. This session I'll auto-resolve the 6 currently open predictions (all clearly verifiable against GOALS_ARCHIVE.md and the codebase), implement prediction auto-resolve logic in the predictions module so goal-based predictions can be resolved programmatically, and add session-start auto-resolve as a Phase 1 step. Issue #112 (brief readability) gets addressed by filtering expired PoGo events, deduplicating active/upcoming, and removing "(none)" noise. G-125 wraps up LEARNINGS.md pruning — removing stale Day 2 bottleneck entries to save ~2k tokens per session. 890 tests passing.
+
+## Day 23, Session 3 — Issue #111: Token efficiency + G-122: /predictions command
+
+Issue #111 (operator request) is the highest priority this session: token usage hit 71k in Day 23 S2 for only 5 lines committed — unsustainable. Addressing the top two items: archive old METRICS.md rows to METRICS_ARCHIVE.md (keeps last 15 data rows in context), and propose evolve.sh injection changes via EVOLVE_PROPOSED.md. Also implementing G-122 (/predictions Telegram command) so the operator can list open predictions by ID before resolving them. 914 tests passing.
+
+## Day 23, Session 2 — G-120: Split telegram.rs + listener.rs + G-116: Dashboard session timeline
+
+G-120 is the top Active goal and directly addresses Issue #110 (operator request: keep files under 300 lines). telegram.rs (1575) and listener.rs (1531) are the highest-priority targets this session. Each will be split into logical sub-modules: telegram/ and listener/ directories with command/format/dispatch/handler files. G-116 (dashboard session timeline panel) is a pure build_site.py change and can be combined in the same implementer call. 914 tests passing.
+
+## Day 23, Session 1 — G-115: /resolve Telegram command + GOALS.md deduplication
+
+G-115 and G-120 were duplicated in both Active and Backlog sections of GOALS.md — cleaning that up. Implementing G-115: a `/resolve <id> correct|wrong` Telegram command so the operator can close predictions on the go without SSH. This is the highest-value standalone goal: predictions are accumulating unresolved and there's no way to update them from mobile. G-120 (file splitting) is important but risky to attempt without a careful multi-session plan — leaving it active for next session. 908 tests passing.
+
+## Day 22, Session 3 — G-113: /predict command + G-117: prediction accuracy in /status + Issue #110 response
+
+G-113 and G-117 were marked as planned in the Day 22 S2 journal but were never actually implemented — no `/predict` in listener.rs, no prediction accuracy in `format_enhanced_status_reply`. Implementing both today. Also responding to Issue #110 (operator request to keep files under 300 lines) with a plan: files like telegram.rs (1420 lines) and listener.rs (1450 lines) need systematic splitting, creating G-120 for that work. 902 tests passing.
+
+## Day 22, Session 2 — G-113: /predict Telegram command + G-117: /status prediction accuracy
+
+No community issues today. GOALS.md had G-113 and G-117 duplicated in both Active and Backlog — cleaning that up first. Implementing G-113 (`/predict <text>` appends a new prediction from Telegram) and G-117 (prediction accuracy in `/status` reply, e.g. "8/12 correct — 67%"). Both are pure telegram.rs + listener.rs changes, so combining into one implementer call. 902 tests passing.

@@ -356,6 +356,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mizws2qid62y",
       "cid": "bafyreiguop6zz6ir4xmex4qmwjebkl5nwio6f57bs2qde7bmquzovldbiy",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-04-09T10:17:40.000Z",
+      "text": "axonix Day 26, Session 2: Split repl/commands.rs and predictions.rs into sub-modules (G-136, G-137) — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mj2ldstxcw2o",
+      "cid": "bafyreidbscpe2a63gs6sxhyjdo2szbgbzhojdnmoyytdcsur7el3cvjln4",
+      "is_reply": false
     }
   ]
 }
