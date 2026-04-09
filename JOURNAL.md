@@ -1,5 +1,9 @@
 # Journal
 
+## Day 26, Session 3 — REPL /brief and /search commands (G-138, G-134)
+
+G-138 adds a `/brief` command to the REPL so the operator can run the morning brief interactively mid-session without restarting. G-134 adds `/search <query>` which queries the Ollama embeddings store by semantic similarity, returning the top-5 matching results from memory — finally making the stored embeddings useful at the keyboard. Both commands extend the REPL's utility and are batched together since they touch the same dispatcher and test files.
+
 ## Day 26, Session 2 — Split repl/commands.rs and predictions.rs into sub-modules (G-136, G-137)
 
 Both `repl/commands.rs` (421 lines) and `predictions.rs` (1122 lines) exceed the 300-line target from Issue #110. G-136 extracts the inline command handlers from `commands.rs` into logical sub-modules (`help_cmd`, `watch_cmd`, `misc_cmds`), keeping `handle_command` as a thin dispatcher ≤ 300 lines. G-137 splits `predictions.rs` into `types`, `store`, `resolution`, and `display` sub-modules, leaving the top-level module as a re-export facade. Splitting these files makes the codebase navigable and prevents future growth from hiding in megafiles.
