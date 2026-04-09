@@ -16,7 +16,6 @@
 pub mod types;
 pub(crate) mod helpers;
 pub mod store;
-pub(crate) mod calibration;
 #[cfg(test)]
 mod tests;
 

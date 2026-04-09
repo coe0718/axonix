@@ -89,66 +89,6 @@ pub fn handle_brief() -> CommandResult {
     CommandResult::Handled(lines)
 }
 
-/// Handle the `/goals` command: show active goals from GOALS.md.
-///
-/// Reads GOALS.md, parses the `## Active` section, extracts goal IDs and
-/// titles, and prints them. Falls back gracefully if the file is missing.
-pub fn handle_goals() -> CommandResult {
-    let content = match std::fs::read_to_string("GOALS.md") {
-        Ok(c) => c,
-        Err(e) => {
-            return CommandResult::Handled(vec![
-                format!("  [goals] could not read GOALS.md: {e}"),
-                String::new(),
-            ]);
-        }
-    };
-
-    // Parse the ## Active section: collect ### G-NNN — Title lines
-    let mut active_goals: Vec<(String, String)> = Vec::new();
-    let mut in_active = false;
-
-    for line in content.lines() {
-        if line.trim_start().starts_with("## Active") {
-            in_active = true;
-            continue;
-        }
-        // Stop at the next ## section (Backlog, Completed, etc.)
-        if in_active && line.trim_start().starts_with("## ") {
-            break;
-        }
-        if in_active && line.trim_start().starts_with("### ") {
-            // Format: ### G-NNN — Title
-            let heading = line.trim_start_matches('#').trim();
-            if let Some((id_part, title)) = heading.split_once(" \u{2014} ") {
-                let id = id_part.trim().to_string();
-                let title = title.trim().to_string();
-                active_goals.push((id, title));
-            } else {
-                // No em-dash separator — use whole heading as title
-                active_goals.push(("?".to_string(), heading.to_string()));
-            }
-        }
-    }
-
-    if active_goals.is_empty() {
-        return CommandResult::Handled(vec![
-            "  [goals] No active goals found in GOALS.md.".to_string(),
-            String::new(),
-        ]);
-    }
-
-    let mut lines = vec![
-        format!("  Active goals ({}):", active_goals.len()),
-        String::new(),
-    ];
-    for (id, title) in &active_goals {
-        lines.push(format!("    {id}  {title}"));
-    }
-    lines.push(String::new());
-    CommandResult::Handled(lines)
-}
-
 /// Handle the `/search <query>` command: semantic similarity search over
 /// the embeddings store.
 ///

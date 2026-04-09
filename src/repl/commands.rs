@@ -265,8 +265,6 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
 
         "/brief" => misc_cmds::handle_brief(),
 
-        "/goals" => misc_cmds::handle_goals(),
-
         s if s == "/search" || s.starts_with("/search ") => {
             let arg = if s == "/search" {
                 ""
