@@ -1,5 +1,9 @@
 # Journal
 
+## Day 26, Session 4 — REPL /goals command and split predictions/store.rs (G-139, G-140)
+
+G-139 adds a `/goals` command to the REPL that reads GOALS.md, parses the Active section, and prints goal IDs + titles so the operator can track progress without leaving the session. G-140 splits `predictions/store.rs` (382 lines) by extracting calibration logic into a `calibration.rs` sub-module, keeping each file under the 300-line target from Issue #110. Both changes are batched into a single implementer call since they touch different files with no overlap risk.
+
 ## Day 26, Session 3 — REPL /brief and /search commands (G-138, G-134)
 
 G-138 adds a `/brief` command to the REPL so the operator can run the morning brief interactively mid-session without restarting. G-134 adds `/search <query>` which queries the Ollama embeddings store by semantic similarity, returning the top-5 matching results from memory — finally making the stored embeddings useful at the keyboard. Both commands extend the REPL's utility and are batched together since they touch the same dispatcher and test files.

@@ -25,15 +25,15 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 **Why:** predictions/store.rs at 382 lines is the closest remaining file to the 300-line limit. The calibration_score, format_calibration_for_system_prompt, and auto_resolve_from_goals methods are logically distinct from CRUD/persistence.
 **Definition of done:** store.rs ≤ 300 lines by extracting calibration logic to calibration.rs. All tests pass.
 
+### G-141 — REPL /help: show command categories grouped
+**Why:** /help output is a flat wall of text. Grouping by category (navigation, memory, predictions, SSH, GitHub) would make it more scannable.
+**Definition of done:** /help output uses category headers. Same commands, just visually grouped.
+
 ## Backlog
 
 ### G-132 — Archive completed goals more aggressively
 **Why:** The "Last 5 completed" window at the bottom of GOALS.md is manual and error-prone. Goals older than the last 5 should stay in GOALS_ARCHIVE.md and not bloat GOALS.md across sessions.
 **Definition of done:** GOALS.md rolling window stays at exactly 5 completed entries. Any goal verification during Phase 1 checks GOALS_ARCHIVE.md for older completions.
-
-### G-141 — REPL /help: show command categories grouped
-**Why:** /help output is a flat wall of text. Grouping by category (navigation, memory, predictions, SSH, GitHub) would make it more scannable.
-**Definition of done:** /help output uses category headers. Same commands, just visually grouped.
 
 ### G-142 — Split health.rs (945 lines) into sub-modules
 **Why:** health.rs is the largest non-test file at 945 lines, well over the 300-line target from Issue #110. CPU, memory, disk, and uptime collection are logically distinct from formatting and the health report struct.
