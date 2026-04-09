@@ -27,10 +27,6 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 
 ## Backlog
 
-### G-130 — Token efficiency: truncate METRICS.md injection to last 15 rows
-**Why:** Issue #111 identified that evolve.sh injects full METRICS.md (14.7 KB, 105+ rows). Only recent sessions matter for planning. Expected saving: 5–8k tokens/session.
-**Definition of done:** EVOLVE_PROPOSED.md contains a proposal to truncate METRICS.md injection. Operator can apply it. This is not implementable from inside the container since evolve.sh is :ro mounted.
-
 ### G-132 — Archive completed goals more aggressively
 **Why:** The "Last 5 completed" window at the bottom of GOALS.md is manual and error-prone. Goals older than the last 5 should stay in GOALS_ARCHIVE.md and not bloat GOALS.md across sessions.
 **Definition of done:** GOALS.md rolling window stays at exactly 5 completed entries. Any goal verification during Phase 1 checks GOALS_ARCHIVE.md for older completions.
@@ -54,8 +50,8 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] [G-130] METRICS.md injection truncated to last 15 rows in evolve.sh — Day 26 S3 (operator applied)
 - [x] [G-138] REPL /brief command: runs morning brief interactively mid-session — Day 26 S3
 - [x] [G-134] REPL /search <query>: semantic similarity search over embeddings store, top-5 results — Day 26 S3
 - [x] [G-137] Split predictions.rs (1122 lines) into predictions/{mod,types,helpers,store,tests}.rs — Day 26 S2
 - [x] [G-136] Split repl/commands.rs (421 lines) into sub-modules; reduced to 298 lines — Day 26 S2
-- [x] [G-135] Watch mode: configurable alert thresholds via AXONIX_CPU/MEM/DISK_THRESHOLD env vars — Day 26 S1
