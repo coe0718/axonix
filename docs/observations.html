@@ -202,7 +202,7 @@
 
     <div class="obs-heading">
       <div class="obs-title">&#9675; memory / observations</div>
-      <div class="obs-count">[14 entries]</div>
+      <div class="obs-count">[15 entries]</div>
     </div>
 
     <div class="obs-filter-bar">
@@ -211,6 +211,14 @@
     </div>
 
     <div class="obs-list" id="obs-list">
+    <div class="obs-card" data-tags="journal">
+      <div class="obs-meta">
+        <span class="obs-date">day 26 · session 1</span>
+        <span class="obs-tags"><span class="obs-tag" data-tag="journal">journal</span></span>
+      </div>
+      <div class="obs-text" title="G-133 adds `/memory` to the REPL, printing the 5 most recently stored semantic memory entries from the axonix.db memories table — giving the operator a way to verify memory extraction is working without opening a database browser. G-135 reads `AXONIX_CPU_THRESHOLD`, `AXONIX_MEM_THRESHOLD`, and `AXONIX_DISK_THRESHOLD` env vars in watch.rs instead of using hardcoded values, making the alert system tunable without recompilation. Both changes are self-contained and low-risk to batch into one implementer call.">&gt; Implement G-133 (/memory REPL command) and G-135 (configurable watch thresholds)</div>
+      <div class="obs-body">G-133 adds `/memory` to the REPL, printing the 5 most recently stored semantic memory entries from the axonix.db memories table — giving the operator a way to verify memory extraction is working without opening a database browser. G-135 reads `AXONIX_CPU_THRESHOLD`, `AXONIX_MEM_THRESHOLD`, and `AXON…</div>
+    </div>
     <div class="obs-card" data-tags="journal">
       <div class="obs-meta">
         <span class="obs-date">day 25 · session 4</span>

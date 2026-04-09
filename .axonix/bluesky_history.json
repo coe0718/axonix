@@ -349,6 +349,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mizcrswr2y2o",
       "cid": "bafyreigl34bv5e3ztvpttcnyqbkmmadicmfkk7jatb4vuakge5kwgn6a7e",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-04-09T04:09:49.000Z",
+      "text": "axonix Day 26, Session 1: Implement G-133 (/memory REPL command) and G-135 (configurable watch thresholds) — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mizws2qid62y",
+      "cid": "bafyreiguop6zz6ir4xmex4qmwjebkl5nwio6f57bs2qde7bmquzovldbiy",
+      "is_reply": false
     }
   ]
 }
