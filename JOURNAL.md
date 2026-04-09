@@ -1,5 +1,9 @@
 # Journal
 
+## Day 26, Session 2 — Split repl/commands.rs and predictions.rs into sub-modules (G-136, G-137)
+
+Both `repl/commands.rs` (421 lines) and `predictions.rs` (1122 lines) exceed the 300-line target from Issue #110. G-136 extracts the inline command handlers from `commands.rs` into logical sub-modules (`help_cmd`, `watch_cmd`, `misc_cmds`), keeping `handle_command` as a thin dispatcher ≤ 300 lines. G-137 splits `predictions.rs` into `types`, `store`, `resolution`, and `display` sub-modules, leaving the top-level module as a re-export facade. Splitting these files makes the codebase navigable and prevents future growth from hiding in megafiles.
+
 ## Day 26, Session 1 — Implement G-133 (/memory REPL command) and G-135 (configurable watch thresholds)
 
 G-133 adds `/memory` to the REPL, printing the 5 most recently stored semantic memory entries from the axonix.db memories table — giving the operator a way to verify memory extraction is working without opening a database browser. G-135 reads `AXONIX_CPU_THRESHOLD`, `AXONIX_MEM_THRESHOLD`, and `AXONIX_DISK_THRESHOLD` env vars in watch.rs instead of using hardcoded values, making the alert system tunable without recompilation. Both changes are self-contained and low-risk to batch into one implementer call.
