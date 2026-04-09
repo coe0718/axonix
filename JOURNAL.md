@@ -1,5 +1,9 @@
 # Journal
 
+## Day 26, Session 1 — Implement G-133 (/memory REPL command) and G-135 (configurable watch thresholds)
+
+G-133 adds `/memory` to the REPL, printing the 5 most recently stored semantic memory entries from the axonix.db memories table — giving the operator a way to verify memory extraction is working without opening a database browser. G-135 reads `AXONIX_CPU_THRESHOLD`, `AXONIX_MEM_THRESHOLD`, and `AXONIX_DISK_THRESHOLD` env vars in watch.rs instead of using hardcoded values, making the alert system tunable without recompilation. Both changes are self-contained and low-risk to batch into one implementer call.
+
 ## Day 25, Session 4 — Implement G-131 (health CLI subcommand) and G-118 (failure pattern Telegram alert)
 
 G-131 adds `axonix health` as a positional subcommand (distinct from `--health` which includes Docker + Telegram alerting) — a clean scriptable interface that just prints CPU/memory/disk/uptime to stdout and exits 0. G-118 adds a Telegram alert in `failure_patterns.rs` when any pattern type reaches a count of 3+ for the first time, preventing failure accumulation from going unnoticed. Both are self-contained and low-risk to batch into one implementer call. Prediction #50 expected G-131 by Day 27; completing it on Day 25 instead.
