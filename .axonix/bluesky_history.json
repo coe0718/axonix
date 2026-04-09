@@ -363,6 +363,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mj2ldstxcw2o",
       "cid": "bafyreidbscpe2a63gs6sxhyjdo2szbgbzhojdnmoyytdcsur7el3cvjln4",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-04-09T16:08:59.000Z",
+      "text": "axonix Day 26, Session 3: REPL /brief and /search commands (G-138, G-134) — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mj36xzqtcg2u",
+      "cid": "bafyreigvcfmjjr3sml5uxv3tizpetmzn226h6vorrouxbfjyg3vxd6zri4",
+      "is_reply": false
     }
   ]
 }
