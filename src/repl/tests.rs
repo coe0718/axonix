@@ -1556,3 +1556,82 @@ use super::*;
         let all = lines.join("\n");
         assert!(all.contains("/search"), "/help should document /search: {all}");
     }
+
+    // ── G-139: /goals ─────────────────────────────────────────────────────────
+
+    /// Shared mutex to serialize tests that change the working directory.
+    fn chdir_lock() -> &'static std::sync::Mutex<()> {
+        static LOCK: std::sync::OnceLock<std::sync::Mutex<()>> = std::sync::OnceLock::new();
+        LOCK.get_or_init(|| std::sync::Mutex::new(()))
+    }
+
+    #[test]
+    fn test_goals_command_no_file() {
+        let _guard = chdir_lock().lock().unwrap_or_else(|e| e.into_inner());
+        // In a temp dir without GOALS.md, /goals should return an error line
+        let tmp = tempfile::tempdir().unwrap();
+        let orig = std::env::current_dir().unwrap();
+        std::env::set_current_dir(tmp.path()).unwrap();
+        let mut state = ReplState::new("test-model".to_string());
+        let result = handle_command("/goals", &mut state, &[]);
+        std::env::set_current_dir(orig).unwrap();
+        match result {
+            CommandResult::Handled(lines) => {
+                assert!(lines.iter().any(|l| l.contains("[goals]")));
+            }
+            _ => panic!("expected Handled"),
+        }
+    }
+
+    #[test]
+    fn test_goals_command_with_goals_md() {
+        let _guard = chdir_lock().lock().unwrap_or_else(|e| e.into_inner());
+        let tmp = tempfile::tempdir().unwrap();
+        let goals_content = "# Goals\n\n## Active\n\n### G-999 \u{2014} Test goal title\n**Why:** testing.\n\n### G-998 \u{2014} Another test goal\n**Why:** also testing.\n\n## Backlog\n\n### G-997 \u{2014} Backlog goal\n";
+        std::fs::write(tmp.path().join("GOALS.md"), goals_content).unwrap();
+        let orig = std::env::current_dir().unwrap();
+        std::env::set_current_dir(tmp.path()).unwrap();
+        let mut state = ReplState::new("test-model".to_string());
+        let result = handle_command("/goals", &mut state, &[]);
+        std::env::set_current_dir(orig).unwrap();
+        match result {
+            CommandResult::Handled(lines) => {
+                let joined = lines.join("\n");
+                assert!(joined.contains("G-999"), "expected G-999 in output");
+                assert!(joined.contains("Test goal title"), "expected title in output");
+                assert!(joined.contains("G-998"), "expected G-998 in output");
+                assert!(!joined.contains("G-997"), "backlog goal should not appear");
+                assert!(joined.contains("Active goals (2)"));
+            }
+            _ => panic!("expected Handled"),
+        }
+    }
+
+    #[test]
+    fn test_goals_command_empty_active() {
+        let _guard = chdir_lock().lock().unwrap_or_else(|e| e.into_inner());
+        let tmp = tempfile::tempdir().unwrap();
+        let goals_content = "# Goals\n\n## Active\n\n## Backlog\n\n### G-001 \u{2014} Something\n";
+        std::fs::write(tmp.path().join("GOALS.md"), goals_content).unwrap();
+        let orig = std::env::current_dir().unwrap();
+        std::env::set_current_dir(tmp.path()).unwrap();
+        let mut state = ReplState::new("test-model".to_string());
+        let result = handle_command("/goals", &mut state, &[]);
+        std::env::set_current_dir(orig).unwrap();
+        match result {
+            CommandResult::Handled(lines) => {
+                assert!(lines.iter().any(|l| l.contains("No active goals")));
+            }
+            _ => panic!("expected Handled"),
+        }
+    }
+
+    #[test]
+    fn test_help_includes_goals_command() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/help", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("/goals"), "/help should document /goals: {all}");
+    }
