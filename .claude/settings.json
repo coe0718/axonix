@@ -23,7 +23,8 @@
       "Bash(docker build:*)",
       "Read(//tmp/**)",
       "Bash(cargo fix:*)",
-      "Bash(./target/debug/axonix predict:*)"
+      "Bash(./target/debug/axonix predict:*)",
+      "Bash(ls /home/coemedia/Documents/code/axonix/src/cycle_summary* /home/coemedia/Documents/code/axonix/src/failure_patterns*)"
     ],
     "additionalDirectories": [
       "/tmp"
