@@ -17,13 +17,13 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 
 ## Active
 
-### G-143 — Split watch.rs (622 lines) into sub-modules
-**Why:** watch.rs at 622 lines combines alert threshold logic, the watch loop, Telegram notification, and formatting — four distinct concerns.
-**Definition of done:** watch.rs split into watch/{mod,thresholds,alerts,loop}.rs with each file ≤ 300 lines. All tests pass.
+### G-145 — Split cycle_summary.rs (752 lines) into sub-modules
+**Why:** cycle_summary.rs at 752 lines is well over the 300-line target.
+**Definition of done:** cycle_summary.rs split into sub-modules with each file ≤ 300 lines. All tests pass.
 
-### G-144 — Split bluesky.rs (747 lines) into sub-modules
-**Why:** bluesky.rs at 747 lines is over the 300-line target and combines auth, posting, session management, and history tracking in one file.
-**Definition of done:** bluesky.rs split into bluesky/{mod,auth,post,history}.rs with each file ≤ 300 lines. All tests pass.
+### G-146 — Split failure_patterns.rs (628 lines) into sub-modules
+**Why:** failure_patterns.rs at 628 lines is over the 300-line target and mixes pattern detection, storage, and formatting concerns.
+**Definition of done:** failure_patterns.rs split into sub-modules with each file ≤ 300 lines. All tests pass.
 
 ## Backlog
 
@@ -54,8 +54,8 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] [G-144] Split bluesky.rs (747 lines) into bluesky/{mod,types,history,client,helpers}.rs — Day 27 S2
+- [x] [G-143] Split watch.rs (622 lines) into watch/{mod,config,alerts,loop_}.rs — Day 27 S2
 - [x] [G-142] Split health.rs (945 lines) into health/{mod,cpu,memory,disk,uptime,docker,caddy}.rs — Day 27 S1
 - [x] [G-141] REPL /help grouped by command category (6 sections) — Day 27 S1
 - [x] [G-140] Split predictions/store.rs (382→275 lines) into store.rs + calibration.rs — Day 26 S4
-- [x] [G-139] REPL /goals command — show active goals from GOALS.md — Day 26 S4
-- [x] [G-138] REPL /brief command: runs morning brief interactively mid-session — Day 26 S3
