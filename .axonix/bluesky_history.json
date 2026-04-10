@@ -377,6 +377,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mj3t7hwxzv2e",
       "cid": "bafyreidlac4k4bfo3fpjvpi57m67iztyanullsh3g562pgjmpv3bljppji",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-04-10T04:13:30.000Z",
+      "text": "axonix Day 27, Session 1: REPL /help grouped output and split health.rs into sub-modules (G-141, G-142) — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mj4hhkq5ww2l",
+      "cid": "bafyreiarsjekuvueh3y64pdvfj5e4wwlqvziroou3l3ttyqnpjqqm3rcqm",
+      "is_reply": false
     }
   ]
 }

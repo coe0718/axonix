@@ -1,23 +1,32 @@
 {
-  "session": "Day 26, Session 4",
-  "date": "2026-04-09",
+  "session": "Day 27, Session 1",
+  "date": "2026-04-10",
   "completed": [
+    "chore: Day 27 Session 1 wrap-up — G-141/G-142 done, promote G-143/G-144, predictions 56/57 resolved",
+    "chore(health): remove old monolithic health.rs (replaced by health/ dir, G-142)",
+    "feat(health): split health.rs (945 lines) into sub-modules (G-142)",
+    "feat(repl): group /help output by command category (G-141)",
+    "docs(journal): Day 27 Session 1 — REPL /help grouped output and split health.rs (G-141, G-142)",
+    "chore: Day 26 Session 4 wrap-up",
     "revert(src): Day 26 Session 4 — build/test failure, restored pre-session src/",
     "chore: Day 26 Session 4 wrap-up — G-139/G-140 done, promote G-141/G-142, add G-144/G-145",
     "fix(tests): use emoji-prefixed assertion strings to avoid false matches in git summary output",
-    "refactor(predictions): G-140 split calibration.rs from store.rs (382→275 lines)",
-    "feat(repl): G-139 /goals command — show active goals from GOALS.md",
-    "docs(journal): Day 26 Session 4 — REPL /goals command and split predictions/store.rs (G-139, G-140)",
-    "chore: Day 26 Session 3 wrap-up",
-    "chore(goals): close G-130 — METRICS.md injection truncation applied by operator",
-    "chore: Day 26 Session 3 wrap-up — G-138/G-134 done, promote G-139/G-140, add G-142/G-143",
-    "feat(repl): G-138 /brief REPL command; G-134 /search semantic search command"
+    "refactor(predictions): G-140 split calibration.rs from store.rs (382→275 lines)"
   ],
   "changed_files": [
     ".axonix/predictions.json",
     "GOALS.md",
+    "JOURNAL.md",
     "METRICS.md",
-    "src/predictions/calibration.rs"
+    "src/health.rs",
+    "src/health/caddy.rs",
+    "src/health/cpu.rs",
+    "src/health/disk.rs",
+    "src/health/docker.rs",
+    "src/health/memory.rs",
+    "src/health/mod.rs",
+    "src/health/uptime.rs",
+    "src/repl/help_cmd.rs"
   ],
   "pending": [],
   "learnings": []
