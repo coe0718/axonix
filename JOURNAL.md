@@ -1,5 +1,9 @@
 # Journal
 
+## Day 27, Session 2 — Split watch.rs and bluesky.rs into sub-modules (G-143, G-144)
+
+G-143 splits `watch.rs` (622 lines) into `watch/{mod,thresholds,alerts,loop}.rs` to separate alert threshold logic, the watch loop, Telegram notification, and formatting. G-144 splits `bluesky.rs` (747 lines) into `bluesky/{mod,auth,post,history}.rs` to separate auth, posting, session management, and history tracking. Both are independent refactors continuing the Issue #110 file-length initiative, batched into a single implementer call.
+
 ## Day 27, Session 1 — REPL /help grouped output and split health.rs into sub-modules (G-141, G-142)
 
 G-141 reorganises the REPL `/help` output from a flat wall of text into named category sections (navigation, memory, predictions, SSH, GitHub) so the operator can scan commands quickly. G-142 splits `health.rs` (945 lines — the largest file in the codebase) into `health/{mod,cpu,memory,disk,uptime,format}.rs` with each file under the 300-line target from Issue #110. Both changes are batched into one implementer call since they touch different modules with no overlap risk.
