@@ -641,28 +641,32 @@ for RESPONSE_FILE in ISSUE_RESPONSE*.md; do
 
     BOT_TOKEN="${AXONIX_BOT_TOKEN:-${GH_TOKEN:-}}"
     if [ -n "$ISSUE_NUM" ] && [ -n "$BOT_TOKEN" ]; then
+        # Dedup: skip if a Day+Session comment already exists (agent may have posted during session)
+        ALREADY=$(GITHUB_TOKEN="$BOT_TOKEN" gh api \
+            "repos/$REPO/issues/${ISSUE_NUM}/comments" --jq '.[].body' 2>/dev/null \
+            | grep -c "Day $DAY, Session $SESSION" || true)
+        if [ "${ALREADY:-0}" -gt 0 ]; then
+            echo "  Skipping issue #$ISSUE_NUM — already commented this session."
+            rm -f "$RESPONSE_FILE"
+            continue
+        fi
+
         BODY="🤖 **Day $DAY, Session $SESSION**
 
 $COMMENT
 
 Commit: $(git rev-parse --short HEAD)"
 
-        curl -sf -X POST \
-            "https://api.github.com/repos/$REPO/issues/$ISSUE_NUM/comments" \
-            -H "Authorization: Bearer $BOT_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            -d "{\"body\": $(echo "$BODY" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')}" \
-            > /dev/null || true
+        GITHUB_TOKEN="$BOT_TOKEN" gh api \
+            "repos/$REPO/issues/$ISSUE_NUM/comments" \
+            -X POST -f body="$BODY" \
+            > /dev/null 2>&1 || true
 
         if [ "$STATUS" = "fixed" ]; then
-            curl -sf -X PATCH \
-                "https://api.github.com/repos/$REPO/issues/$ISSUE_NUM" \
-                -H "Authorization: Bearer $BOT_TOKEN" \
-                -H "Accept: application/vnd.github+json" \
-                -H "X-GitHub-Api-Version: 2022-11-28" \
-                -d '{"state": "closed"}' \
-                > /dev/null || true
+            GITHUB_TOKEN="$BOT_TOKEN" gh api \
+                "repos/$REPO/issues/$ISSUE_NUM" \
+                -X PATCH -f state="closed" \
+                > /dev/null 2>&1 || true
             echo "  Closed issue #$ISSUE_NUM"
         else
             echo "  Commented on issue #$ISSUE_NUM (status: $STATUS)"
