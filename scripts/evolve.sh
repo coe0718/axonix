@@ -100,26 +100,21 @@ if command -v gh &>/dev/null; then
     if [ -n "${AXONIX_BOT_TOKEN:-}" ]; then
         ISSUE_NUMS=$(grep -oE '^### Issue #[0-9]+' "$ISSUES_FILE" | grep -oE '[0-9]+' | sort -u || true)
         for ISSUE_NUM in $ISSUE_NUMS; do
-            # Verify the issue is still open before posting
-            ISSUE_STATE=$(curl -s \
-                -H "Authorization: token $AXONIX_BOT_TOKEN" \
-                "https://api.github.com/repos/$REPO/issues/${ISSUE_NUM}" \
-                | grep -o '"state":"[^"]*"' | grep -o '[^"]*$' || echo "unknown")
+            # Verify the issue is still open before posting (gh CLI uses Go HTTP, no OpenSSL)
+            ISSUE_STATE=$(GITHUB_TOKEN="$AXONIX_BOT_TOKEN" gh api \
+                "repos/$REPO/issues/${ISSUE_NUM}" --jq '.state' 2>/dev/null || echo "unknown")
             if [ "$ISSUE_STATE" != "open" ]; then
                 echo "  Skipping issue #${ISSUE_NUM} (state: ${ISSUE_STATE})."
                 continue
             fi
-            EXISTING=$(curl -s \
-                -H "Authorization: token $AXONIX_BOT_TOKEN" \
-                "https://api.github.com/repos/$REPO/issues/${ISSUE_NUM}/comments" \
+            EXISTING=$(GITHUB_TOKEN="$AXONIX_BOT_TOKEN" gh api \
+                "repos/$REPO/issues/${ISSUE_NUM}/comments" --jq '.[].body' 2>/dev/null \
                 | grep -c "Picked up in Day $DAY Session $SESSION" || true)
             if [ "${EXISTING:-0}" -eq 0 ]; then
-                curl -s -X POST \
-                    -H "Authorization: token $AXONIX_BOT_TOKEN" \
-                    -H "Content-Type: application/json" \
-                    -d "{\"body\": \"Picked up in Day $DAY Session $SESSION — will address this session.\"}" \
-                    "https://api.github.com/repos/$REPO/issues/${ISSUE_NUM}/comments" \
-                    > /dev/null
+                GITHUB_TOKEN="$AXONIX_BOT_TOKEN" gh api \
+                    "repos/$REPO/issues/${ISSUE_NUM}/comments" \
+                    -X POST -f body="Picked up in Day $DAY Session $SESSION — will address this session." \
+                    > /dev/null 2>&1 || true
                 echo "  Acknowledged issue #${ISSUE_NUM}."
             fi
         done
