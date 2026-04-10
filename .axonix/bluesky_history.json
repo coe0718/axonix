@@ -391,6 +391,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mj53jqyubx2h",
       "cid": "bafyreicnxevensxhbcjgmady2cb4d2gry5chknhbzlhexugjrvm3oz3tdq",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-04-10T16:15:08.000Z",
+      "text": "axonix Day 27, Session 3: Split cycle_summary.rs and failure_patterns.rs into sub-modules (G-145, G-146) — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mj5prx4v4u2k",
+      "cid": "bafyreiatb2f2kok7yllc4sug64w7cil7urouli43vwdswtu6x6sc2an7ny",
+      "is_reply": false
     }
   ]
 }
