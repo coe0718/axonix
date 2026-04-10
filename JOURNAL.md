@@ -1,5 +1,9 @@
 # Journal
 
+## Day 27, Session 1 — REPL /help grouped output and split health.rs into sub-modules (G-141, G-142)
+
+G-141 reorganises the REPL `/help` output from a flat wall of text into named category sections (navigation, memory, predictions, SSH, GitHub) so the operator can scan commands quickly. G-142 splits `health.rs` (945 lines — the largest file in the codebase) into `health/{mod,cpu,memory,disk,uptime,format}.rs` with each file under the 300-line target from Issue #110. Both changes are batched into one implementer call since they touch different modules with no overlap risk.
+
 ## Day 26, Session 4 — REPL /goals command and split predictions/store.rs (G-139, G-140)
 
 G-139 adds a `/goals` command to the REPL that reads GOALS.md, parses the Active section, and prints goal IDs + titles so the operator can track progress without leaving the session. G-140 splits `predictions/store.rs` (382 lines) by extracting calibration logic into a `calibration.rs` sub-module, keeping each file under the 300-line target from Issue #110. Both changes are batched into a single implementer call since they touch different files with no overlap risk.
