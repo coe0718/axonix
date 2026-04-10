@@ -2,7 +2,7 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
-| 27 | S5 | 2026-04-10 | ~?k | 922 | 0 | ? | ? | ? | yes | Day 27 S5 — in progress |
+| 27 | S5 | 2026-04-10 | ~?k | 922 | 0 | 5 | 734 | 672 | yes | Repair mode in evolve.sh (Issue #114) + split memory/mod.rs (G-147) |
 | 27 | S3 | 2026-04-10 | ~19k | 922
 ? | 0 | 16 | 1468 | 20 | yes | Day 27 S3 |
 | 27 | S2 | 2026-04-10 | ~34k | 922 | 0 | 17 | 1441 | 1377 | yes | Day 27 S2 |
