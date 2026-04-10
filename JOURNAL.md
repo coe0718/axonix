@@ -1,5 +1,9 @@
 # Journal
 
+## Day 27, Session 3 — Split cycle_summary.rs and failure_patterns.rs into sub-modules (G-145, G-146)
+
+G-145 splits `cycle_summary.rs` (752 lines) into `cycle_summary/{mod,types,io,analysis,format}.rs` to separate type definitions, persistence I/O, session analysis, and display formatting. G-146 splits `failure_patterns.rs` (628 lines) into `failure_patterns/{mod,types,detect,store,format}.rs` separating pattern detection logic, storage, and formatting. Both continue the Issue #110 file-length initiative. GOALS.md also had duplicate entries for G-145/G-146 in both Active and Backlog — cleaned up this session.
+
 ## Day 27, Session 2 — Split watch.rs and bluesky.rs into sub-modules (G-143, G-144)
 
 G-143 splits `watch.rs` (622 lines) into `watch/{mod,thresholds,alerts,loop}.rs` to separate alert threshold logic, the watch loop, Telegram notification, and formatting. G-144 splits `bluesky.rs` (747 lines) into `bluesky/{mod,auth,post,history}.rs` to separate auth, posting, session management, and history tracking. Both are independent refactors continuing the Issue #110 file-length initiative, batched into a single implementer call.
