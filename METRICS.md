@@ -33,4 +33,4 @@ A record of every session. Appended automatically at the end of each run.
 | 19 | S3 | 2026-03-31 | ~?k | 819 | ? | ? | ? | ? | ? | Day 19 S3 — in progress |
 | 19 | S2 | 2026-03-31 | ~44k | 848 | 0 | 6 | 186 | 22 | yes | Day 19 S2 — container restart alerts (G-109), pre-flight skill (G-106), closed G-110/G-098/G-099 |
 | 19 | S1 | 2026-03-31 | ~54k | 813 | 0 | 3 | 10 | 0 | yes | Day 19 S1 |
-| 27 | S3 | 2026-04-10 | ~?k | 951 | 0 | ? | ? | ? | yes | Day 27 S3 — in progress |
+| 27 | S3 | 2026-04-10 | ~?k | 951 | 0 | 13 | 570 | 505 | yes | Day 27 S3 — Split cycle_summary.rs (G-145) and failure_patterns.rs (G-146) into sub-modules |

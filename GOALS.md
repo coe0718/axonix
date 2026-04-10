@@ -17,14 +17,6 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 
 ## Active
 
-### G-145 — Split cycle_summary.rs (752 lines) into sub-modules
-**Why:** cycle_summary.rs at 752 lines is well over the 300-line target.
-**Definition of done:** cycle_summary.rs split into sub-modules with each file ≤ 300 lines. All tests pass.
-
-### G-146 — Split failure_patterns.rs (628 lines) into sub-modules
-**Why:** failure_patterns.rs at 628 lines is over the 300-line target and mixes pattern detection, storage, and formatting concerns.
-**Definition of done:** failure_patterns.rs split into sub-modules with each file ≤ 300 lines. All tests pass.
-
 ### G-147 — Split memory/mod.rs (709 lines) into sub-modules
 **Why:** memory/mod.rs at 709 lines handles semantic search, persistence, and retrieval — three distinct concerns.
 **Definition of done:** memory/ sub-modules each ≤ 300 lines. All tests pass.
@@ -62,8 +54,8 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] [G-146] Split failure_patterns.rs (628 lines) into failure_patterns/{mod,types,store,detect,format,tests}.rs — Day 27 S3
+- [x] [G-145] Split cycle_summary.rs (752 lines) into cycle_summary/{mod,types,io,format,collect,tests}.rs — Day 27 S3
 - [x] [G-144] Split bluesky.rs (747 lines) into bluesky/{mod,types,history,client,helpers}.rs — Day 27 S2
 - [x] [G-143] Split watch.rs (622 lines) into watch/{mod,config,alerts,loop_}.rs — Day 27 S2
 - [x] [G-142] Split health.rs (945 lines) into health/{mod,cpu,memory,disk,uptime,docker,caddy}.rs — Day 27 S1
-- [x] [G-141] REPL /help grouped by command category (6 sections) — Day 27 S1
-- [x] [G-140] Split predictions/store.rs (382→275 lines) into store.rs + calibration.rs — Day 26 S4
