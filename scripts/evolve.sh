@@ -64,19 +64,71 @@ METRICS_ROWS_BEFORE=$(grep -cE "^\| [0-9]" METRICS.md 2>/dev/null || echo "0")
 
 # ── Step 1: Verify starting state ──
 echo "→ Checking build..."
+BUILD_OK=true
 if ! cargo build 2>/tmp/build_err.txt; then
     BUILD_ERR=$(tail -5 /tmp/build_err.txt | tr '\n' ' ')
     echo "  ✗ Build FAILED: $BUILD_ERR"
     cat /tmp/build_err.txt >&2
-    tg_notify "❌ *Axonix* Day $DAY S$SESSION — build FAILED: ${BUILD_ERR}"
-    exit 1
+    BUILD_OK=false
+    FAILURE_TYPE="build"
+    FAILURE_FILE="/tmp/build_err.txt"
 fi
-if ! cargo test --quiet 2>/tmp/test_err.txt; then
+
+if $BUILD_OK && ! cargo test --quiet 2>/tmp/test_err.txt; then
     TEST_ERR=$(grep -E "^FAILED|^error" /tmp/test_err.txt | head -3 | tr '\n' ' ')
     echo "  ✗ Tests FAILED: $TEST_ERR"
     cat /tmp/test_err.txt >&2
-    tg_notify "❌ *Axonix* Day $DAY S$SESSION — tests FAILED: ${TEST_ERR}"
-    exit 1
+    BUILD_OK=false
+    FAILURE_TYPE="test"
+    FAILURE_FILE="/tmp/test_err.txt"
+fi
+
+if ! $BUILD_OK; then
+    echo "  → Launching repair session..."
+    tg_notify "🔧 *Axonix* Day $DAY S$SESSION — $FAILURE_TYPE failure detected, launching repair session"
+
+    FAILURE_CONTENT=$(cat "$FAILURE_FILE")
+    REPAIR_PROMPT_FILE=$(mktemp)
+    cat > "$REPAIR_PROMPT_FILE" <<REPAIR_PROMPT
+You are Axonix in repair mode. The cargo build or test step failed before your normal session could start.
+
+Error output:
+${FAILURE_CONTENT}
+
+Your ONLY job is:
+1. Read the error carefully
+2. Identify the root cause (stale file? type error? missing import?)
+3. Fix it with the minimum change needed
+4. Run: cargo build && cargo test
+5. Commit the fix with: git commit -m "fix: repair $FAILURE_TYPE failure — <brief description>"
+
+Common causes:
+- E0761: duplicate module definitions — a stale .rs file exists alongside a new mod/ directory. Fix: delete the stale .rs file.
+- E0432/E0433: use-of-undeclared import — update the use path
+- Missing function: add or re-export it
+
+Do not start a normal session. Fix the build and stop.
+REPAIR_PROMPT
+
+    cargo run --bin axonix -- \
+        --model "$MODEL" \
+        --skills ./skills \
+        < "$REPAIR_PROMPT_FILE" 2>&1 \
+        | tee /tmp/repair_session.log \
+        | ./target/debug/axonix --stream-pipe "$STREAM_URL" || true
+
+    rm -f "$REPAIR_PROMPT_FILE"
+
+    echo "  → Re-checking build after repair attempt..."
+    if cargo build 2>/tmp/post_repair_err.txt && cargo test --quiet 2>/dev/null; then
+        echo "  ✓ Repair succeeded. Continuing normal session."
+        tg_notify "✅ *Axonix* Day $DAY S$SESSION — repair succeeded, continuing session"
+    else
+        POST_ERR=$(tail -3 /tmp/post_repair_err.txt | tr '\n' ' ')
+        echo "  ✗ Repair failed. Manual intervention required."
+        tg_notify "❌ *Axonix* Day $DAY S$SESSION — repair FAILED (still broken after attempt): ${POST_ERR}"
+        exit 1
+    fi
 fi
 echo "  Build OK."
 echo ""
