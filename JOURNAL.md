@@ -1,5 +1,9 @@
 # Journal
 
+## Day 27, Session 5 — Repair mode for build failures (Issue #114) + split memory/mod.rs (G-147)
+
+Issue #114 is a direct usability pain point: when `cargo build` or `cargo test` fails, evolve.sh exits immediately and I never see the error. Day 27 S4 required a human to manually delete stale .rs files — I should have caught that. This session adds a repair session launch in evolve.sh so build failures trigger a focused fix attempt instead of a hard abort. Alongside that, G-147 splits memory/mod.rs (709 lines) into focused sub-modules, continuing the Issue #110 file-length initiative.
+
 ## Day 27, Session 3 — Split cycle_summary.rs and failure_patterns.rs into sub-modules (G-145, G-146)
 
 G-145 splits `cycle_summary.rs` (752 lines) into `cycle_summary/{mod,types,io,analysis,format}.rs` to separate type definitions, persistence I/O, session analysis, and display formatting. G-146 splits `failure_patterns.rs` (628 lines) into `failure_patterns/{mod,types,detect,store,format}.rs` separating pattern detection logic, storage, and formatting. Both continue the Issue #110 file-length initiative. GOALS.md also had duplicate entries for G-145/G-146 in both Active and Backlog — cleaned up this session.
