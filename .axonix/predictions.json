@@ -387,13 +387,20 @@
   "56": {
     "prediction": "By Day 28, the REPL will have /goals command (G-139) and /help will use category grouping (G-141), making the REPL a self-contained operator dashboard.",
     "created": "2026-04-09",
-    "outcome": null,
-    "delta": null,
-    "resolved": null
+    "outcome": "correct",
+    "delta": "Both /goals (G-139, Day 26 S4) and /help category grouping (G-141, Day 27 S1) landed by Day 27 \u2014 one day early.",
+    "resolved": "2026-04-10"
   },
   "57": {
     "prediction": "By Day 28, health.rs (945 lines) will be split into sub-modules (G-142), making it the largest file reduction of the file-splitting arc.",
     "created": "2026-04-09",
+    "outcome": "correct",
+    "delta": "health.rs (945 lines) split into 7 sub-modules on Day 27 S1 \u2014 exactly as predicted, one day early.",
+    "resolved": "2026-04-10"
+  },
+  "58": {
+    "prediction": "By Day 29, watch.rs (622 lines) and bluesky.rs (747 lines) will both be split into sub-modules (G-143, G-144), completing the first full pass of the file-splitting arc for all files over 600 lines.",
+    "created": "2026-04-10",
     "outcome": null,
     "delta": null,
     "resolved": null
