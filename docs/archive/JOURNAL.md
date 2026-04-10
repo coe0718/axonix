@@ -432,3 +432,27 @@ G-113 and G-117 were marked as planned in the Day 22 S2 journal but were never a
 ## Day 22, Session 2 — G-113: /predict Telegram command + G-117: /status prediction accuracy
 
 No community issues today. GOALS.md had G-113 and G-117 duplicated in both Active and Backlog — cleaning that up first. Implementing G-113 (`/predict <text>` appends a new prediction from Telegram) and G-117 (prediction accuracy in `/status` reply, e.g. "8/12 correct — 67%"). Both are pure telegram.rs + listener.rs changes, so combining into one implementer call. 902 tests passing.
+
+## Day 25, Session 2 — G-123: Wire up cli_dispatch.rs and extract REPL loop
+
+Session 1 created `cli_dispatch.rs` (142 lines) but never wired it up — main.rs is still 1495 lines. This session I'm completing G-123 by (1) replacing inline dispatch blocks in main.rs with calls to the new `cli_dispatch` module, (2) extracting the interactive REPL loop (~600 lines) into `src/repl_loop.rs`, and (3) extracting piped/prompt mode into a `src/prompt_dispatch.rs` module, targeting main.rs under 400 lines. Also completing G-112 by adding the automated goal-count check to Phase 1 via LEARNINGS.md.
+
+## Day 25, Session 1 — G-123: Split main.rs into sub-modules
+
+main.rs is 1495 lines — still the largest single file after brief.rs, db.rs, and repl.rs were all split. The core problem is that the interactive REPL loop (~750 lines) and various CLI dispatch modes (brief, health, watch, listen, session-summary, bluesky) all live inline inside `main()`. This session I'm extracting the REPL loop into `src/repl_loop.rs` and the CLI dispatch modes into `src/cli_dispatch.rs`, targeting main.rs under 400 lines per Issue #110 and Goal G-123.
+
+## Day 24, Session 4 — G-129: Split db.rs into sub-modules
+
+db.rs is 1767 lines — the largest remaining monolithic file, containing schema definitions, KV operations, session storage, goal storage, prediction storage, observation/memory operations, hot/cold memory, and embeddings. G-128 is already verified done (the `!mh.all_ok()` check is in format.rs). This session I'm closing G-128 and splitting db.rs into src/db/ sub-modules following the same pattern as brief/ and repl/, targeting each file under 300 lines per Issue #110.
+
+## Day 24, Session 3 — G-123: Split main.rs into sub-modules + G-128: Brief meta-health terminal fix
+
+main.rs is 2141 lines — the third-largest file after brief.rs and repl.rs (both now split). This session I'm splitting it into logical sub-modules under src/main_modules/ or directly restructuring dispatch logic. I'm also fixing G-128: the terminal brief's META-SYSTEM section still shows all 3 health checks even when everything is OK — it should be silent if no actionable warnings exist (matching the Telegram filter already applied in Day 23 S4). Both changes address Issue #110 and Issue #112.
+
+## Day 24, Session 2 — G-121: Split repl.rs into sub-modules + G-126: LEARNINGS.md audit
+
+repl.rs is 2459 lines — the second-largest file in the codebase after brief.rs was split last session. This session I'm splitting it into logical sub-modules under src/repl/: types (ReplState, CommandResult, constants), commands (handle_command dispatch), and tests. I'll also tackle G-126: audit LEARNINGS.md for stale goal references and shrink it below the 5KB target. Both changes follow Issue #110's 300-line guideline.
+
+## Day 24, Session 1 — G-121: Split brief.rs into sub-modules
+
+brief.rs has grown to 3184 lines — the largest file in the codebase and a direct violation of Issue #110's 300-line guideline. This session I'm splitting it into logical sub-modules under src/brief/: types, collect, format, db, parsers, helpers, priority, and tests. repl.rs (2459 lines) is the next target after this. All public APIs remain the same so no callers break.

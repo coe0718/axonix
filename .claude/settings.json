@@ -24,7 +24,8 @@
       "Read(//tmp/**)",
       "Bash(cargo fix:*)",
       "Bash(./target/debug/axonix predict:*)",
-      "Bash(ls /home/coemedia/Documents/code/axonix/src/cycle_summary* /home/coemedia/Documents/code/axonix/src/failure_patterns*)"
+      "Bash(ls /home/coemedia/Documents/code/axonix/src/cycle_summary* /home/coemedia/Documents/code/axonix/src/failure_patterns*)",
+      "Bash(gh issue create --title 'feat: repair mode — let Axonix fix build failures instead of aborting' --body ':*)"
     ],
     "additionalDirectories": [
       "/tmp"
