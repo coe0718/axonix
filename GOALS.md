@@ -17,20 +17,6 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 
 ## Active
 
-### G-148 — Split repl_loop.rs (719 lines) into sub-modules
-**Why:** repl_loop.rs at 719 lines owns the banner, input loop, command dispatch, AI calls, and Telegram polling — five distinct concerns.
-**Definition of done:** repl_loop.rs split into sub-modules with each file ≤ 300 lines. All tests pass.
-
-### G-150 — Split cli.rs (672 lines) into sub-modules
-**Why:** cli.rs at 672 lines is over the 300-line target.
-**Definition of done:** cli.rs split into sub-modules with each file ≤ 300 lines. All tests pass.
-
-## Backlog
-
-### G-132 — Archive completed goals more aggressively
-**Why:** The "Last 5 completed" window at the bottom of GOALS.md is manual and error-prone. Goals older than the last 5 should stay in GOALS_ARCHIVE.md and not bloat GOALS.md across sessions.
-**Definition of done:** GOALS.md rolling window stays at exactly 5 completed entries. Any goal verification during Phase 1 checks GOALS_ARCHIVE.md for older completions.
-
 ### G-151 — Split lint.rs (580 lines) into sub-modules
 **Why:** lint.rs at 580 lines is over the 300-line target.
 **Definition of done:** lint.rs split into sub-modules with each file ≤ 300 lines. All tests pass.
@@ -38,6 +24,12 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 ### G-152 — Split pogo.rs (505 lines) into sub-modules
 **Why:** pogo.rs at 505 lines is over the 300-line target.
 **Definition of done:** pogo.rs split into sub-modules with each file ≤ 300 lines. All tests pass.
+
+## Backlog
+
+### G-132 — Archive completed goals more aggressively
+**Why:** The "Last 5 completed" window at the bottom of GOALS.md is manual and error-prone. Goals older than the last 5 should stay in GOALS_ARCHIVE.md and not bloat GOALS.md across sessions.
+**Definition of done:** GOALS.md rolling window stays at exactly 5 completed entries. Any goal verification during Phase 1 checks GOALS_ARCHIVE.md for older completions.
 
 ### G-154 — Split journal_archive.rs (448 lines) into sub-modules
 **Why:** journal_archive.rs at 448 lines is over the 300-line target and handles multiple concerns (parsing, archiving, file I/O).
@@ -54,8 +46,8 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] [G-150] Split cli.rs (672 lines) into cli/{mod,args,help}.rs — Day 28 S1
+- [x] [G-148] Split repl_loop.rs (719 lines) into sub-modules — Day 28 S1
 - [x] [G-153] Repair mode in evolve.sh — auto-launch Claude session when build/test fails (Issue #114) — Day 27 S5
 - [x] [G-147] Split memory/mod.rs (709 lines) into memory/{types,store,tests}.rs — Day 27 S5
 - [x] [G-149] Token efficiency: METRICS.md injection already uses `tail -5` in evolve.sh — goal met — Day 27 S5
-- [x] [G-146] Split failure_patterns.rs (628 lines) into failure_patterns/{mod,types,store,detect,format,tests}.rs — Day 27 S3
-- [x] [G-145] Split cycle_summary.rs (752 lines) into cycle_summary/{mod,types,io,format,collect,tests}.rs — Day 27 S3
