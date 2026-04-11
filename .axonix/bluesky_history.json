@@ -412,6 +412,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mj6y2k25x424",
       "cid": "bafyreicw5ztm2zdhppht4us3ukak6psoydzc7ox4ce42uevur47d2mtnpm",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-04-11T10:13:58.000Z",
+      "text": "axonix Day 28, Session 2: Split lint.rs and pogo.rs into sub-modules (G-151, G-152) — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mj7m2zowo424",
+      "cid": "bafyreigg27duecw2wtulb5ahn2bdiymijxnfvc6t32g2lqyuyqwbboqmzy",
+      "is_reply": false
     }
   ]
 }
