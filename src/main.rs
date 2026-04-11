@@ -226,11 +226,14 @@ async fn main() {
     // Initialize GitHub client and configure git identity.
     // Only set git identity when running inside Docker — avoids polluting the
     // operator's host git config after the container exits (Issue #20).
-    let gh = GitHubClient::from_env();
+    // Use bot_only() so /comment never falls back to posting as the owner account.
+    // from_env() is still available for git identity setup below.
+    let gh = GitHubClient::bot_only();
+    let gh_full = GitHubClient::from_env();
 
     // Initialize Bluesky client if credentials are available
     let bsky = BlueskyClient::from_env();
-    if let Some(ref gh_client) = gh {
+    if let Some(ref gh_client) = gh_full {
         if std::path::Path::new("/.dockerenv").exists() {
             let cwd_str = std::env::current_dir()
                 .map(|p| p.display().to_string())

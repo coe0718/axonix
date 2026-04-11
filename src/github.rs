@@ -92,6 +92,23 @@ impl GitHubClient {
         None
     }
 
+    /// Create a bot-only client — returns None if AXONIX_BOT_TOKEN is not set.
+    /// Use this for posting comments to avoid accidentally posting as the owner.
+    pub fn bot_only() -> Option<Self> {
+        if let Ok(token) = std::env::var("AXONIX_BOT_TOKEN")
+            .or_else(|_| std::env::var("AXONIX_TOKEN"))
+        {
+            if !token.is_empty() {
+                return Some(Self {
+                    token,
+                    identity: GitHubIdentity::Bot,
+                    client: crate::http_client::get(),
+                });
+            }
+        }
+        None
+    }
+
     /// Create a client with an explicit token and identity.
     pub fn new(token: impl Into<String>, identity: GitHubIdentity) -> Self {
         Self {

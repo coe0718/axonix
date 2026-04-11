@@ -153,17 +153,17 @@ if command -v gh &>/dev/null; then
         ISSUE_NUMS=$(grep -oE '^### Issue #[0-9]+' "$ISSUES_FILE" | grep -oE '[0-9]+' | sort -u || true)
         for ISSUE_NUM in $ISSUE_NUMS; do
             # Verify the issue is still open before posting (gh CLI uses Go HTTP, no OpenSSL)
-            ISSUE_STATE=$(GITHUB_TOKEN="$AXONIX_BOT_TOKEN" gh api \
+            ISSUE_STATE=$(GH_TOKEN="$AXONIX_BOT_TOKEN" gh api \
                 "repos/$REPO/issues/${ISSUE_NUM}" --jq '.state' 2>/dev/null || echo "unknown")
             if [ "$ISSUE_STATE" != "open" ]; then
                 echo "  Skipping issue #${ISSUE_NUM} (state: ${ISSUE_STATE})."
                 continue
             fi
-            EXISTING=$(GITHUB_TOKEN="$AXONIX_BOT_TOKEN" gh api \
+            EXISTING=$(GH_TOKEN="$AXONIX_BOT_TOKEN" gh api \
                 "repos/$REPO/issues/${ISSUE_NUM}/comments" --jq '.[].body' 2>/dev/null \
                 | grep -c "Picked up in Day $DAY Session $SESSION" || true)
             if [ "${EXISTING:-0}" -eq 0 ]; then
-                GITHUB_TOKEN="$AXONIX_BOT_TOKEN" gh api \
+                GH_TOKEN="$AXONIX_BOT_TOKEN" gh api \
                     "repos/$REPO/issues/${ISSUE_NUM}/comments" \
                     -X POST -f body="Picked up in Day $DAY Session $SESSION — will address this session." \
                     > /dev/null 2>&1 || true
@@ -639,10 +639,10 @@ for RESPONSE_FILE in ISSUE_RESPONSE*.md; do
     STATUS=$(grep "^status:" "$RESPONSE_FILE" | awk '{print $2}' || true)
     COMMENT=$(sed -n '/^comment:/,$ p' "$RESPONSE_FILE" | sed '1s/^comment: //' || true)
 
-    BOT_TOKEN="${AXONIX_BOT_TOKEN:-${GH_TOKEN:-}}"
+    BOT_TOKEN="${AXONIX_BOT_TOKEN:-}"
     if [ -n "$ISSUE_NUM" ] && [ -n "$BOT_TOKEN" ]; then
         # Dedup: skip if a Day+Session comment already exists (agent may have posted during session)
-        ALREADY=$(GITHUB_TOKEN="$BOT_TOKEN" gh api \
+        ALREADY=$(GH_TOKEN="$BOT_TOKEN" gh api \
             "repos/$REPO/issues/${ISSUE_NUM}/comments" --jq '.[].body' 2>/dev/null \
             | grep -c "Day $DAY, Session $SESSION" || true)
         if [ "${ALREADY:-0}" -gt 0 ]; then
@@ -657,13 +657,13 @@ $COMMENT
 
 Commit: $(git rev-parse --short HEAD)"
 
-        GITHUB_TOKEN="$BOT_TOKEN" gh api \
+        GH_TOKEN="$BOT_TOKEN" gh api \
             "repos/$REPO/issues/$ISSUE_NUM/comments" \
             -X POST -f body="$BODY" \
             > /dev/null 2>&1 || true
 
         if [ "$STATUS" = "fixed" ]; then
-            GITHUB_TOKEN="$BOT_TOKEN" gh api \
+            GH_TOKEN="$BOT_TOKEN" gh api \
                 "repos/$REPO/issues/$ISSUE_NUM" \
                 -X PATCH -f state="closed" \
                 > /dev/null 2>&1 || true
