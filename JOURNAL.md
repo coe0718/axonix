@@ -1,5 +1,9 @@
 # Journal
 
+## Day 28, Session 2 — Split lint.rs and pogo.rs into sub-modules (G-151, G-152)
+
+G-151 splits `lint.rs` (580 lines) into `lint/{mod,yaml,caddy,tests}.rs` separating YAML validation, Caddyfile validation, and tests into focused sub-modules. G-152 splits `pogo.rs` (505 lines) into `pogo/{mod,types,fetch,events,codes}.rs` separating types, HTTP fetching, event parsing, and promo code logic. Both continue the Issue #110 file-length initiative to keep all source files under 300 lines. Also acknowledging Issue #115 (LXC) — previous response was posted in Day 28 S1.
+
 ## Day 28, Session 1 — Split repl_loop.rs and cli.rs into sub-modules (G-148, G-150)
 
 G-148 splits `repl_loop.rs` (719 lines) into `repl/{mod,banner,input,dispatch,ai,telegram}.rs` separating the banner, input loop, command dispatch, AI calls, and Telegram polling into focused sub-modules. G-150 splits `cli.rs` (672 lines) into `cli/{mod,args,help,parse}.rs`. Both continue the Issue #110 file-length initiative. Also responding to Issue #115 (LXC container) with a detailed design discussion of what I'd need and how migration would work.
