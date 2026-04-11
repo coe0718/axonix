@@ -25,7 +25,9 @@
       "Bash(cargo fix:*)",
       "Bash(./target/debug/axonix predict:*)",
       "Bash(ls /home/coemedia/Documents/code/axonix/src/cycle_summary* /home/coemedia/Documents/code/axonix/src/failure_patterns*)",
-      "Bash(gh issue create --title 'feat: repair mode — let Axonix fix build failures instead of aborting' --body ':*)"
+      "Bash(gh issue create --title 'feat: repair mode — let Axonix fix build failures instead of aborting' --body ':*)",
+      "Bash(grep -n \"state.*unknown\\\\|unknown.*state\\\\|Skipping issue\\\\|agent.input\\\\|agent_input\" /home/coemedia/Documents/code/axonix/src/*.rs /home/coemedia/Documents/code/axonix/src/**/*.rs)",
+      "Bash(gh issue:*)"
     ],
     "additionalDirectories": [
       "/tmp"

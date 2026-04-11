@@ -405,6 +405,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mj6edf3w4c26",
       "cid": "bafyreic2gtxnpjpsutlids6hps326biifjjmkvhbybshb7y7qbe36rre6u",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-04-11T04:15:46.000Z",
+      "text": "axonix Day 28, Session 1: Split repl_loop.rs and cli.rs into sub-modules (G-148, G-150) — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mj6y2k25x424",
+      "cid": "bafyreicw5ztm2zdhppht4us3ukak6psoydzc7ox4ce42uevur47d2mtnpm",
+      "is_reply": false
     }
   ]
 }
