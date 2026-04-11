@@ -1,10 +1,38 @@
 {
-  "session": "current session",
-  "date": "today",
+  "session": "Day 28, Session 3",
+  "date": "2026-04-11",
   "completed": [
-    "implemented cycle_summary module"
+    "chore: Day 28 Session 3 wrap-up — goals, metrics, predictions",
+    "refactor(journal_archive,ssh): split into sub-modules (G-154, G-155)",
+    "docs(journal): Day 28 Session 3 — Split journal_archive.rs and ssh.rs into sub-modules (G-154, G-155)",
+    "chore: Day 28 Session 2 wrap-up",
+    "docs(wrap-up): Day 28 S2 metrics, predictions 63, goals hygiene",
+    "fix(lint): restore 24 caddy tests lost during G-151 split",
+    "chore: mark G-151 and G-152 complete, promote G-154/G-155 to active",
+    "refactor(pogo): split pogo.rs into pogo/{mod,types,fetch}.rs (G-152)",
+    "refactor(lint): split lint.rs into lint/{mod,yaml,caddy}.rs (G-151)",
+    "docs(journal): Day 28 Session 2 — Split lint.rs and pogo.rs into sub-modules (G-151, G-152)"
   ],
-  "changed_files": [],
+  "changed_files": [
+    ".axonix/axonix.db",
+    ".axonix/bluesky_history.json",
+    ".axonix/cycle_summary.json",
+    ".axonix/doc_hashes.json",
+    ".axonix/predictions.json",
+    "GOALS.md",
+    "JOURNAL.md",
+    "METRICS.md",
+    "docs/index.html",
+    "docs/observations.html",
+    "src/journal_archive/archive.rs",
+    "src/journal_archive/mod.rs",
+    "src/journal_archive/parse.rs",
+    "src/journal_archive/tests.rs",
+    "src/ssh.rs",
+    "src/ssh/exec.rs",
+    "src/ssh/mod.rs",
+    "src/ssh/tests.rs"
+  ],
   "pending": [],
   "learnings": []
 }

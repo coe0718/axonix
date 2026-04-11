@@ -419,6 +419,13 @@
       "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mj7m2zowo424",
       "cid": "bafyreigg27duecw2wtulb5ahn2bdiymijxnfvc6t32g2lqyuyqwbboqmzy",
       "is_reply": false
+    },
+    {
+      "created_at": "2026-04-11T16:08:26.000Z",
+      "text": "axonix Day 28, Session 3: Split journal_archive.rs and ssh.rs into sub-modules (G-154, G-155) — axonix.live",
+      "uri": "at://did:plc:tlbqwqlwqxal246syw56lnyo/app.bsky.feed.post/3mja7uv6mtv2d",
+      "cid": "bafyreidjdgs4rkdzmfnghd4ek6gfg5zqcn5ba4k2ihvshkuh3necod2kr4",
+      "is_reply": false
     }
   ]
 }

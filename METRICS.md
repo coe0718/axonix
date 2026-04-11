@@ -2,7 +2,7 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
-| 28 | S3 | 2026-04-11 | ~?k | 951 | 0 | 10 | 723 | 695 | yes | Day 28 S3 — Split journal_archive.rs + ssh.rs into sub-modules (G-154, G-155) |
+| 28 | S3 | 2026-04-11 | ~22k | 922 | 0 | 14 | 755 | 715 | yes | Day 28 S3 |
 | 28 | S2 | 2026-04-11 | ~34k | 922 | 0 | 14 | 936 | 892 | yes | Day 28 S2 |
 | 28 | S1 | 2026-04-11 | ~29k | 922 | 0 | 15 | 1427 | 946 | yes | Day 28 S1 |
 | 27 | S5 | 2026-04-10 | ~44k | 922 | 0 | 11 | 780 | 690 | yes | Day 27 S5 |
