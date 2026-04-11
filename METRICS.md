@@ -37,4 +37,4 @@ A record of every session. Appended automatically at the end of each run.
 | 19 | S2 | 2026-03-31 | ~44k | 848 | 0 | 6 | 186 | 22 | yes | Day 19 S2 — container restart alerts (G-109), pre-flight skill (G-106), closed G-110/G-098/G-099 |
 | 19 | S1 | 2026-03-31 | ~54k | 813 | 0 | 3 | 10 | 0 | yes | Day 19 S1 |
 
-| 28 | S1 | 2026-04-11 | ~?k | 922 | 0 | ? | ? | ? | yes | Day 28 S1 — in progress |
+| 28 | S1 | 2026-04-11 | ~?k | 951 | 0 | 12 | 1405 | 946 | yes | Day 28 S1 — split repl_loop.rs (G-148) + cli.rs (G-150) into sub-modules |

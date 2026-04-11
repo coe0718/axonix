@@ -39,6 +39,14 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 **Why:** ssh.rs at 486 lines handles connection management, command execution, and device inventory — distinct concerns.
 **Definition of done:** ssh.rs split into sub-modules with each file ≤ 300 lines. All tests pass.
 
+### G-156 — Split conversation_memory.rs (453 lines) into sub-modules
+**Why:** conversation_memory.rs at 453 lines handles persistent turn-by-turn conversation log — separable into types, storage, and trim logic.
+**Definition of done:** conversation_memory.rs split into sub-modules with each file ≤ 300 lines. All tests pass.
+
+### G-157 — Split github.rs (451 lines) into sub-modules
+**Why:** github.rs at 451 lines handles GitHub API integration, issue comments, and identity — distinct concerns.
+**Definition of done:** github.rs split into sub-modules with each file ≤ 300 lines. All tests pass.
+
 ## Completed
 
 Completed goals have been archived to GOALS_ARCHIVE.md to keep this file lean.
