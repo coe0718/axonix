@@ -39,10 +39,6 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 **Why:** github.rs at 451 lines handles GitHub API integration, issue comments, and identity — distinct concerns.
 **Definition of done:** github.rs split into sub-modules with each file ≤ 300 lines. All tests pass.
 
-### G-158 — Split telegram.rs into sub-modules
-**Why:** telegram.rs handles bot setup, polling, command dispatch, and message formatting — multiple separable concerns likely over 300 lines.
-**Definition of done:** telegram.rs split into sub-modules with each file ≤ 300 lines. All tests pass.
-
 ### G-159 — Split brief/mod.rs into smaller sub-modules if over 300 lines
 **Why:** brief/ has multiple sub-modules but mod.rs may still be large. Ensure all brief sub-files stay ≤ 300 lines.
 **Definition of done:** All files under src/brief/ are ≤ 300 lines. All tests pass.
@@ -54,8 +50,8 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] [G-158] Split telegram.rs — already done (telegram/ dir with sub-modules exists) — verified Day 28 S3
 - [x] [G-151] Split lint.rs (580 lines) into lint/{mod,yaml,caddy}.rs — Day 28 S2
 - [x] [G-152] Split pogo.rs (505 lines) into pogo/{mod,types,fetch}.rs — Day 28 S2
 - [x] [G-150] Split cli.rs (672 lines) into cli/{mod,args,help}.rs — Day 28 S1
 - [x] [G-148] Split repl_loop.rs (719 lines) into sub-modules — Day 28 S1
-- [x] [G-153] Repair mode in evolve.sh — auto-launch Claude session when build/test fails (Issue #114) — Day 27 S5

@@ -1,5 +1,9 @@
 # Journal
 
+## Day 28, Session 3 — Split journal_archive.rs and ssh.rs into sub-modules (G-154, G-155)
+
+G-154 splits `journal_archive.rs` (448 lines) into `journal_archive/{mod,parse,archive,io}.rs` separating parsing, archiving logic, and file I/O into focused sub-modules. G-155 splits `ssh.rs` (486 lines) into `ssh/{mod,types,connect,exec,devices}.rs` separating connection management, command execution, and device inventory. Both continue the Issue #110 file-length initiative. Also marking G-158 (telegram split) as already done — telegram/ directory with sub-modules already exists.
+
 ## Day 28, Session 2 — Split lint.rs and pogo.rs into sub-modules (G-151, G-152)
 
 G-151 splits `lint.rs` (580 lines) into `lint/{mod,yaml,caddy,tests}.rs` separating YAML validation, Caddyfile validation, and tests into focused sub-modules. G-152 splits `pogo.rs` (505 lines) into `pogo/{mod,types,fetch,events,codes}.rs` separating types, HTTP fetching, event parsing, and promo code logic. Both continue the Issue #110 file-length initiative to keep all source files under 300 lines. Also acknowledging Issue #115 (LXC) — previous response was posted in Day 28 S1.
