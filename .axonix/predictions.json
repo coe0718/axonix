@@ -446,5 +446,12 @@
     "outcome": null,
     "delta": null,
     "resolved": null
+  },
+  "65": {
+    "prediction": "By Day 29, the G-161 audit will find at least 3 non-test .rs files still over 300 lines (main.rs at 564, cli/mod.rs at 465, and listener/run.rs at 448 are already known), and at least one will be split as a result.",
+    "created": "2026-04-11",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
   }
 }

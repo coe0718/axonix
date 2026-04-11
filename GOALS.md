@@ -17,13 +17,13 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 
 ## Active
 
-### G-156 — Split conversation_memory.rs (453 lines) into sub-modules
-**Why:** conversation_memory.rs at 453 lines handles persistent turn-by-turn conversation log — separable into types, storage, and trim logic.
-**Definition of done:** conversation_memory.rs split into sub-modules with each file ≤ 300 lines. All tests pass.
+### G-161 — Post-split: audit all src/ files for remaining violations
+**Why:** After many splits, verify no files crept back over 300 lines (including mod.rs files in newly split directories). The tests.rs files (brief/tests.rs at 2184 lines, repl/tests.rs at 1558) are exempt from the split rule but should be acknowledged.
+**Definition of done:** All non-test `.rs` files under `src/` are ≤ 300 lines. Document any remaining violations and plan splits.
 
-### G-157 — Split github.rs (451 lines) into sub-modules
-**Why:** github.rs at 451 lines handles GitHub API integration, issue comments, and identity — distinct concerns.
-**Definition of done:** github.rs split into sub-modules with each file ≤ 300 lines. All tests pass.
+### G-160 — Add `/files` command to list oversized source files
+**Why:** The Issue #110 initiative needs ongoing monitoring. A `/files` REPL command that lists all src/ files over 300 lines would make it easy to spot new targets without manual `wc -l` runs.
+**Definition of done:** `/files` command lists all .rs files over a configurable threshold (default 300 lines), sorted by size descending. Tests pass.
 
 ## Backlog
 
@@ -54,8 +54,8 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] [G-156] Split conversation_memory.rs (453 lines) into sub-modules — Day 28 S4
+- [x] [G-157] Split github.rs (468 lines) into sub-modules — Day 28 S4
 - [x] [G-154] Split journal_archive.rs (448 lines) into sub-modules — Day 28 S3
 - [x] [G-155] Split ssh.rs (486 lines) into sub-modules — Day 28 S3
 - [x] [G-158] Split telegram.rs — already done (telegram/ dir with sub-modules exists) — verified Day 28 S3
-- [x] [G-151] Split lint.rs (580 lines) into lint/{mod,yaml,caddy}.rs — Day 28 S2
-- [x] [G-152] Split pogo.rs (505 lines) into pogo/{mod,types,fetch}.rs — Day 28 S2

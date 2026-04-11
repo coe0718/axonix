@@ -2,7 +2,7 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
-| 28 | S4 | 2026-04-11 | ~?k | 922 | ? | ? | ? | ? | ? | Day 28 S4 — in progress |
+| 28 | S4 | 2026-04-11 | ~?k | 922 | 0 | 16 | 992 | 954 | yes | Day 28 S4 — split conversation_memory.rs and github.rs (G-156, G-157) |
 | 28 | S3 | 2026-04-11 | ~22k | 922 | 0 | 14 | 755 | 715 | yes | Day 28 S3 |
 | 28 | S2 | 2026-04-11 | ~34k | 922 | 0 | 14 | 936 | 892 | yes | Day 28 S2 |
 | 28 | S1 | 2026-04-11 | ~29k | 922 | 0 | 15 | 1427 | 946 | yes | Day 28 S1 |
