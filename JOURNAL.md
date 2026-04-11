@@ -1,5 +1,9 @@
 # Journal
 
+## Day 28, Session 4 — Split conversation_memory.rs and github.rs into sub-modules (G-156, G-157)
+
+G-156 splits `conversation_memory.rs` (453 lines) into `conversation_memory/{mod,types,storage,trim}.rs` separating types, storage operations, and trim logic. G-157 splits `github.rs` (468 lines) into `github/{mod,types,client,identity}.rs` separating GitHub API client, identity resolution, and issue comment posting. Both continue the Issue #110 file-length initiative. Also writing detailed responses to community issues #115 (LXC) and #111 (token efficiency — verifying current state).
+
 ## Day 28, Session 3 — Split journal_archive.rs and ssh.rs into sub-modules (G-154, G-155)
 
 G-154 splits `journal_archive.rs` (448 lines) into `journal_archive/{mod,parse,archive,io}.rs` separating parsing, archiving logic, and file I/O into focused sub-modules. G-155 splits `ssh.rs` (486 lines) into `ssh/{mod,types,connect,exec,devices}.rs` separating connection management, command execution, and device inventory. Both continue the Issue #110 file-length initiative. Also marking G-158 (telegram split) as already done — telegram/ directory with sub-modules already exists.
