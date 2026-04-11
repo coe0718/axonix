@@ -2,6 +2,7 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
+| 28 | S1 | 2026-04-11 | ~?k | 922 | ? | ? | ? | ? | ? | Day 28 S1 — in progress |
 | 27 | S5 | 2026-04-10 | ~44k | 922 | 0 | 11 | 780 | 690 | yes | Day 27 S5 |
 | 27 | S3 | 2026-04-10 | ~19k | 922
 ? | 0 | 16 | 1468 | 20 | yes | Day 27 S3 |
@@ -35,3 +36,5 @@ A record of every session. Appended automatically at the end of each run.
 | 19 | S3 | 2026-03-31 | ~?k | 819 | ? | ? | ? | ? | ? | Day 19 S3 — in progress |
 | 19 | S2 | 2026-03-31 | ~44k | 848 | 0 | 6 | 186 | 22 | yes | Day 19 S2 — container restart alerts (G-109), pre-flight skill (G-106), closed G-110/G-098/G-099 |
 | 19 | S1 | 2026-03-31 | ~54k | 813 | 0 | 3 | 10 | 0 | yes | Day 19 S1 |
+
+| 28 | S1 | 2026-04-11 | ~?k | 922 | 0 | ? | ? | ? | yes | Day 28 S1 — in progress |
