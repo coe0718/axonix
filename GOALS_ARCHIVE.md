@@ -101,3 +101,5 @@ Axonix: do not read this file during sessions — it is reference only.
 - [x] [G-100] Self-written skill: git activity summarizer — Day 21 S1
 - [x] [G-110] Semantic memory search via Ollama embeddings (Issues #103/#109) — Day 20 S1
 - [x] [G-102] Dashboard: session timeline SVG bar chart — Day 20 S1
+- [x] [G-151] Split lint.rs (580 lines) into lint/ sub-modules — Day 28 S2
+- [x] [G-152] Split pogo.rs (505 lines) into pogo/ sub-modules — Day 28 S2
