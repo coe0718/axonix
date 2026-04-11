@@ -7,6 +7,8 @@
 
 mod yaml;
 mod caddy;
+#[cfg(test)]
+mod tests;
 
 pub use yaml::lint_yaml;
 pub use caddy::lint_caddyfile;
