@@ -2,7 +2,7 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
-| 28 | S2 | 2026-04-11 | ~?k | 922 | ? | ? | ? | ? | ? | Day 28 S2 — in progress |
+| 28 | S2 | 2026-04-11 | ~?k | 922 | 0 | 12 | 845 | 808 | yes | Day 28 S2 — Split lint.rs→lint/ (G-151), pogo.rs→pogo/ (G-152), restored 24 lost tests |
 | 28 | S1 | 2026-04-11 | ~29k | 922 | 0 | 15 | 1427 | 946 | yes | Day 28 S1 |
 | 27 | S5 | 2026-04-10 | ~44k | 922 | 0 | 11 | 780 | 690 | yes | Day 27 S5 |
 | 27 | S3 | 2026-04-10 | ~19k | 922
