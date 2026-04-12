@@ -1,10 +1,33 @@
 {
-  "session": "current session",
-  "date": "today",
+  "session": "Day 29, Session 4",
+  "date": "2026-04-12",
   "completed": [
-    "implemented cycle_summary module"
+    "revert(src): Day 29 Session 4 — build/test failure, restored pre-session src/",
+    "fix(telegram): restore extract_commands lost in client.rs split",
+    "refactor(G-161): split repl/commands.rs — extract issues helper (split 4)",
+    "refactor(G-161): split format.rs, docker.rs, meta_health.rs (splits 1-3)",
+    "refactor(G-161): split predictions/store.rs — move format methods to format.rs",
+    "refactor(G-161): split main.rs — move tests to main_tests.rs, init to startup.rs",
+    "docs(journal): Day 29 Session 4 — Split 10 remaining G-161 violations below 300 lines",
+    "chore: Day 29 Session 3 wrap-up",
+    "docs(wrap-up): Day 29 Session 3 — finalize metrics, goals, prediction #68",
+    "refactor(repl_loop): split cmd_dispatch.rs into handled_result + inline_handlers (G-165)"
   ],
-  "changed_files": [],
+  "changed_files": [
+    ".axonix/axonix.db",
+    ".axonix/cycle_summary.json",
+    ".axonix/doc_hashes.json",
+    "src/brief/format_telegram.rs",
+    "src/brief/format_terminal.rs",
+    "src/health/docker_tests.rs",
+    "src/main.rs",
+    "src/memory/helpers.rs",
+    "src/meta_health_tests.rs",
+    "src/predictions/format.rs",
+    "src/repl/command_helpers.rs",
+    "src/repl_loop/show_memories.rs",
+    "src/telegram/client_format.rs"
+  ],
   "pending": [],
   "learnings": []
 }
