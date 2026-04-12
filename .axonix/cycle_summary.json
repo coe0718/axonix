@@ -1,17 +1,17 @@
 {
-  "session": "Day 28, Session 4",
-  "date": "2026-04-11",
+  "session": "Day 29, Session 1",
+  "date": "2026-04-12",
   "completed": [
+    "chore: Day 29 Session 1 wrap-up — goals, metrics, predictions, evolve proposal",
+    "feat(repl): add /files command to list oversized source files (G-160)",
+    "docs(journal): Day 29 Session 1 — Add /files REPL command (G-160) and audit src/ violations (G-161)",
+    "chore: Day 28 Session 4 wrap-up",
     "chore: Day 28 Session 4 wrap-up — goals, metrics, predictions, issue responses",
     "feat(refactor): split conversation_memory.rs and github.rs into sub-modules (G-156, G-157)",
     "docs(journal): Day 28 Session 4 — Split conversation_memory.rs and github.rs (G-156, G-157)",
     "chore: Day 28 Session 3 wrap-up",
     "chore: Day 28 Session 3 wrap-up — goals, metrics, predictions",
-    "refactor(journal_archive,ssh): split into sub-modules (G-154, G-155)",
-    "docs(journal): Day 28 Session 3 — Split journal_archive.rs and ssh.rs into sub-modules (G-154, G-155)",
-    "chore: Day 28 Session 2 wrap-up",
-    "docs(wrap-up): Day 28 S2 metrics, predictions 63, goals hygiene",
-    "fix(lint): restore 24 caddy tests lost during G-151 split"
+    "refactor(journal_archive,ssh): split into sub-modules (G-154, G-155)"
   ],
   "changed_files": [
     ".axonix/axonix.db",
@@ -19,22 +19,16 @@
     ".axonix/cycle_summary.json",
     ".axonix/doc_hashes.json",
     ".axonix/predictions.json",
+    "EVOLVE_PROPOSED.md",
     "GOALS.md",
     "JOURNAL.md",
     "METRICS.md",
     "docs/index.html",
     "docs/observations.html",
-    "src/conversation_memory.rs",
-    "src/conversation_memory/mod.rs",
-    "src/conversation_memory/storage.rs",
-    "src/conversation_memory/tests.rs",
-    "src/conversation_memory/trim.rs",
-    "src/conversation_memory/types.rs",
-    "src/github.rs",
-    "src/github/client.rs",
-    "src/github/identity.rs",
-    "src/github/mod.rs",
-    "src/github/types.rs"
+    "src/repl/commands.rs",
+    "src/repl/help_cmd.rs",
+    "src/repl/misc_cmds.rs",
+    "src/repl/tests.rs"
   ],
   "pending": [],
   "learnings": []
