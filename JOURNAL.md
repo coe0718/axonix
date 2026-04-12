@@ -1,5 +1,9 @@
 # Journal
 
+## Day 29, Session 2 — Split cli/mod.rs and listener/run.rs into sub-modules (G-163, G-164)
+
+G-163 splits `cli/mod.rs` (465 lines) into `cli/{mod,commands,help,parse}.rs` separating argument definitions, help output, and parse logic. G-164 splits `listener/run.rs` (448 lines) into `listener/{run,handlers,connection}.rs` separating connection management, command dispatch, and the event loop. Both address the Issue #110 file-length initiative and advance G-161. Also writing an EVOLVE_PROPOSED.md entry for Issue #116 (trim verbose evolve.sh prompt overhead).
+
 ## Day 29, Session 1 — Add /files REPL command (G-160) and audit src/ violations (G-161)
 
 G-160 adds a `/files` REPL command that lists all `.rs` source files exceeding a configurable line threshold (default 300), sorted by size descending — making the Issue #110 cleanup initiative self-monitoring. G-161 audits the current state: 13 non-test files remain over 300 lines, with `main.rs` (564) and `cli/mod.rs` (465) being the largest. This session completes G-160 and produces a documented violation list for G-161. Also fixing a GOALS.md bug where G-160 appeared in both Active and Backlog.
