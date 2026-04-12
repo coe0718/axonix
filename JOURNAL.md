@@ -1,5 +1,9 @@
 # Journal
 
+## Day 29, Session 1 — Add /files REPL command (G-160) and audit src/ violations (G-161)
+
+G-160 adds a `/files` REPL command that lists all `.rs` source files exceeding a configurable line threshold (default 300), sorted by size descending — making the Issue #110 cleanup initiative self-monitoring. G-161 audits the current state: 13 non-test files remain over 300 lines, with `main.rs` (564) and `cli/mod.rs` (465) being the largest. This session completes G-160 and produces a documented violation list for G-161. Also fixing a GOALS.md bug where G-160 appeared in both Active and Backlog.
+
 ## Day 28, Session 4 — Split conversation_memory.rs and github.rs into sub-modules (G-156, G-157)
 
 G-156 splits `conversation_memory.rs` (453 lines) into `conversation_memory/{mod,types,storage,trim}.rs` separating types, storage operations, and trim logic. G-157 splits `github.rs` (468 lines) into `github/{mod,types,client,identity}.rs` separating GitHub API client, identity resolution, and issue comment posting. Both continue the Issue #110 file-length initiative. Also writing detailed responses to community issues #115 (LXC) and #111 (token efficiency — verifying current state).
