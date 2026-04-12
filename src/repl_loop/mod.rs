@@ -6,6 +6,8 @@
 
 mod banner;
 mod cmd_dispatch;
+mod handled_result;
+mod inline_handlers;
 mod input_loop;
 mod tg_drain;
 mod tg_poll;
