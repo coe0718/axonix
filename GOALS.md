@@ -19,8 +19,12 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 
 ### G-161 — Post-split: audit all src/ files for remaining violations
 **Why:** After many splits, verify no files crept back over 300 lines (including mod.rs files in newly split directories). The tests.rs files (brief/tests.rs at 2184 lines, repl/tests.rs at 1558, cli/tests.rs at 459, listener/tests.rs at 680) are exempt from the split rule.
-**Current violations (Day 29 S2 audit):** main.rs (564), repl_loop/cmd_dispatch.rs (390), predictions/store.rs (382), brief/format.rs (358), health/docker.rs (350), meta_health.rs (324), repl/commands.rs (315), telegram/client.rs (313), memory/store.rs (311), repl_loop/input_loop.rs (304), agent_setup.rs (301).
+**Current violations (Day 29 S3 audit):** main.rs (564), repl_loop/cmd_dispatch.rs (390), predictions/store.rs (382), brief/format.rs (358), health/docker.rs (350), meta_health.rs (324), repl/commands.rs (315), telegram/client.rs (313), memory/store.rs (311), repl_loop/input_loop.rs (304), agent_setup.rs (301).
 **Definition of done:** All non-test `.rs` files under `src/` are ≤ 300 lines. Document any remaining violations and plan splits.
+
+### G-165 — Split repl_loop/cmd_dispatch.rs (390 lines) into sub-modules
+**Why:** cmd_dispatch.rs at 390 lines is the next largest non-exempt violation. It has two clear logical sections: the marker-based async dispatcher and the inline /status//context//tokens handlers.
+**Definition of done:** All files under src/repl_loop/ are ≤ 300 lines. All tests pass.
 
 ## Backlog
 
@@ -36,9 +40,7 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 **Why:** The /status command shows health metrics but doesn't show what was last worked on. Adding last git commit message + timestamp would make it more informative at a glance.
 **Definition of done:** /status output includes last commit hash, message, and relative time. Tests pass.
 
-### G-165 — Split repl_loop/cmd_dispatch.rs (390 lines) into sub-modules
-**Why:** cmd_dispatch.rs at 390 lines is the next largest non-exempt violation after the cli and listener splits complete.
-**Definition of done:** All files under src/repl_loop/ are ≤ 300 lines. All tests pass.
+
 
 ## Completed
 

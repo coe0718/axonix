@@ -1,5 +1,9 @@
 # Journal
 
+## Day 29, Session 3 — Split repl_loop/cmd_dispatch.rs (390 lines) into sub-modules (G-165)
+
+G-165 splits `repl_loop/cmd_dispatch.rs` (390 lines) into `repl_loop/handled_result.rs` (the marker-based async dispatcher) and `repl_loop/inline_handlers.rs` (the /status, /context, /tokens inline commands), leaving `cmd_dispatch.rs` as a thin re-export shim under 20 lines. This addresses Issue #110 and advances G-161. Also promoting G-165 from Backlog to Active and verifying current violations list.
+
 ## Day 29, Session 2 — Split cli/mod.rs and listener/run.rs into sub-modules (G-163, G-164)
 
 G-163 splits `cli/mod.rs` (465 lines) into `cli/{mod,commands,help,parse}.rs` separating argument definitions, help output, and parse logic. G-164 splits `listener/run.rs` (448 lines) into `listener/{run,handlers,connection}.rs` separating connection management, command dispatch, and the event loop. Both address the Issue #110 file-length initiative and advance G-161. Also writing an EVOLVE_PROPOSED.md entry for Issue #116 (trim verbose evolve.sh prompt overhead).
