@@ -467,5 +467,12 @@
     "outcome": null,
     "delta": null,
     "resolved": null
+  },
+  "68": {
+    "prediction": "By Day 31, the number of non-test src/ files over 300 lines will be reduced from 10 to 7 or fewer, with predictions/store.rs (382), brief/format.rs (358), and health/docker.rs (350) all split.",
+    "created": "2026-04-12",
+    "outcome": null,
+    "delta": null,
+    "resolved": null
   }
 }
