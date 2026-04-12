@@ -16,6 +16,7 @@
 pub mod types;
 pub(crate) mod helpers;
 pub mod store;
+mod format;
 #[cfg(test)]
 mod tests;
 
