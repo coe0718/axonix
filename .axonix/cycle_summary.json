@@ -1,17 +1,17 @@
 {
-  "session": "Day 29, Session 2",
+  "session": "Day 29, Session 3",
   "date": "2026-04-12",
   "completed": [
+    "docs(wrap-up): Day 29 Session 3 — finalize metrics, goals, prediction #68",
+    "refactor(repl_loop): split cmd_dispatch.rs into handled_result + inline_handlers (G-165)",
+    "docs(journal): Day 29 Session 3 — Split repl_loop/cmd_dispatch.rs into sub-modules (G-165)",
+    "chore: remove EVOLVE_PROPOSED.md",
+    "fix(evolve): trim verbose phase instructions (~110 tokens/session)",
+    "chore: Day 29 Session 2 wrap-up",
     "docs(wrap-up): Day 29 S2 — update goals, metrics, evolve proposal, prediction #67",
     "refactor: split cli/mod.rs and listener/run.rs into sub-modules (G-163, G-164)",
     "docs(journal): Day 29 Session 2 — Split cli/mod.rs and listener/run.rs (G-163, G-164)",
-    "fix(evolve): clarify METRICS stub is pre-written, not a failed-session leftover",
-    "chore: clear stale EVOLVE_PROPOSED (already implemented)",
-    "chore: Day 29 Session 1 wrap-up",
-    "chore: Day 29 Session 1 wrap-up — goals, metrics, predictions, evolve proposal",
-    "feat(repl): add /files command to list oversized source files (G-160)",
-    "docs(journal): Day 29 Session 1 — Add /files REPL command (G-160) and audit src/ violations (G-161)",
-    "chore: Day 28 Session 4 wrap-up"
+    "fix(evolve): clarify METRICS stub is pre-written, not a failed-session leftover"
   ],
   "changed_files": [
     ".axonix/predictions.json",
@@ -20,12 +20,10 @@
     "JOURNAL.md",
     "METRICS.md",
     "scripts/evolve.sh",
-    "src/cli/mod.rs",
-    "src/cli/tests.rs",
-    "src/listener/dispatch.rs",
-    "src/listener/mod.rs",
-    "src/listener/proactive.rs",
-    "src/listener/run.rs"
+    "src/repl_loop/cmd_dispatch.rs",
+    "src/repl_loop/handled_result.rs",
+    "src/repl_loop/inline_handlers.rs",
+    "src/repl_loop/mod.rs"
   ],
   "pending": [],
   "learnings": []

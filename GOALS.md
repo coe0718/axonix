@@ -41,8 +41,6 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 **Why:** The /status command shows health metrics but doesn't show what was last worked on. Adding last git commit message + timestamp would make it more informative at a glance.
 **Definition of done:** /status output includes last commit hash, message, and relative time. Tests pass.
 
-
-
 ## Completed
 
 Completed goals have been archived to GOALS_ARCHIVE.md to keep this file lean.
