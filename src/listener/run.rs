@@ -4,23 +4,15 @@
 //! dispatches commands to the appropriate handlers, and manages the agent context.
 
 use crate::conversation_memory::ConversationMemory;
-use crate::telegram::{TelegramClient, BotCommand, MemoryAction, TELEGRAM_HELP_TEXT};
-use crate::health::HealthSnapshot;
-use crate::db::AxonixDb;
-use yoagent::{AgentEvent, StreamDelta};
+use crate::telegram::TelegramClient;
 
 use super::config::{
     ListenerConfig, AckedIssues, ListenerStats, DEFAULT_HAIKU_MODEL,
     select_model_for_command, parse_rate_limit_env, local_hour,
 };
-use super::prompt::{
-    build_listener_system_prompt, make_listener_agent, get_last_commit_message,
-    format_history_reply,
-};
-use super::handlers::{
-    append_goal_to_backlog, append_prediction, resolve_prediction,
-    compute_prediction_accuracy, run_mini_session, list_open_predictions,
-};
+use super::prompt::{build_listener_system_prompt, make_listener_agent};
+use super::dispatch::{DispatchCtx, dispatch_command};
+use super::proactive::{poll_github_issues, send_daily_brief};
 
 /// Run the always-on Telegram listener loop.
 ///
@@ -128,239 +120,18 @@ pub async fn run_listener(
                 continue;
             }
 
-            match cmd {
-                BotCommand::Ask(ask_cmd) => {
-                    // Send "processing" acknowledgement
-                    let _ = tg.reply_to("⏳ Processing...", ask_cmd.message_id).await;
-
-                    // Rebuild agent if it has processed too many turns (context hygiene)
-                    if agent_turn_count > 50 {
-                        let refresh_goal = crate::brief::parse_active_goals().into_iter().next();
-                        let refresh_title = refresh_goal.as_deref().unwrap_or("");
-                        let refresh_ctx = crate::brief::collect_memory_context(refresh_title);
-                        let fresh_prompt = build_listener_system_prompt(&mem, refresh_goal.as_deref(), &refresh_ctx);
-                        let refresh_ask_model = select_model_for_command("/ask", model, &haiku_model);
-                        agent = make_listener_agent(api_key, &refresh_ask_model, &fresh_prompt);
-                        agent_turn_count = 0;
-                    }
-
-                    // Run the agent — prompt() returns a streaming event receiver
-                    let mut rx = agent.prompt(&ask_cmd.prompt).await;
-                    let mut response_text = String::new();
-                    let mut had_error = false;
-
-                    while let Some(event) = rx.recv().await {
-                        match event {
-                            AgentEvent::MessageUpdate {
-                                delta: StreamDelta::Text { delta },
-                                ..
-                            } => {
-                                response_text.push_str(&delta);
-                            }
-                            AgentEvent::InputRejected { reason } => {
-                                eprintln!("  ⚠ listener: input rejected: {reason}");
-                                had_error = true;
-                            }
-                            _ => {}
-                        }
-                    }
-
-                    if had_error || response_text.is_empty() {
-                        let msg = if had_error {
-                            "⚠️ Request was rejected by the agent.".to_string()
-                        } else {
-                            "⚠️ No response from agent.".to_string()
-                        };
-                        let _ = tg.reply_to(&msg, ask_cmd.message_id).await;
-                        stats.errors += 1;
-                    } else {
-                        // Truncate to max_response_chars
-                        let reply = if response_text.chars().count() > config.max_response_chars {
-                            let truncated: String = response_text
-                                .chars()
-                                .take(config.max_response_chars)
-                                .collect();
-                            format!("{truncated}\n_(truncated)_")
-                        } else {
-                            response_text.clone()
-                        };
-
-                        let _ = tg.reply_to(&reply, ask_cmd.message_id).await;
-
-                        // Record turn in memory
-                        mem.push("user", &ask_cmd.prompt, "telegram");
-                        mem.push("assistant", &response_text, "telegram");
-                        if let Err(e) = mem.save() {
-                            eprintln!("  ⚠ listener: failed to save memory: {e}");
-                        }
-
-                        agent_turn_count += 2; // user + assistant
-                        stats.messages_handled += 1;
-                    }
-                }
-                BotCommand::Health { message_id } => {
-                    let snap = HealthSnapshot::collect();
-                    let reply = snap.format_compact();
-                    let _ = tg.reply_to(&reply, message_id).await;
-                    stats.messages_handled += 1;
-                }
-                BotCommand::Brief { message_id } => {
-                    let brief = crate::brief::Brief::collect();
-                    let reply = brief.format_telegram();
-                    let _ = tg.reply_to(&reply, message_id).await;
-                    stats.messages_handled += 1;
-                }
-                BotCommand::Goal { description, message_id } => {
-                    match append_goal_to_backlog(&description) {
-                        Ok(()) => {
-                            let reply = format!("✅ Goal added to backlog:\n_{description}_");
-                            let _ = tg.reply_to(&reply, message_id).await;
-                        }
-                        Err(e) => {
-                            let reply = format!("⚠️ Failed to add goal: {e}");
-                            let _ = tg.reply_to(&reply, message_id).await;
-                            stats.errors += 1;
-                        }
-                    }
-                    stats.messages_handled += 1;
-                }
-                BotCommand::Run { task, message_id } => {
-                    let _ = tg.reply_to(&format!("⏳ Running task: _{task}_"), message_id).await;
-                    // /run uses Sonnet — needs full reasoning and code capability
-                    let run_model = select_model_for_command("/run", model, &haiku_model);
-                    match run_mini_session(&task, api_key, &run_model).await {
-                        Ok(result) => {
-                            let reply = TelegramClient::format_response(&result);
-                            for chunk in &reply {
-                                let _ = tg.reply_to(chunk, message_id).await;
-                            }
-                        }
-                        Err(e) => {
-                            let _ = tg.reply_to(&format!("⚠️ Task failed: {e}"), message_id).await;
-                            stats.errors += 1;
-                        }
-                    }
-                    stats.messages_handled += 1;
-                }
-                BotCommand::Status { message_id } => {
-                    let active_goal = crate::brief::parse_active_goals().into_iter().next();
-                    let last_commit = get_last_commit_message();
-                    // Compute prediction accuracy for G-117
-                    let accuracy = compute_prediction_accuracy();
-                    let reply = TelegramClient::format_enhanced_status_reply(
-                        model,
-                        stats.uptime_secs,
-                        active_goal.as_deref(),
-                        last_commit.as_deref(),
-                        accuracy.as_deref(),
-                    );
-                    let _ = tg.reply_to(&reply, message_id).await;
-                    stats.messages_handled += 1;
-                }
-                BotCommand::Help { message_id } => {
-                    let _ = tg.reply_to(TELEGRAM_HELP_TEXT, message_id).await;
-                    stats.messages_handled += 1;
-                }
-                BotCommand::Memory { action, message_id } => {
-                    let day = std::env::var("DAY_COUNT")
-                        .ok()
-                        .and_then(|s| s.split_whitespace().next().map(|n| n.to_string()))
-                        .unwrap_or_else(|| "?".to_string());
-                    let session_label = format!("Day {day}");
-                    let reply = match action {
-                        MemoryAction::Add { text, category } => {
-                            match AxonixDb::open_default() {
-                                Ok(db) => match db.sobs_insert(&text, &category, "", "", &session_label, "") {
-                                    Ok(_) => format!("✅ Observation stored (category: {category})"),
-                                    Err(e) => format!("❌ Failed to store observation: {e}"),
-                                },
-                                Err(e) => format!("❌ DB unavailable: {e}"),
-                            }
-                        }
-                        MemoryAction::Search { query } => {
-                            match AxonixDb::open_default() {
-                                Ok(db) => match db.sobs_search(&query, 5) {
-                                    Ok(results) if results.is_empty() => "No observations found.".to_string(),
-                                    Ok(results) => results
-                                        .iter()
-                                        .map(|o| format!("[{}] {}\n  _{}_", o.category, o.content, o.created_at))
-                                        .collect::<Vec<_>>()
-                                        .join("\n\n"),
-                                    Err(e) => format!("❌ Search failed: {e}"),
-                                },
-                                Err(e) => format!("❌ DB unavailable: {e}"),
-                            }
-                        }
-                        MemoryAction::List => {
-                            match AxonixDb::open_default() {
-                                Ok(db) => match db.sobs_list(5) {
-                                    Ok(results) if results.is_empty() => "No observations recorded yet.".to_string(),
-                                    Ok(results) => results
-                                        .iter()
-                                        .map(|o| format!("[{}] {}\n  _{}_", o.category, o.content, o.created_at))
-                                        .collect::<Vec<_>>()
-                                        .join("\n\n"),
-                                    Err(e) => format!("❌ List failed: {e}"),
-                                },
-                                Err(e) => format!("❌ DB unavailable: {e}"),
-                            }
-                        }
-                    };
-                    let _ = tg.reply_to(&reply, message_id).await;
-                    stats.messages_handled += 1;
-                }
-                BotCommand::History { message_id } => {
-                    let reply = format_history_reply(&mem, 5);
-                    let _ = tg.reply_to(&reply, message_id).await;
-                    stats.messages_handled += 1;
-                }
-                BotCommand::Goals { message_id } => {
-                    let active = crate::brief::parse_active_goals();
-                    let backlog = crate::brief::parse_backlog_goals();
-                    let mut lines: Vec<String> = Vec::new();
-                    lines.push("*Active Goals:*".to_string());
-                    if active.is_empty() {
-                        lines.push("  _(none)_".to_string());
-                    } else {
-                        for g in &active {
-                            lines.push(format!("  • {g}"));
-                        }
-                    }
-                    lines.push("*Next Backlog:*".to_string());
-                    if let Some(first) = backlog.into_iter().next() {
-                        lines.push(format!("  • {first}"));
-                    } else {
-                        lines.push("  _(empty)_".to_string());
-                    }
-                    let reply = lines.join("\n");
-                    let _ = tg.reply_to(&reply, message_id).await;
-                    stats.messages_handled += 1;
-                }
-                BotCommand::Predict { text, message_id } => {
-                    let reply = match append_prediction(&text) {
-                        Ok(id) => format!("✅ Prediction #{id} saved: {text}"),
-                        Err(e) => format!("❌ Failed to save prediction: {e}"),
-                    };
-                    let _ = tg.reply_to(&reply, message_id).await;
-                    stats.messages_handled += 1;
-                }
-                BotCommand::Resolve { id, verdict, message_id } => {
-                    let reply = match resolve_prediction(id, verdict) {
-                        Ok(text) => {
-                            let label = if verdict { "✅ correct" } else { "❌ wrong" };
-                            format!("Prediction #{id} marked {label}:\n_{text}_")
-                        }
-                        Err(e) => format!("⚠️ Could not resolve prediction: {e}"),
-                    };
-                    let _ = tg.reply_to(&reply, message_id).await;
-                    stats.messages_handled += 1;
-                }
-                BotCommand::ListPredictions { message_id } => {
-                    let reply = list_open_predictions();
-                    let _ = tg.reply_to(&reply, message_id).await;
-                    stats.messages_handled += 1;
-                }
-            }
+            let mut ctx = DispatchCtx {
+                agent: &mut agent,
+                agent_turn_count: &mut agent_turn_count,
+                mem: &mut mem,
+                stats: &mut stats,
+                config,
+                tg,
+                model,
+                haiku_model: &haiku_model,
+                api_key,
+            };
+            dispatch_command(cmd, &mut ctx).await;
         }
 
         // Log stats summary every 100 messages
@@ -372,59 +143,7 @@ pub async fn run_listener(
         if last_github_poll.elapsed().as_secs() >= config.github_poll_interval_secs {
             last_github_poll = std::time::Instant::now();
             if let Some(ref token) = gh_token {
-                let gh = crate::github::GitHubClient::new(
-                    token,
-                    crate::github::GitHubIdentity::Bot,
-                );
-                match gh.list_issues("coe0718/axonix", 20).await {
-                    Ok(issues) => {
-                        let new_issues: Vec<_> = issues
-                            .iter()
-                            .filter(|i| i.labels.iter().any(|l| l == "agent-input"))
-                            .filter(|i| !acked_issues.contains(u64::from(i.number)))
-                            .collect();
-                        for issue in &new_issues {
-                            let day = std::env::var("DAY_COUNT")
-                                .ok()
-                                .and_then(|s| {
-                                    s.split_whitespace().next().map(|n| n.to_string())
-                                })
-                                .unwrap_or_else(|| "?".to_string());
-                            let session = std::env::var("SESSION_COUNT")
-                                .ok()
-                                .unwrap_or_else(|| "?".to_string());
-                            let ack_msg = format!(
-                                "Picked up in Day {day} Session {session} — I'll look at this in the next available cron window.",
-                            );
-                            match gh
-                                .post_comment(
-                                    "coe0718/axonix",
-                                    u64::from(issue.number),
-                                    &ack_msg,
-                                )
-                                .await
-                            {
-                                Ok(_) => {
-                                    acked_issues.insert(u64::from(issue.number));
-                                    let _ = acked_issues.save();
-                                    eprintln!(
-                                        "  ✓ acknowledged issue #{}",
-                                        issue.number
-                                    );
-                                }
-                                Err(e) => {
-                                    eprintln!(
-                                        "  ⚠ listener: failed to ack issue #{}: {e}",
-                                        issue.number
-                                    );
-                                }
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        eprintln!("  ⚠ listener: github poll error: {e}");
-                    }
-                }
+                poll_github_issues(tg, token, &mut acked_issues).await;
             }
         }
 
@@ -434,12 +153,7 @@ pub async fn run_listener(
             && last_brief_hour != Some(current_hour);
         if should_send_brief {
             last_brief_hour = Some(current_hour);
-            let brief = crate::brief::Brief::collect();
-            let msg = brief.format_telegram();
-            match tg.send_message(&msg).await {
-                Ok(_) => eprintln!("  ✓ listener: daily brief sent"),
-                Err(e) => eprintln!("  ⚠ listener: failed to send daily brief: {e}"),
-            }
+            send_daily_brief(tg).await;
         }
 
         // Sleep between polls

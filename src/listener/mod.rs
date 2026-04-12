@@ -36,6 +36,8 @@ pub mod config;
 pub mod prompt;
 pub mod handlers;
 pub mod run;
+mod dispatch;
+mod proactive;
 
 pub use config::{
     DEFAULT_HAIKU_MODEL,
