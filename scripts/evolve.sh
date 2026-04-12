@@ -300,10 +300,10 @@ Step 4b — Update GOALS.md right now:
 - For any goal you already verified is done (in code, not just journal), mark [x] now
 - Do not wait until Phase 7 — if the session ends early, GOALS.md must already reflect reality
 
-Step 4c — Write a METRICS.md stub row right now:
-Run: cargo test 2>&1 | grep "^test result" | head -1
-Write this row (fill in actual test count, leave ? for stats filled in later):
-  | $DAY | S$SESSION | $DATE | ~?k | <tests passed> | 0 | ? | ? | ? | yes | Day $DAY S$SESSION — in progress |
+Step 4c — METRICS.md stub row:
+evolve.sh already wrote the stub row for Day $DAY S$SESSION before this session started.
+It will appear as "in progress" — this is expected and correct, not a leftover from a failed run.
+Do NOT rewrite or duplicate it. Just confirm it is there with: grep "S$SESSION" METRICS.md
 
 Step 4d — Commit all three together:
   git add JOURNAL.md GOALS.md METRICS.md && git commit -m "docs(journal): Day $DAY Session $SESSION — [title]"
