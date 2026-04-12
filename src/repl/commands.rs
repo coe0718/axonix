@@ -11,6 +11,10 @@ use super::help_cmd;
 use super::watch_cmd;
 use super::misc_cmds;
 
+#[path = "command_helpers.rs"]
+mod command_helpers;
+use command_helpers::handle_issues_arg;
+
 /// Process a REPL input string. Returns a `CommandResult`.
 ///
 /// This function is pure: it only mutates `state`, produces output lines,
@@ -235,30 +239,7 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
             } else {
                 s.trim_start_matches("/issues ").trim()
             };
-
-            let limit: u8 = if arg.is_empty() {
-                10
-            } else {
-                match arg.parse::<u8>() {
-                    Ok(n) if n > 0 && n <= 30 => n,
-                    Ok(0) => {
-                        return CommandResult::Handled(vec![
-                            "  Error: limit must be between 1 and 30.".to_string(),
-                            "  Usage: /issues [N] (default: 10, max: 30)".to_string(),
-                            String::new(),
-                        ]);
-                    }
-                    _ => {
-                        return CommandResult::Handled(vec![
-                            format!("  Error: invalid limit '{arg}'. Must be a number 1–30."),
-                            "  Usage: /issues [N] (default: 10, max: 30)".to_string(),
-                            String::new(),
-                        ]);
-                    }
-                }
-            };
-
-            CommandResult::FetchIssues(limit)
+            handle_issues_arg(arg)
         }
 
         "/archive-journal" => misc_cmds::handle_archive_journal(),
