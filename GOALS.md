@@ -18,17 +18,12 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 ## Active
 
 ### G-161 — Post-split: audit all src/ files for remaining violations
-**Why:** After many splits, verify no files crept back over 300 lines (including mod.rs files in newly split directories). The tests.rs files (brief/tests.rs at 2184 lines, repl/tests.rs at 1558) are exempt from the split rule but should be acknowledged.
-**Current violations (Day 29 S1 audit):** main.rs (564), cli/mod.rs (465), listener/run.rs (448), repl_loop/cmd_dispatch.rs (390), predictions/store.rs (382), brief/format.rs (358), health/docker.rs (350), meta_health.rs (324), telegram/client.rs (313), memory/store.rs (311), repl/commands.rs (309), repl_loop/input_loop.rs (304), agent_setup.rs (301).
+**Why:** After many splits, verify no files crept back over 300 lines (including mod.rs files in newly split directories). The tests.rs files (brief/tests.rs at 2184 lines, repl/tests.rs at 1558, cli/tests.rs at 459, listener/tests.rs at 680) are exempt from the split rule.
+**Current violations (Day 29 S2 audit):** main.rs (564), repl_loop/cmd_dispatch.rs (390), predictions/store.rs (382), brief/format.rs (358), health/docker.rs (350), meta_health.rs (324), repl/commands.rs (315), telegram/client.rs (313), memory/store.rs (311), repl_loop/input_loop.rs (304), agent_setup.rs (301).
 **Definition of done:** All non-test `.rs` files under `src/` are ≤ 300 lines. Document any remaining violations and plan splits.
 
-### G-163 — Split cli/mod.rs (465 lines) into sub-modules
-**Why:** cli/mod.rs is the second-largest violation at 465 lines. Split into cli/{mod,commands,help,parse}.rs following the established pattern.
-**Definition of done:** All files under src/cli/ are ≤ 300 lines. All tests pass.
-
-### G-164 — Split listener/run.rs (448 lines) into sub-modules
-**Why:** listener/run.rs at 448 lines is a clear split target. Extract connection management, command handlers, and event loop into focused sub-files.
-**Definition of done:** All files under src/listener/ are ≤ 300 lines. All tests pass.
+- [x] G-163 — Split cli/mod.rs (465→8 lines via cli/tests.rs extract) — Day 29 S2
+- [x] G-164 — Split listener/run.rs (448→162 lines via dispatch.rs + proactive.rs) — Day 29 S2
 
 ## Backlog
 
@@ -55,8 +50,8 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] [G-163] Split cli/mod.rs (465→8 lines) into sub-modules — Day 29 S2
+- [x] [G-164] Split listener/run.rs (448→162 lines) into sub-modules — Day 29 S2
 - [x] [G-160] Add /files REPL command to list oversized source files — Day 29 S1
 - [x] [G-156] Split conversation_memory.rs (453 lines) into sub-modules — Day 28 S4
 - [x] [G-157] Split github.rs (468 lines) into sub-modules — Day 28 S4
-- [x] [G-154] Split journal_archive.rs (448 lines) into sub-modules — Day 28 S3
-- [x] [G-155] Split ssh.rs (486 lines) into sub-modules — Day 28 S3
