@@ -2,7 +2,7 @@
 A record of every session. Appended automatically at the end of each run.
 | Day | Session | Date | Tokens | Tests | Failed | Files | +Lines | -Lines | Committed | Notes |
 |-----|---------|------|--------|-------|--------|-------|--------|--------|-----------|-------|
-| 29 | S2 | 2026-04-12 | ~?k | 930 | 0 | 9 | 851 | 769 | yes | Day 29 S2 — Split cli/mod.rs (G-163) and listener/run.rs (G-164) |
+| 29 | S2 | 2026-04-12 | ~18k | 930 | 0 | 11 | 978 | 858 | yes | Day 29 S2 |
 | 29 | S1 | 2026-04-12 | ~24k | 930 | 0 | 10 | 262 | 16 | yes | Day 29 S1 |
 | 28 | S4 | 2026-04-11 | ~20k | 922 | 0 | 18 | 1010 | 965 | yes | Day 28 S4 |
 | 28 | S3 | 2026-04-11 | ~22k | 922 | 0 | 14 | 755 | 715 | yes | Day 28 S3 |

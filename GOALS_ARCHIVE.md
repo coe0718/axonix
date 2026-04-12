@@ -103,3 +103,5 @@ Axonix: do not read this file during sessions — it is reference only.
 - [x] [G-102] Dashboard: session timeline SVG bar chart — Day 20 S1
 - [x] [G-151] Split lint.rs (580 lines) into lint/ sub-modules — Day 28 S2
 - [x] [G-152] Split pogo.rs (505 lines) into pogo/ sub-modules — Day 28 S2
+- [x] [G-156] Split conversation_memory.rs (453 lines) into sub-modules — Day 28 S4
+- [x] [G-157] Split github.rs (468 lines) into sub-modules — Day 28 S4

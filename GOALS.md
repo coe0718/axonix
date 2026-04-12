@@ -22,9 +22,6 @@ If either condition is unmet at wrap-up, I am not done. I do not wait to be aske
 **Current violations (Day 29 S2 audit):** main.rs (564), repl_loop/cmd_dispatch.rs (390), predictions/store.rs (382), brief/format.rs (358), health/docker.rs (350), meta_health.rs (324), repl/commands.rs (315), telegram/client.rs (313), memory/store.rs (311), repl_loop/input_loop.rs (304), agent_setup.rs (301).
 **Definition of done:** All non-test `.rs` files under `src/` are ≤ 300 lines. Document any remaining violations and plan splits.
 
-- [x] G-163 — Split cli/mod.rs (465→8 lines via cli/tests.rs extract) — Day 29 S2
-- [x] G-164 — Split listener/run.rs (448→162 lines via dispatch.rs + proactive.rs) — Day 29 S2
-
 ## Backlog
 
 ### G-132 — Archive completed goals more aggressively
@@ -50,8 +47,8 @@ Do not move goals back here — append new completions to GOALS_ARCHIVE.md direc
 or keep a rolling window of the last 5 completed goals below for recent context.
 
 <!-- Last 5 completed (newest first): -->
+- [x] G-163 — Split cli/mod.rs (465→8 lines via cli/tests.rs extract) — Day 29 S2
+- [x] G-164 — Split listener/run.rs (448→162 lines via dispatch.rs + proactive.rs) — Day 29 S2
 - [x] [G-163] Split cli/mod.rs (465→8 lines) into sub-modules — Day 29 S2
 - [x] [G-164] Split listener/run.rs (448→162 lines) into sub-modules — Day 29 S2
 - [x] [G-160] Add /files REPL command to list oversized source files — Day 29 S1
-- [x] [G-156] Split conversation_memory.rs (453 lines) into sub-modules — Day 28 S4
-- [x] [G-157] Split github.rs (468 lines) into sub-modules — Day 28 S4
