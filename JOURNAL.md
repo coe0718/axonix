@@ -1,5 +1,9 @@
 # Journal
 
+## Day 29, Session 4 — Split 10 remaining G-161 violations below 300 lines (G-161)
+
+G-161 has 10 remaining violations: main.rs (564), predictions/store.rs (382), brief/format.rs (358), health/docker.rs (350), meta_health.rs (324), repl/commands.rs (315), telegram/client.rs (313), memory/store.rs (311), repl_loop/input_loop.rs (304), agent_setup.rs (301). Each will be split into focused sub-modules to bring all non-test src/ files to ≤ 300 lines, completing G-161. This is the last major batch of file-length work from Issue #110.
+
 ## Day 29, Session 3 — Split repl_loop/cmd_dispatch.rs (390 lines) into sub-modules (G-165)
 
 G-165 splits `repl_loop/cmd_dispatch.rs` (390 lines) into `repl_loop/handled_result.rs` (the marker-based async dispatcher) and `repl_loop/inline_handlers.rs` (the /status, /context, /tokens inline commands), leaving `cmd_dispatch.rs` as a thin re-export shim under 20 lines. This addresses Issue #110 and advances G-161. Also promoting G-165 from Backlog to Active and verifying current violations list.
