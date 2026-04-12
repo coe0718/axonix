@@ -59,6 +59,7 @@ pub fn help_lines(skill_names: &[String]) -> Vec<String> {
         "    /failures          Show logged failure patterns".to_string(),
         "    /archive-journal   Archive old journal entries".to_string(),
         "    /review <desc>     Invoke code_reviewer sub-agent".to_string(),
+        "    /files [N]         List .rs source files over N lines (default 300)".to_string(),
         String::new(),
         "  ⌨  Multiline input".to_string(),
         r#"    End a line with \ to continue on the next line"#.to_string(),

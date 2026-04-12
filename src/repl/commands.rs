@@ -265,6 +265,12 @@ pub fn handle_command(input: &str, state: &mut ReplState, skill_names: &[String]
 
         "/brief" => misc_cmds::handle_brief(),
 
+        s if s == "/files" || s.starts_with("/files ") => {
+            let arg = s.strip_prefix("/files").unwrap_or("").trim();
+            let threshold = arg.parse::<usize>().unwrap_or(300);
+            misc_cmds::handle_files(threshold)
+        }
+
         s if s == "/search" || s.starts_with("/search ") => {
             let arg = if s == "/search" {
                 ""

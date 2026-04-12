@@ -1556,3 +1556,100 @@ use super::*;
         let all = lines.join("\n");
         assert!(all.contains("/search"), "/help should document /search: {all}");
     }
+
+    // ── G-160: /files command ─────────────────────────────────────────────────
+
+    /// /files with default threshold should return Handled and mention "Source files".
+    #[test]
+    fn test_files_returns_handled() {
+        let result = super::misc_cmds::handle_files(300);
+        assert!(
+            matches!(result, CommandResult::Handled(_)),
+            "/files should return CommandResult::Handled"
+        );
+    }
+
+    #[test]
+    fn test_files_output_contains_header() {
+        let CommandResult::Handled(lines) = super::misc_cmds::handle_files(300) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(
+            all.contains("Source files"),
+            "/files output should contain 'Source files' header: {all}"
+        );
+    }
+
+    /// With a threshold of 99999 there should be zero violations.
+    #[test]
+    fn test_files_very_high_threshold_no_violations() {
+        let CommandResult::Handled(lines) = super::misc_cmds::handle_files(99999) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(
+            all.contains("0 violations") || all.contains("No violations"),
+            "/files 99999 should report no violations: {all}"
+        );
+    }
+
+    /// /files via handle_command should return Handled.
+    #[test]
+    fn test_files_command_dispatch() {
+        let mut s = state();
+        let result = handle_command("/files", &mut s, &[]);
+        assert!(
+            matches!(result, CommandResult::Handled(_)),
+            "/files command should return CommandResult::Handled"
+        );
+    }
+
+    /// /files 500 should parse the threshold and return Handled.
+    #[test]
+    fn test_files_command_with_threshold() {
+        let mut s = state();
+        let result = handle_command("/files 500", &mut s, &[]);
+        assert!(
+            matches!(result, CommandResult::Handled(_)),
+            "/files 500 should return CommandResult::Handled"
+        );
+    }
+
+    /// /files output should mention the threshold in the footer.
+    #[test]
+    fn test_files_output_mentions_threshold() {
+        let CommandResult::Handled(lines) = super::misc_cmds::handle_files(400) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(
+            all.contains("400"),
+            "/files 400 output should mention the threshold: {all}"
+        );
+    }
+
+    /// /files should not report "Unknown command".
+    #[test]
+    fn test_files_not_unknown_command() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/files", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(
+            !all.contains("Unknown command"),
+            "/files should not be treated as unknown: {all}"
+        );
+    }
+
+    /// /help should document /files.
+    #[test]
+    fn test_help_includes_files_command() {
+        let mut s = state();
+        let CommandResult::Handled(lines) = handle_command("/help", &mut s, &[]) else {
+            panic!("expected Handled");
+        };
+        let all = lines.join("\n");
+        assert!(all.contains("/files"), "/help should document /files: {all}");
+    }

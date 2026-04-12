@@ -1,7 +1,7 @@
 //! Miscellaneous REPL command handlers extracted from `handle_command`.
 //!
 //! Covers: `/failures`, `/summary`, `/recap`, `/archive-journal`,
-//!          `/brief`, `/search`.
+//!          `/brief`, `/search`, `/files`.
 
 use super::types::CommandResult;
 
@@ -175,4 +175,98 @@ pub fn handle_search(query: &str) -> CommandResult {
     }
     lines.push(String::new());
     CommandResult::Handled(lines)
+}
+
+/// Walk `src/` recursively and collect all `.rs` files with their line counts.
+/// Returns a sorted-descending list of `(line_count, path_string)`.
+fn collect_rs_files(root: &str) -> Vec<(usize, String)> {
+    let mut results = Vec::new();
+    let mut dirs = vec![std::path::PathBuf::from(root)];
+    while let Some(dir) = dirs.pop() {
+        let entries = match std::fs::read_dir(&dir) {
+            Ok(e) => e,
+            Err(_) => continue,
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                dirs.push(path);
+            } else if path.extension().and_then(|e| e.to_str()) == Some("rs") {
+                let contents = match std::fs::read_to_string(&path) {
+                    Ok(c) => c,
+                    Err(_) => continue,
+                };
+                let line_count = contents.chars().filter(|&c| c == '\n').count() + 1;
+                let display = path.display().to_string();
+                results.push((line_count, display));
+            }
+        }
+    }
+    results.sort_by(|a, b| b.0.cmp(&a.0));
+    results
+}
+
+/// Handle the `/files [N]` command: list `.rs` source files over `threshold` lines.
+///
+/// Files are sorted descending by line count. Test files (`tests.rs`) are shown
+/// with a `(tests — exempt)` tag rather than counted as violations.
+pub fn handle_files(threshold: usize) -> CommandResult {
+    let all_files = collect_rs_files("src");
+
+    if all_files.is_empty() {
+        return CommandResult::Handled(vec![
+            "  [files] No .rs files found under src/".to_string(),
+            "  Run this command from the workspace root.".to_string(),
+            String::new(),
+        ]);
+    }
+
+    // Separate violations from exempt test files.
+    let mut violations: Vec<(usize, String)> = Vec::new();
+    let mut exempt: Vec<(usize, String)> = Vec::new();
+    for (lines, path) in &all_files {
+        if *lines > threshold {
+            let is_test = path.ends_with("tests.rs")
+                || path.ends_with("/tests.rs")
+                || path.contains("tests.rs");
+            if is_test {
+                exempt.push((*lines, path.clone()));
+            } else {
+                violations.push((*lines, path.clone()));
+            }
+        }
+    }
+
+    let mut out = Vec::new();
+    out.push(format!(
+        "  Source files over {threshold} lines ({} violation{}):",
+        violations.len(),
+        if violations.len() == 1 { "" } else { "s" }
+    ));
+    out.push(String::new());
+
+    if violations.is_empty() {
+        out.push(format!(
+            "  ✓ No violations — all non-test .rs files are under {threshold} lines."
+        ));
+    } else {
+        for (count, path) in &violations {
+            out.push(format!("  {:>5}  {}", count, path));
+        }
+    }
+
+    if !exempt.is_empty() {
+        out.push(String::new());
+        out.push("  (tests — exempt):".to_string());
+        for (count, path) in &exempt {
+            out.push(format!("  {:>5}  {}  (tests — exempt)", count, path));
+        }
+    }
+
+    out.push(String::new());
+    out.push(format!(
+        "  Run /files <N> to use a custom threshold (current: {threshold})."
+    ));
+    out.push(String::new());
+    CommandResult::Handled(out)
 }
