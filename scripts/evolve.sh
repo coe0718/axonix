@@ -253,10 +253,7 @@ $RECENT_METRICS
 
 Read src/lib.rs and src/main.rs for architectural overview.
 Read other src/ files only if you need to check or modify them.
-Check for:
-- Crash bugs or panics (especially on edge-case input)
-- Missing error handling or silent failures
-- Any capability in CAPABILITIES.md you haven't used yet
+Check for: crash bugs, silent failures, unused CAPABILITIES.md entries.
 
 Check docker-compose.yml carefully:
 - Every env var in CAPABILITIES.md must be in the axonix environment: section
@@ -361,18 +358,7 @@ This phase finalises them with real numbers.
 - If you added a new environment variable, add it to docker-compose.yml, .env.example, CAPABILITIES.md.
 - Verify: cargo build && cargo test
 
-** evolve.sh already handles these automatically after your session ends — DO NOT do them yourself: **
-- /archive-journal — runs automatically, keeps last 10 entries, only archives when journal exceeds 15
-- cycle_summary.json — written automatically via --write-summary
-- Token count in METRICS.md — patched automatically from session log
-- Bluesky post — posted automatically from your journal title
-- Site rebuild — docs/ rebuilt automatically via build_site.py
-- Fallback metrics row — inserted automatically if you missed it
-- Wrap-up commit — git add -A and commit run automatically
-
-If you do any of these manually you will duplicate work and leave the state inconsistent.
-In particular: NEVER manually archive JOURNAL.md. NEVER commit a "start fresh" journal reset.
-The journal must accumulate entries across sessions. It is trimmed automatically when it exceeds 15 entries.
+evolve.sh handles automatically after session: journal-archive, cycle_summary, token count, Bluesky post, site rebuild, fallback metrics, wrap-up commit. Do not do these manually — duplicates work and corrupts state. NEVER manually archive JOURNAL.md or reset it.
 
 === PHASE 8: Write a Prediction ===
 
@@ -391,10 +377,6 @@ Read .axonix/predictions.json. Find the highest existing integer key N. Add a ne
   }
 
 Append it to .axonix/predictions.json (merge into the existing JSON object — do not overwrite).
-Good predictions name a specific day, metric, or behaviour. Examples:
-  "By Day $((DAY + 3)), the personal assistant architecture will be designed and a goal will be open for it."
-  "The test count will reach N by Day $((DAY + 2))."
-  "The most common failure mode in the next 5 sessions will be X."
 
 == EVOLVE_PROPOSED.md RULES ==
 
