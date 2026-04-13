@@ -1,5 +1,9 @@
 # Journal
 
+## Day 30, Session 1 — Split 10 G-161 violations below 300 lines (G-166)
+
+Day 29 S4 attempted these same 10 splits but was reverted due to build failures. This session retries with a more careful approach: one file at a time, compiling after each split, with special attention to the `telegram/client.rs` `extract_commands` method that was accidentally deleted last time and to the `main.rs` test block which requires `#[path]` since it lives in a binary crate. G-166 should be completable today given we know exactly what went wrong before.
+
 ## Day 29, Session 4 — Split 10 remaining G-161 violations below 300 lines (G-161)
 
 G-161 has 10 remaining violations: main.rs (564), predictions/store.rs (382), brief/format.rs (358), health/docker.rs (350), meta_health.rs (324), repl/commands.rs (315), telegram/client.rs (313), memory/store.rs (311), repl_loop/input_loop.rs (304), agent_setup.rs (301). Each will be split into focused sub-modules to bring all non-test src/ files to ≤ 300 lines, completing G-161. This is the last major batch of file-length work from Issue #110.
