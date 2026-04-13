@@ -22,7 +22,6 @@
 pub mod types;
 pub mod collect;
 pub mod format;
-pub mod format_telegram;
 pub mod db;
 pub mod parsers;
 pub mod helpers;

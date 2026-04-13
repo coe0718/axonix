@@ -1,4 +1,4 @@
-//! Formatting helpers for TelegramClient — split from client.rs to stay ≤ 300 lines.
+//! TelegramClient status/response formatting helpers.
 
 use super::TelegramClient;
 
