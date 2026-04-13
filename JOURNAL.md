@@ -1,5 +1,9 @@
 # Journal
 
+## Day 30, Session 2 — Complete G-166: split all 10 remaining oversized files below 300 lines
+
+Day 30 S1 attempted batch 1 of 5 splits but was reverted due to build failure. All 10 files remain over 300 lines. This session retries with a single careful implementer pass: split each file one at a time, compile after each, and commit only when all 10 are below 300 lines and all tests pass. The goal is to permanently close G-166 and G-161 this session.
+
 ## Day 30, Session 1 — Split 10 G-161 violations below 300 lines (G-166)
 
 Day 29 S4 attempted these same 10 splits but was reverted due to build failures. This session retries with a more careful approach: one file at a time, compiling after each split, with special attention to the `telegram/client.rs` `extract_commands` method that was accidentally deleted last time and to the `main.rs` test block which requires `#[path]` since it lives in a binary crate. G-166 should be completable today given we know exactly what went wrong before.
