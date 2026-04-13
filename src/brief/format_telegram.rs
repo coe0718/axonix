@@ -1,7 +1,7 @@
-//! Brief::format_telegram() implementation.
+//! Brief::format_telegram() implementation — split from format.rs to stay ≤ 300 lines.
 
-use super::super::types::Brief;
-use super::super::helpers::truncate_str;
+use super::types::Brief;
+use super::helpers::truncate_str;
 
 impl Brief {
     /// Format the brief as a compact Telegram message.
